@@ -15,10 +15,16 @@ uso **E1.1 — Cadastrar imóveis**. O banco está pronto e validado; **nenhum c
 | Verificação | `scripts/verificar-db.sh` |
 | Dicionário | `docs/db/dicionario.md` |
 | Diagrama | `docs/db/schema.dbml` |
+| Aplicação no Supabase | `db/supabase/README.md` e `db/supabase/aplicar_tudo.sql` |
 | Regras/contexto | `docs/CONTEXTO.md` e `docs/db/decisoes.md` |
 
 Ao criar o projeto Spring Boot, copie as migrations para `src/main/resources/db/migration/`
 (mesmos nomes `V001__...`). O Flyway aplica em ordem e registra em `flyway_schema_history`.
+
+Para ver o schema rápido no Supabase **sem** Flyway, use o SQL Editor e cole
+`db/supabase/aplicar_tudo.sql` (instruções em `db/supabase/README.md`). Não misture esse caminho com
+Flyway no mesmo banco: o Flyway encontraria tabelas sem `flyway_schema_history`. Há também o script
+`scripts/aplicar-supabase.sh` para aplicar via `psql`/Docker.
 
 ## 1. RNF1 — ORM e conexão com o Supabase
 

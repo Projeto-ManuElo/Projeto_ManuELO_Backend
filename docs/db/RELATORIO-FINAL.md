@@ -7,6 +7,8 @@
 - Seed fictício (`db/seed/dev_seed.sql`) e script do primeiro administrador
   (`db/seed/primeiro_admin.sql`).
 - Runtime de verificação (`scripts/verificar-db.sh` e `scripts/pg-verify.mjs`).
+- Bundle para o SQL Editor do Supabase (`db/supabase/aplicar_tudo.sql`), guia
+  (`db/supabase/README.md`) e script `scripts/aplicar-supabase.sh`.
 - `docker-compose.yml` para Postgres local.
 - Documentação: `docs/db/dicionario.md`, `docs/db/schema.dbml`, `docs/db/progresso.md`,
   `docs/db/decisoes.md` e `docs/db/integracao-equipe.md`.

@@ -1,8 +1,8 @@
 # Progresso (memória do loop; a conversa não é memória)
 
-Iteração atual: 15 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
+Iteração atual: 16 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
 Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; docker e psql indisponíveis)
-Última atualização: T15 concluída
+Última atualização: T16 concluída
 
 ## Entendimento inicial (8 linhas)
 1. O ManuElo é um sistema financeiro/documental; o banco é PostgreSQL (Supabase) com migrations Flyway.
@@ -40,11 +40,24 @@ Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; doc
       docs/db/RELATORIO-FINAL.md (decisões, riscos, como aplicar em src/main/resources/db/migration).
 - [x] T15 Handoff de integração: docs/db/integracao-equipe.md (RNF1, RNF2, autenticação, Storage de PDF,
       busca/filtros, edição segura de imóveis e E1.1 cadastrar imóveis).
+- [x] T16 Publicação no Supabase: bundle SQL para o SQL Editor (db/supabase/aplicar_tudo.sql),
+      gerador (scripts/gerar-bundle-supabase.sh), guia (db/supabase/README.md) e aplicador via
+      psql/Docker (scripts/aplicar-supabase.sh). A criação do projeto continua manual (login).
 
 ## Bloqueios (tarefa travada: diagnóstico e o que já tentou)
 (nenhum)
 
 ## Log (uma entrada por iteração: tarefa, arquivos, resultado da verificação)
+### T16 — bundle e aplicação no Supabase
+- Arquivos: db/supabase/aplicar_tudo.sql (gerado); db/supabase/README.md;
+  scripts/gerar-bundle-supabase.sh; scripts/aplicar-supabase.sh.
+- O bundle concatena V001..V011 em uma transação com `search_path = public, extensions`; foi aplicado
+  em Postgres limpo e passou nos 13 testes. O script usa psql ou Docker, recusa a porta 6543 e aplica
+  seed/admin opcionais.
+- Bloqueio real: criar o projeto Supabase exige login na conta do usuário; não há token/CLI no ambiente.
+  O caminho manual está documentado; depois de criar, basta colar o bundle no SQL Editor.
+- Verificação: bundle + seed + `13 teste(s), 0 falha(s)` → OK.
+
 ### T15 — handoff de integração com o backend
 - Arquivos: docs/db/integracao-equipe.md.
 - Cobre RNF1 (Maven/Spring Boot 3, Session pooler 5432, `ddl-auto=validate`, mapeamento JPA,
