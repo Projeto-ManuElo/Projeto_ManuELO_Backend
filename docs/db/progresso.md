@@ -1,8 +1,8 @@
 # Progresso (memória do loop; a conversa não é memória)
 
-Iteração atual: 7 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
+Iteração atual: 8 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
 Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; docker e psql indisponíveis)
-Última atualização: T08 concluída
+Última atualização: T07 concluída
 
 ## Entendimento inicial (8 linhas)
 1. O ManuElo é um sistema financeiro/documental; o banco é PostgreSQL (Supabase) com migrations Flyway.
@@ -25,7 +25,7 @@ Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; doc
 - [x] T06 V005 movimentacoes: checks por tipo e categoria, competência, forma CAUCAO, índices.
 - [x] T08 V006 documentos (checks de vínculo, tamanho, classificação) e reformas.
       (Antecipada: T07 depende de `documentos` para o comprovante de SAÍDA; DEC-14.)
-- [ ] T07 V007 regras de integridade das movimentações: imutabilidade, estorno (admin, valor igual,
+- [x] T07 V007 regras de integridade das movimentações: imutabilidade, estorno (admin, valor igual,
       sem duplo estorno), imóvel coerente com o contrato, saldo de caução, comprovante em SAIDA (deferido).
 - [ ] T09 V008 relatorios, relatorio_movimentacoes, relatorio_contratos, configuracoes (+ seeds de config).
 - [ ] T10 V009 views e funções: extrato e resumo por período (entradas, saídas, saldo, estornos),
@@ -43,6 +43,11 @@ Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; doc
 (nenhum)
 
 ## Log (uma entrada por iteração: tarefa, arquivos, resultado da verificação)
+### T07 — regras de integridade e imutabilidade
+- Arquivos: db/migrations/V007__regras_movimentacoes_caucao.sql; db/tests/07_regras_movimentacoes_caucao.sql.
+- Correção: o teste de duplo estorno agora espera `check_violation` (o trigger responde antes da unique).
+- Verificação: `7 migration(ões), 8 teste(s), 0 falha(s)` → VERIFICAÇÃO OK.
+
 ### T08 — documentos e reformas (V006, antecipada)
 - Arquivos: db/migrations/V006__documentos_reformas.sql; db/tests/06_documentos_reformas.sql.
 - Verificação: `6 migration(ões), 7 teste(s), 0 falha(s)` → VERIFICAÇÃO OK.

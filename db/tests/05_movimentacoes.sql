@@ -43,6 +43,14 @@ VALUES ('00000000-0000-4000-8000-000000000613', 'SAIDA', 'MANUTENCAO', 300.00,
         'Encanador Fulano')
 ON CONFLICT DO NOTHING;
 
+-- Comprovante da SAÍDA (exigido pelo trigger deferido da V007).
+INSERT INTO documentos (id, nome_arquivo, caminho_armazenamento, tipo_mime, tamanho_bytes,
+                        movimentacao_id, enviado_por)
+VALUES ('00000000-0000-4000-8000-000000000615', 'comprovante-saida.jpg',
+        'supabase://docs/comprovante-saida.jpg', 'image/jpeg', 1024,
+        '00000000-0000-4000-8000-000000000613', '00000000-0000-4000-8000-000000000601')
+ON CONFLICT DO NOTHING;
+
 -- Negativos.
 DO $$
 BEGIN
@@ -201,7 +209,7 @@ BEGIN
             '00000000-0000-4000-8000-000000000601',
             '00000000-0000-4000-8000-000000000611', 'Duplicado');
     RAISE EXCEPTION 'aceitou dois estornos para o mesmo original';
-  EXCEPTION WHEN unique_violation THEN NULL;
+  EXCEPTION WHEN check_violation THEN NULL;
   END;
 
   BEGIN
