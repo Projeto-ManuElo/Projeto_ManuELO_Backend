@@ -1,8 +1,8 @@
 # Progresso (memória do loop; a conversa não é memória)
 
-Iteração atual: 9 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
+Iteração atual: 10 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
 Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; docker e psql indisponíveis)
-Última atualização: T09 concluída
+Última atualização: T10 concluída
 
 ## Entendimento inicial (8 linhas)
 1. O ManuElo é um sistema financeiro/documental; o banco é PostgreSQL (Supabase) com migrations Flyway.
@@ -28,7 +28,7 @@ Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; doc
 - [x] T07 V007 regras de integridade das movimentações: imutabilidade, estorno (admin, valor igual,
       sem duplo estorno), imóvel coerente com o contrato, saldo de caução, comprovante em SAIDA (deferido).
 - [x] T09 V008 relatorios, relatorio_movimentacoes, relatorio_contratos, configuracoes (+ seeds de config).
-- [ ] T10 V009 views e funções: extrato e resumo por período (entradas, saídas, saldo, estornos),
+- [x] T10 V009 views e funções: extrato e resumo por período (entradas, saídas, saldo, estornos),
       situação de contratos (validade e atraso), situação de imóveis, indicadores da home, histórico de
       reformas, lista de documentos, saldo de caução.
 - [ ] T11 V010 segurança: RLS em todas as tabelas, revoke para anon/authenticated (protegido por
@@ -43,6 +43,10 @@ Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; doc
 (nenhum)
 
 ## Log (uma entrada por iteração: tarefa, arquivos, resultado da verificação)
+### T10 — views e funções derivadas
+- Arquivos: db/migrations/V009__views_funcoes.sql; db/tests/09_views_funcoes.sql.
+- Verificação: `9 migration(ões), 10 teste(s), 0 falha(s)` → VERIFICAÇÃO OK.
+
 ### T09 — relatórios e configurações
 - Arquivos: db/migrations/V008__relatorios_configuracoes.sql; db/tests/08_relatorios_configuracoes.sql.
 - Verificação: `8 migration(ões), 9 teste(s), 0 falha(s)` → VERIFICAÇÃO OK.
