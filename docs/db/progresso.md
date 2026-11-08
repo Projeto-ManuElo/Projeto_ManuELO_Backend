@@ -1,8 +1,8 @@
 # Progresso (memória do loop; a conversa não é memória)
 
-Iteração atual: 8 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
+Iteração atual: 9 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
 Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; docker e psql indisponíveis)
-Última atualização: T07 concluída
+Última atualização: T09 concluída
 
 ## Entendimento inicial (8 linhas)
 1. O ManuElo é um sistema financeiro/documental; o banco é PostgreSQL (Supabase) com migrations Flyway.
@@ -27,7 +27,7 @@ Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; doc
       (Antecipada: T07 depende de `documentos` para o comprovante de SAÍDA; DEC-14.)
 - [x] T07 V007 regras de integridade das movimentações: imutabilidade, estorno (admin, valor igual,
       sem duplo estorno), imóvel coerente com o contrato, saldo de caução, comprovante em SAIDA (deferido).
-- [ ] T09 V008 relatorios, relatorio_movimentacoes, relatorio_contratos, configuracoes (+ seeds de config).
+- [x] T09 V008 relatorios, relatorio_movimentacoes, relatorio_contratos, configuracoes (+ seeds de config).
 - [ ] T10 V009 views e funções: extrato e resumo por período (entradas, saídas, saldo, estornos),
       situação de contratos (validade e atraso), situação de imóveis, indicadores da home, histórico de
       reformas, lista de documentos, saldo de caução.
@@ -43,6 +43,10 @@ Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; doc
 (nenhum)
 
 ## Log (uma entrada por iteração: tarefa, arquivos, resultado da verificação)
+### T09 — relatórios e configurações
+- Arquivos: db/migrations/V008__relatorios_configuracoes.sql; db/tests/08_relatorios_configuracoes.sql.
+- Verificação: `8 migration(ões), 9 teste(s), 0 falha(s)` → VERIFICAÇÃO OK.
+
 ### T07 — regras de integridade e imutabilidade
 - Arquivos: db/migrations/V007__regras_movimentacoes_caucao.sql; db/tests/07_regras_movimentacoes_caucao.sql.
 - Correção: o teste de duplo estorno agora espera `check_violation` (o trigger responde antes da unique).
