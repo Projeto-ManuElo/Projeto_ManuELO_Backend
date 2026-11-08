@@ -17,3 +17,18 @@ Modelo de entrada:
 - Reverter: se `documentos` voltar para V007, mover o trigger `trg_movimentacao_exige_comprovante_saida`
   para a migration seguinte e ajustar os testes.
 
+
+## DEC-15 endereço completo com logradouro, número, bairro e cidade obrigatórios
+- Contexto: o CONTEXTO não marca quais campos de endereço são opcionais; o schema-base deixava número e
+  bairro nulos.
+- Escolha: logradouro, numero, bairro e cidade NOT NULL; complemento e cep opcionais; uf com default 'SE'
+  e CHECK de duas letras maiúsculas; cep no formato 00000-000 ou 00000000.
+- Motivo: desempate do AGENTS a favor da integridade; endereço sem número/bairro não é utilizável.
+- Reverter: nova migration com ALTER TABLE imoveis ALTER COLUMN ... DROP NOT NULL e drop dos CHECKs.
+
+## DEC-16 documento e telefone normalizados em dígitos
+- Contexto: CPF/CNPJ aparecem formatados no Figma; a busca por CPF precisa funcionar.
+- Escolha: `documento` guarda só dígitos (11 para CPF, 14 para CNPJ) em inquilinos e fiadores;
+  `telefone` guarda 10 ou 11 dígitos. A formatação fica na interface.
+- Motivo: unicidade e busca determinísticas; CHECK mais restritivo e reversível.
+- Reverter: nova migration ampliando o CHECK para aceitar pontuação e ajustando os seeds.
