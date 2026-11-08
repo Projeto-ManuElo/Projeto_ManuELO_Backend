@@ -1,8 +1,8 @@
 # Progresso (memória do loop; a conversa não é memória)
 
-Iteração atual: 11 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
+Iteração atual: 12 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
 Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; docker e psql indisponíveis)
-Última atualização: T11 concluída
+Última atualização: T12 concluída
 
 ## Entendimento inicial (8 linhas)
 1. O ManuElo é um sistema financeiro/documental; o banco é PostgreSQL (Supabase) com migrations Flyway.
@@ -33,7 +33,7 @@ Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; doc
       reformas, lista de documentos, saldo de caução.
 - [x] T11 V010 segurança: RLS em todas as tabelas, revoke para anon/authenticated (protegido por
       "se a role existir"), role manuelo_app com privilégio mínimo.
-- [ ] T12 Seed fictício (db/seed/dev_seed.sql: 124 imóveis, contratos, movimentações com estornos e
+- [x] T12 Seed fictício (db/seed/dev_seed.sql: 124 imóveis, contratos, movimentações com estornos e
       atrasos) e db/seed/primeiro_admin.sql (parâmetros por variável psql, sem senha no repositório).
 - [ ] T13 Teste de volume: as views respondem em menos de 2 s com 124 imóveis e 3000 movimentações.
 - [ ] T14 Entregáveis finais: docs/db/schema.dbml (para dbdiagram.io), docs/db/dicionario.md,
@@ -43,6 +43,14 @@ Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; doc
 (nenhum)
 
 ## Log (uma entrada por iteração: tarefa, arquivos, resultado da verificação)
+### T12 — seed fictício
+- Arquivos: db/seed/dev_seed.sql; db/seed/primeiro_admin.sql; db/tests/11_seed_ficticio.sql.
+- Volume: 124 imóveis, 120 inquilinos, 60 fiadores, 110 contratos e 3040 movimentações
+  (2150 entradas, 860 saídas com comprovante, 30 estornos), 110 depósitos e 10 abatimentos de caução.
+- O primeiro admin é criado via psql com variáveis `:nome`, `:email`, `:senha_hash` (hash fornecido pelo
+  backend), sem segredo no repositório; entra PENDENTE_APROVACAO e é aprovado por si na sequência.
+- Verificação: `10 migration(ões), 12 teste(s), 0 falha(s)` → VERIFICAÇÃO OK.
+
 ### T11 — segurança RLS
 - Arquivos: db/migrations/V010__seguranca_rls.sql; db/tests/10_seguranca_rls.sql.
 - Nota: não revoguei USAGE do schema public de PUBLIC (quebraria outras roles do Supabase); o acesso de
