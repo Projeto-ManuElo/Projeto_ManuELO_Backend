@@ -1,8 +1,8 @@
 # Progresso (memória do loop; a conversa não é memória)
 
-Iteração atual: 13 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
+Iteração atual: 14 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
 Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; docker e psql indisponíveis)
-Última atualização: T13 concluída
+Última atualização: T14 concluída
 
 ## Entendimento inicial (8 linhas)
 1. O ManuElo é um sistema financeiro/documental; o banco é PostgreSQL (Supabase) com migrations Flyway.
@@ -36,13 +36,21 @@ Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; doc
 - [x] T12 Seed fictício (db/seed/dev_seed.sql: 124 imóveis, contratos, movimentações com estornos e
       atrasos) e db/seed/primeiro_admin.sql (parâmetros por variável psql, sem senha no repositório).
 - [x] T13 Teste de volume: as views respondem em menos de 2 s com 124 imóveis e 3000 movimentações.
-- [ ] T14 Entregáveis finais: docs/db/schema.dbml (para dbdiagram.io), docs/db/dicionario.md,
+- [x] T14 Entregáveis finais: docs/db/schema.dbml (para dbdiagram.io), docs/db/dicionario.md,
       docs/db/RELATORIO-FINAL.md (decisões, riscos, como aplicar em src/main/resources/db/migration).
 
 ## Bloqueios (tarefa travada: diagnóstico e o que já tentou)
 (nenhum)
 
 ## Log (uma entrada por iteração: tarefa, arquivos, resultado da verificação)
+### T14 — entregáveis de documentação
+- Arquivos: docs/db/schema.dbml; docs/db/dicionario.md; docs/db/RELATORIO-FINAL.md.
+- O schema.dbml reflete as 13 tabelas, enums, FKs e índices reais (V001..V011); as views/funções estão
+  listadas no fim. O dicionário cobre colunas, CHECKs, triggers, views, funções e consultas de exemplo.
+- O relatório final traz como aplicar no Flyway, evidência da verificação, desempenho antes/depois da
+  V011, riscos e checklist. Nenhum arquivo Java foi criado (escopo).
+- Verificação: `11 migration(ões), 13 teste(s), 0 falha(s)` → VERIFICAÇÃO OK.
+
 ### T13 — volume e desempenho
 - Arquivos: db/migrations/V011__desempenho_views.sql; db/tests/12_volume_desempenho.sql.
 - `fn_contrato_atraso` passou a agregar pagamentos uma única vez por competência; `vw_home_indicadores`

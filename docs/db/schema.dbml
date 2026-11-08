@@ -1,0 +1,447 @@
+// ManuElo — schema v3 (gerado a partir de db/migrations V001..V011).
+// Cole em https://dbdiagram.io para visualizar. Fonte da verdade: docs/CONTEXTO.md.
+// Views e funções não aparecem no diagrama; estão listadas no fim e em docs/db/dicionario.md.
+
+Enum perfil_usuario {
+  ADMINISTRADOR
+  COLABORADOR
+}
+
+Enum status_usuario {
+  PENDENTE_APROVACAO
+  ATIVO
+  INATIVO
+}
+
+Enum tipo_imovel {
+  APARTAMENTO
+  CASA
+  COMERCIAL
+  TERRENO
+}
+
+Enum status_imovel {
+  ALUGADO
+  VAGO
+  EM_MANUTENCAO
+}
+
+Enum tipo_movimentacao {
+  ENTRADA
+  SAIDA
+  ESTORNO
+}
+
+Enum categoria_movimentacao {
+  ALUGUEL
+  OUTRAS_ENTRADAS
+  MANUTENCAO
+  TRIBUTOS
+  ADMINISTRATIVO
+  OUTRAS_SAIDAS
+}
+
+Enum forma_pagamento {
+  PIX
+  BOLETO
+  TRANSFERENCIA
+  DINHEIRO
+  CAUCAO
+}
+
+Enum tipo_caucao {
+  DEPOSITO
+  ABATIMENTO_ALUGUEL
+  DEVOLUCAO
+}
+
+Enum tipo_documento {
+  CONTRATO
+  COMPROVANTE
+  NOTA_FISCAL
+  DOCUMENTO_CONTABIL
+  CADASTRO
+}
+
+Enum tipo_relatorio {
+  CONTRATOS_EXISTENTES
+  CONTRATOS_ATRASADOS
+  CONTRATOS_A_VENCER
+  MOVIMENTACAO
+}
+
+Enum filtro_tipo_movimentacao {
+  ENTRADA
+  SAIDA
+}
+
+Enum situacao_relatorio_contrato {
+  EXISTENTE
+  ATRASADO
+  A_VENCER
+}
+
+Table usuarios {
+  id uuid [pk, default: `gen_random_uuid()`]
+  nome varchar(160) [not null]
+  email varchar(160) [not null]
+  senha_hash varchar(255) [not null]
+  perfil perfil_usuario [not null, default: 'COLABORADOR']
+  status status_usuario [not null, default: 'PENDENTE_APROVACAO']
+  aprovado_por uuid
+  aprovado_em timestamptz
+  ultimo_acesso_em timestamptz
+  criado_por uuid
+  criado_em timestamptz [not null, default: `now()`]
+  atualizado_por uuid
+  atualizado_em timestamptz
+
+  indexes {
+    (lower(email)) [unique, name: 'uq_usuarios_email']
+    status
+    perfil
+  }
+
+  Note: 'E-mail único sem diferenciar maiúsculas. ATIVO exige aprovado_em; PENDENTE_APROVACAO exige aprovação nula. Usuário nunca é apagado (R10).'
+}
+
+Table tokens_redefinicao_senha {
+  id uuid [pk, default: `gen_random_uuid()`]
+  usuario_id uuid [not null]
+  token_hash varchar(255) [not null]
+  expira_em timestamptz [not null]
+  usado_em timestamptz
+  criado_em timestamptz [not null, default: `now()`]
+
+  indexes {
+    token_hash [unique, name: 'uq_tokens_redefinicao_hash']
+    usuario_id
+  }
+
+  Note: 'Só hash, uso único e com prazo; UPDATE/DELETE bloqueados por trigger (R10).'
+}
+
+Table imoveis {
+  id uuid [pk, default: `gen_random_uuid()`]
+  logradouro varchar(200) [not null]
+  numero varchar(20) [not null]
+  complemento varchar(100)
+  bairro varchar(100) [not null]
+  cidade varchar(100) [not null]
+  uf char(2) [not null, default: 'SE']
+  cep varchar(9)
+  tipo tipo_imovel [not null]
+  status status_imovel [not null, default: 'VAGO']
+  criado_por uuid
+  criado_em timestamptz [not null, default: `now()`]
+  atualizado_por uuid
+  atualizado_em timestamptz
+
+  indexes {
+    status
+    tipo
+    logradouro [name: 'ix_imoveis_logradouro_trgm', note: 'GIN trigram']
+    bairro [name: 'ix_imoveis_bairro_trgm', note: 'GIN trigram']
+    cidade [name: 'ix_imoveis_cidade_trgm', note: 'GIN trigram']
+  }
+
+  Note: 'status guarda EM_MANUTENCAO; alugado/vago são derivados do contrato vigente (DEC-09). CEP 00000-000 ou 00000000; UF duas letras maiúsculas.'
+}
+
+Table inquilinos {
+  id uuid [pk, default: `gen_random_uuid()`]
+  nome varchar(160) [not null]
+  documento varchar(18) [not null]
+  email varchar(160)
+  criado_por uuid
+  criado_em timestamptz [not null, default: `now()`]
+  atualizado_por uuid
+  atualizado_em timestamptz
+
+  indexes {
+    documento [unique, name: 'uq_inquilinos_documento']
+    nome [name: 'ix_inquilinos_nome_trgm', note: 'GIN trigram']
+    documento [name: 'ix_inquilinos_documento_trgm', note: 'GIN trigram']
+  }
+
+  Note: 'documento só dígitos: 11 (CPF) ou 14 (CNPJ), único (DEC-16).'
+}
+
+Table fiadores {
+  id uuid [pk, default: `gen_random_uuid()`]
+  nome varchar(160) [not null]
+  documento varchar(18) [not null]
+  email varchar(160)
+  telefone varchar(20)
+  criado_por uuid
+  criado_em timestamptz [not null, default: `now()`]
+  atualizado_por uuid
+  atualizado_em timestamptz
+
+  indexes {
+    documento [unique, name: 'uq_fiadores_documento']
+    nome [name: 'ix_fiadores_nome_trgm', note: 'GIN trigram']
+  }
+
+  Note: 'documento só dígitos; telefone com 10 ou 11 dígitos (DEC-16).'
+}
+
+Table contratos {
+  id uuid [pk, default: `gen_random_uuid()`]
+  imovel_id uuid [not null]
+  inquilino_id uuid [not null]
+  fiador_id uuid
+  inicio date [not null]
+  fim date
+  valor_aluguel numeric(14,2) [not null]
+  dia_vencimento smallint [not null]
+  acompanhar_pagamento_desde date [not null]
+  possui_acao_judicial boolean [not null, default: false]
+  acao_judicial_descricao varchar(500)
+  criado_por uuid
+  criado_em timestamptz [not null, default: `now()`]
+  atualizado_por uuid
+  atualizado_em timestamptz
+
+  indexes {
+    imovel_id
+    inquilino_id
+    fiador_id
+    fim
+    acompanhar_pagamento_desde
+  }
+
+  Note: 'Sem sobreposição de períodos no mesmo imóvel (EXCLUDE gist). fim >= inicio; dia_vencimento 1..31; descrição obrigatória se possui_acao_judicial; acompanhar_pagamento_desde >= inicio (DEC-12).'
+}
+
+Table caucao_movimentacoes {
+  id uuid [pk, default: `gen_random_uuid()`]
+  contrato_id uuid [not null]
+  tipo tipo_caucao [not null]
+  valor numeric(14,2) [not null]
+  data date [not null]
+  movimentacao_id uuid
+  documento_id uuid
+  criado_por uuid [not null]
+  criado_em timestamptz [not null, default: `now()`]
+
+  indexes {
+    contrato_id
+    data
+    movimentacao_id
+    documento_id
+  }
+
+  Note: 'Livro-razão imutável. ABATIMENTO_ALUGUEL exige movimentação ENTRADA/ALUGUEL/CAUCAO do mesmo contrato e valor. Saldo nunca negativo (R07).'
+}
+
+Table movimentacoes {
+  id uuid [pk, default: `gen_random_uuid()`]
+  tipo tipo_movimentacao [not null]
+  categoria categoria_movimentacao
+  valor numeric(14,2) [not null]
+  data_movimentacao date [not null]
+  descricao varchar(255) [not null]
+  forma_pagamento forma_pagamento
+  imovel_id uuid
+  responsavel_id uuid [not null]
+  contrato_id uuid
+  competencia date
+  origem_descricao varchar(255)
+  favorecido varchar(160)
+  movimentacao_original_id uuid
+  justificativa varchar(500)
+  corrige_movimentacao_id uuid
+  criado_em timestamptz [not null, default: `now()`]
+
+  indexes {
+    movimentacao_original_id [unique, name: 'uq_movimentacoes_original']
+    data_movimentacao
+    (tipo, categoria)
+    contrato_id
+    imovel_id
+    competencia
+    responsavel_id
+    corrige_movimentacao_id
+  }
+
+  Note: 'Imutável (R01). ESTORNO: só ADMINISTRADOR, mesmo valor, um por original, justificativa, não estorna estorno. ALUGUEL exige contrato, competência no 1º dia do mês e imóvel do contrato. OUTRAS_ENTRADAS exige origem_descricao. SAIDA exige forma e comprovante até o fim da transação (deferido). CAUCAO só em ALUGUEL e com abatimento correspondente.'
+}
+
+Table documentos {
+  id uuid [pk, default: `gen_random_uuid()`]
+  nome_arquivo varchar(200) [not null]
+  tipo tipo_documento
+  data_documento date
+  pendente_revisao boolean [not null, default: true]
+  caminho_armazenamento varchar(500) [not null]
+  tipo_mime varchar(100) [not null]
+  tamanho_bytes bigint [not null]
+  movimentacao_id uuid
+  imovel_id uuid
+  inquilino_id uuid
+  contrato_id uuid
+  enviado_por uuid [not null]
+  enviado_em timestamptz [not null, default: `now()`]
+  atualizado_por uuid
+  atualizado_em timestamptz
+
+  indexes {
+    movimentacao_id
+    imovel_id
+    inquilino_id
+    contrato_id
+    enviado_em
+    nome_arquivo [name: 'ix_documentos_nome_trgm', note: 'GIN trigram']
+  }
+
+  Note: 'Ao menos um vínculo; PDF/JPG/PNG até 10 MB; pendente_revisao permite tipo e data vazios, classificar exige os dois (R08).'
+}
+
+Table reformas {
+  id uuid [pk, default: `gen_random_uuid()`]
+  imovel_id uuid [not null]
+  data_reforma date [not null]
+  descricao varchar(500) [not null]
+  valor numeric(14,2) [not null]
+  movimentacao_id uuid
+  criado_por uuid
+  criado_em timestamptz [not null, default: `now()`]
+  atualizado_por uuid
+  atualizado_em timestamptz
+
+  Note: 'O responsável do período é derivado do contrato vigente na data (DEC-07).'
+}
+
+Table relatorios {
+  id uuid [pk, default: `gen_random_uuid()`]
+  nome varchar(160) [not null]
+  tipo tipo_relatorio [not null]
+  data_referencia date [not null]
+  periodo_inicio date
+  periodo_fim date
+  filtro_tipo_movimentacao filtro_tipo_movimentacao
+  janela_dias integer
+  total_entradas numeric(14,2)
+  total_saidas numeric(14,2)
+  saldo numeric(14,2)
+  qtd_registros integer [not null]
+  caminho_arquivo varchar(500) [not null]
+  gerado_por uuid [not null]
+  gerado_em timestamptz [not null, default: `now()`]
+
+  indexes {
+    tipo
+    gerado_em
+    data_referencia
+  }
+
+  Note: 'Insert-only (R09). MOVIMENTACAO exige período e totais; os demais tipos não os aceitam. CONTRATOS_A_VENCER exige janela_dias > 0.'
+}
+
+Table relatorio_movimentacoes {
+  relatorio_id uuid [not null]
+  movimentacao_id uuid [not null]
+  ordem integer [not null]
+
+  indexes {
+    (relatorio_id, movimentacao_id) [pk, name: 'pk_relatorio_movimentacoes']
+    (relatorio_id, ordem) [unique, name: 'uq_relatorio_movimentacoes_ordem']
+    movimentacao_id
+  }
+
+  Note: 'Composição exata do PDF; insert-only.'
+}
+
+Table relatorio_contratos {
+  relatorio_id uuid [not null]
+  contrato_id uuid [not null]
+  ordem integer [not null]
+  situacao situacao_relatorio_contrato [not null]
+  dias integer
+
+  indexes {
+    (relatorio_id, contrato_id) [pk, name: 'pk_relatorio_contratos']
+    (relatorio_id, ordem) [unique, name: 'uq_relatorio_contratos_ordem']
+    contrato_id
+  }
+
+  Note: 'Composição exata do PDF; dias obrigatório quando situacao não é EXISTENTE; insert-only.'
+}
+
+Table configuracoes {
+  chave varchar(100) [pk]
+  valor varchar(500) [not null]
+  descricao varchar(255)
+  criado_em timestamptz [not null, default: `now()`]
+  atualizado_por uuid
+  atualizado_em timestamptz [not null, default: `now()`]
+
+  Note: 'Seeds: dias_alerta_vencimento=7 e dias_atraso_critico=7.'
+}
+
+Ref: usuarios.aprovado_por > usuarios.id [delete: restrict]
+Ref: usuarios.criado_por > usuarios.id [delete: restrict]
+Ref: usuarios.atualizado_por > usuarios.id [delete: restrict]
+
+Ref: tokens_redefinicao_senha.usuario_id > usuarios.id [delete: restrict]
+
+Ref: imoveis.criado_por > usuarios.id [delete: restrict]
+Ref: imoveis.atualizado_por > usuarios.id [delete: restrict]
+
+Ref: inquilinos.criado_por > usuarios.id [delete: restrict]
+Ref: inquilinos.atualizado_por > usuarios.id [delete: restrict]
+
+Ref: fiadores.criado_por > usuarios.id [delete: restrict]
+Ref: fiadores.atualizado_por > usuarios.id [delete: restrict]
+
+Ref: contratos.imovel_id > imoveis.id [delete: restrict]
+Ref: contratos.inquilino_id > inquilinos.id [delete: restrict]
+Ref: contratos.fiador_id > fiadores.id [delete: restrict]
+Ref: contratos.criado_por > usuarios.id [delete: restrict]
+Ref: contratos.atualizado_por > usuarios.id [delete: restrict]
+
+Ref: caucao_movimentacoes.contrato_id > contratos.id [delete: restrict]
+Ref: caucao_movimentacoes.movimentacao_id > movimentacoes.id [delete: restrict]
+Ref: caucao_movimentacoes.documento_id > documentos.id [delete: restrict]
+Ref: caucao_movimentacoes.criado_por > usuarios.id [delete: restrict]
+
+Ref: movimentacoes.imovel_id > imoveis.id [delete: restrict]
+Ref: movimentacoes.responsavel_id > usuarios.id [delete: restrict]
+Ref: movimentacoes.contrato_id > contratos.id [delete: restrict]
+Ref: movimentacoes.movimentacao_original_id > movimentacoes.id [delete: restrict]
+Ref: movimentacoes.corrige_movimentacao_id > movimentacoes.id [delete: restrict]
+
+Ref: documentos.movimentacao_id > movimentacoes.id [delete: restrict]
+Ref: documentos.imovel_id > imoveis.id [delete: restrict]
+Ref: documentos.inquilino_id > inquilinos.id [delete: restrict]
+Ref: documentos.contrato_id > contratos.id [delete: restrict]
+Ref: documentos.enviado_por > usuarios.id [delete: restrict]
+Ref: documentos.atualizado_por > usuarios.id [delete: restrict]
+
+Ref: reformas.imovel_id > imoveis.id [delete: restrict]
+Ref: reformas.movimentacao_id > movimentacoes.id [delete: restrict]
+Ref: reformas.criado_por > usuarios.id [delete: restrict]
+Ref: reformas.atualizado_por > usuarios.id [delete: restrict]
+
+Ref: relatorios.gerado_por > usuarios.id [delete: restrict]
+
+Ref: relatorio_movimentacoes.relatorio_id > relatorios.id [delete: restrict]
+Ref: relatorio_movimentacoes.movimentacao_id > movimentacoes.id [delete: restrict]
+
+Ref: relatorio_contratos.relatorio_id > relatorios.id [delete: restrict]
+Ref: relatorio_contratos.contrato_id > contratos.id [delete: restrict]
+
+Ref: configuracoes.atualizado_por > usuarios.id [delete: restrict]
+
+// ---------------------------------------------------------------------------
+// Derivados (views) — não desenhados acima:
+//   vw_contratos_situacao, vw_contratos_atrasados, vw_contratos_a_vencer,
+//   vw_imoveis_situacao, vw_home_indicadores, vw_reformas_historico,
+//   vw_documentos_lista, vw_saldo_caucao, vw_movimentacoes_recentes.
+// Funções: fn_resumo_periodo, fn_extrato_periodo, fn_contrato_atraso,
+//   fn_contrato_situacao, fn_atualizar_atualizado_em, fn_bloquear_alteracao,
+//   fn_movimentacao_regras, fn_movimentacao_correcao,
+//   fn_movimentacao_comprovante_saida, fn_movimentacao_caucao_vinculada,
+//   fn_caucao_regras, fn_token_redefinicao_uso_unico.
+// ---------------------------------------------------------------------------
