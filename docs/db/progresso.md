@@ -1,8 +1,8 @@
 # Progresso (memória do loop; a conversa não é memória)
 
-Iteração atual: 10 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
+Iteração atual: 11 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
 Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; docker e psql indisponíveis)
-Última atualização: T10 concluída
+Última atualização: T11 concluída
 
 ## Entendimento inicial (8 linhas)
 1. O ManuElo é um sistema financeiro/documental; o banco é PostgreSQL (Supabase) com migrations Flyway.
@@ -31,7 +31,7 @@ Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; doc
 - [x] T10 V009 views e funções: extrato e resumo por período (entradas, saídas, saldo, estornos),
       situação de contratos (validade e atraso), situação de imóveis, indicadores da home, histórico de
       reformas, lista de documentos, saldo de caução.
-- [ ] T11 V010 segurança: RLS em todas as tabelas, revoke para anon/authenticated (protegido por
+- [x] T11 V010 segurança: RLS em todas as tabelas, revoke para anon/authenticated (protegido por
       "se a role existir"), role manuelo_app com privilégio mínimo.
 - [ ] T12 Seed fictício (db/seed/dev_seed.sql: 124 imóveis, contratos, movimentações com estornos e
       atrasos) e db/seed/primeiro_admin.sql (parâmetros por variável psql, sem senha no repositório).
@@ -43,6 +43,12 @@ Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; doc
 (nenhum)
 
 ## Log (uma entrada por iteração: tarefa, arquivos, resultado da verificação)
+### T11 — segurança RLS
+- Arquivos: db/migrations/V010__seguranca_rls.sql; db/tests/10_seguranca_rls.sql.
+- Nota: não revoguei USAGE do schema public de PUBLIC (quebraria outras roles do Supabase); o acesso de
+  anon/authenticated é negado no nível das tabelas.
+- Verificação: `10 migration(ões), 11 teste(s), 0 falha(s)` → VERIFICAÇÃO OK.
+
 ### T10 — views e funções derivadas
 - Arquivos: db/migrations/V009__views_funcoes.sql; db/tests/09_views_funcoes.sql.
 - Verificação: `9 migration(ões), 10 teste(s), 0 falha(s)` → VERIFICAÇÃO OK.
