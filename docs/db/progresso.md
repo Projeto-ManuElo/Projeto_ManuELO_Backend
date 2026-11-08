@@ -1,8 +1,8 @@
 # Progresso (memória do loop; a conversa não é memória)
 
-Iteração atual: 4 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
+Iteração atual: 5 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
 Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; docker e psql indisponíveis)
-Última atualização: T04 concluída
+Última atualização: T05 concluída
 
 ## Entendimento inicial (8 linhas)
 1. O ManuElo é um sistema financeiro/documental; o banco é PostgreSQL (Supabase) com migrations Flyway.
@@ -21,7 +21,7 @@ Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; doc
 - [x] T02 V001 extensões (btree_gist, pg_trgm), enums, função de auditoria (atualizado_em).
 - [x] T03 V002 usuarios (status, aprovação) e tokens_redefinicao_senha, com testes dos checks.
 - [x] T04 V003 imoveis, inquilinos, fiadores, índices de busca (nome, CPF, endereço).
-- [ ] T05 V004 contratos (dia_vencimento, ação judicial, sem sobreposição) e caucao_movimentacoes.
+- [x] T05 V004 contratos (dia_vencimento, ação judicial, sem sobreposição) e caucao_movimentacoes.
 - [ ] T06 V005 movimentacoes: checks por tipo e categoria, competência, forma CAUCAO, índices.
 - [ ] T08 V006 documentos (checks de vínculo, tamanho, classificação) e reformas.
       (Antecipada: T07 depende de `documentos` para o comprovante de SAÍDA; DEC-14.)
@@ -43,6 +43,10 @@ Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; doc
 (nenhum)
 
 ## Log (uma entrada por iteração: tarefa, arquivos, resultado da verificação)
+### T05 — contratos e caução
+- Arquivos: db/migrations/V004__contratos_caucao.sql; db/tests/04_contratos_caucao.sql.
+- Verificação: `4 migration(ões), 5 teste(s), 0 falha(s)` → VERIFICAÇÃO OK.
+
 ### T04 — imóveis, inquilinos e fiadores
 - Arquivos: db/migrations/V003__imoveis_inquilinos_fiadores.sql; db/tests/03_imoveis_inquilinos_fiadores.sql.
 - Verificação: `3 migration(ões), 4 teste(s), 0 falha(s)` → VERIFICAÇÃO OK.
