@@ -1,8 +1,8 @@
 # Progresso (memória do loop; a conversa não é memória)
 
-Iteração atual: 14 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
+Iteração atual: 15 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
 Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; docker e psql indisponíveis)
-Última atualização: T14 concluída
+Última atualização: T15 concluída
 
 ## Entendimento inicial (8 linhas)
 1. O ManuElo é um sistema financeiro/documental; o banco é PostgreSQL (Supabase) com migrations Flyway.
@@ -38,11 +38,21 @@ Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; doc
 - [x] T13 Teste de volume: as views respondem em menos de 2 s com 124 imóveis e 3000 movimentações.
 - [x] T14 Entregáveis finais: docs/db/schema.dbml (para dbdiagram.io), docs/db/dicionario.md,
       docs/db/RELATORIO-FINAL.md (decisões, riscos, como aplicar em src/main/resources/db/migration).
+- [x] T15 Handoff de integração: docs/db/integracao-equipe.md (RNF1, RNF2, autenticação, Storage de PDF,
+      busca/filtros, edição segura de imóveis e E1.1 cadastrar imóveis).
 
 ## Bloqueios (tarefa travada: diagnóstico e o que já tentou)
 (nenhum)
 
 ## Log (uma entrada por iteração: tarefa, arquivos, resultado da verificação)
+### T15 — handoff de integração com o backend
+- Arquivos: docs/db/integracao-equipe.md.
+- Cobre RNF1 (Maven/Spring Boot 3, Session pooler 5432, `ddl-auto=validate`, mapeamento JPA,
+  transações com triggers deferidos), RNF2 (Flyway, seed, primeiro admin), autenticação/aprovação,
+  upload em bucket privado do Supabase, buscas com trigram, edição segura de imóveis e o fluxo E1.1
+  (imóvel + contrato + documento na mesma transação).
+- Verificação: sem mudança de SQL; `11 migration(ões), 13 teste(s), 0 falha(s)`.
+
 ### T14 — entregáveis de documentação
 - Arquivos: docs/db/schema.dbml; docs/db/dicionario.md; docs/db/RELATORIO-FINAL.md.
 - O schema.dbml reflete as 13 tabelas, enums, FKs e índices reais (V001..V011); as views/funções estão
