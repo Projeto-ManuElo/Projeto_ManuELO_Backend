@@ -1,0 +1,153 @@
+// REFERÊNCIA v2 (DiagramaBD + DBML aprovado antes do Figma). Superado pelo docs/CONTEXTO.md onde divergir.
+// Útil para: CHECKs, índices e tipos de partida.
+
+Enum perfil_acesso { ADMINISTRADOR COLABORADOR }
+Enum tipo_imovel { APARTAMENTO CASA COMERCIAL TERRENO }
+Enum status_imovel { ALUGADO VAGO EM_MANUTENCAO }
+Enum tipo_lancamento { ENTRADA SAIDA ESTORNO }
+Enum categoria_lancamento { ALUGUEL OUTRAS_ENTRADAS MANUTENCAO TRIBUTOS ADMINISTRATIVO OUTRAS_SAIDAS }
+Enum forma_pagamento { PIX BOLETO TRANSFERENCIA DINHEIRO }
+Enum tipo_documento { CONTRATO COMPROVANTE NOTA_FISCAL DOCUMENTO_CONTABIL CADASTRO }
+Enum tipo_relatorio { TRIMESTRAL ANUAL PERSONALIZADO }
+
+Table usuarios {
+  id uuid [pk, default: `gen_random_uuid()`]
+  nome varchar(120) [not null]
+  email varchar(160) [not null, unique]
+  senha_hash varchar(255) [not null]
+  perfil perfil_acesso [not null, default: 'COLABORADOR']
+  ativo boolean [not null, default: true]
+  ultimo_acesso_em timestamptz
+  criado_por uuid
+  criado_em timestamptz [not null, default: `now()`]
+  atualizado_por uuid
+  atualizado_em timestamptz
+}
+
+Table tokens_redefinicao_senha {
+  id uuid [pk, default: `gen_random_uuid()`]
+  usuario_id uuid [not null]
+  token_hash varchar(255) [not null, unique]
+  expira_em timestamptz [not null]
+  usado_em timestamptz
+  criado_em timestamptz [not null, default: `now()`]
+}
+
+Table imoveis {
+  id uuid [pk, default: `gen_random_uuid()`]
+  logradouro varchar(200) [not null]
+  numero varchar(20)
+  complemento varchar(100)
+  bairro varchar(100)
+  cidade varchar(100) [not null]
+  uf char(2) [not null, default: 'SE']
+  cep varchar(9)
+  tipo tipo_imovel [not null]
+  status status_imovel [not null, default: 'VAGO']
+  criado_por uuid [not null]
+  criado_em timestamptz [not null, default: `now()`]
+  atualizado_por uuid
+  atualizado_em timestamptz
+}
+
+Table inquilinos {
+  id uuid [pk, default: `gen_random_uuid()`]
+  nome varchar(160) [not null]
+  documento varchar(18) [not null, unique]
+  email varchar(160)
+  criado_por uuid [not null]
+  criado_em timestamptz [not null, default: `now()`]
+  atualizado_por uuid
+  atualizado_em timestamptz
+}
+
+Table contratos {
+  id uuid [pk, default: `gen_random_uuid()`]
+  imovel_id uuid [not null]
+  inquilino_id uuid [not null]
+  inicio date [not null]
+  fim date
+  valor_aluguel decimal(14,2) [not null]
+  criado_por uuid [not null]
+  criado_em timestamptz [not null, default: `now()`]
+  atualizado_por uuid
+  atualizado_em timestamptz
+  checks {
+    `valor_aluguel > 0`
+    `fim is null or fim > inicio`
+  }
+}
+
+Table lancamentos {
+  id uuid [pk, default: `gen_random_uuid()`]
+  tipo tipo_lancamento [not null]
+  categoria categoria_lancamento
+  valor decimal(14,2) [not null]
+  data_lancamento date [not null]
+  descricao varchar(255) [not null]
+  forma_pagamento forma_pagamento
+  imovel_id uuid
+  responsavel_id uuid [not null]
+  contrato_id uuid
+  origem_descricao varchar(255)
+  favorecido varchar(160)
+  lancamento_original_id uuid [unique]
+  justificativa varchar(255)
+  criado_em timestamptz [not null, default: `now()`]
+  checks {
+    `valor > 0`
+    `(tipo = 'ENTRADA' and categoria in ('ALUGUEL','OUTRAS_ENTRADAS')) or (tipo = 'SAIDA' and categoria in ('MANUTENCAO','TRIBUTOS','ADMINISTRATIVO','OUTRAS_SAIDAS')) or (tipo = 'ESTORNO' and categoria is null)`
+    `tipo = 'ESTORNO' or forma_pagamento is not null`
+    `categoria is distinct from 'ALUGUEL' or contrato_id is not null`
+    `categoria is distinct from 'OUTRAS_ENTRADAS' or (origem_descricao is not null and length(trim(origem_descricao)) > 0)`
+    `tipo = 'SAIDA' or favorecido is null`
+    `(tipo = 'ESTORNO' and lancamento_original_id is not null and justificativa is not null) or (tipo <> 'ESTORNO' and lancamento_original_id is null and justificativa is null)`
+  }
+}
+
+Table documentos {
+  id uuid [pk, default: `gen_random_uuid()`]
+  nome_arquivo varchar(200) [not null]
+  tipo tipo_documento
+  data_documento date
+  pendente_revisao boolean [not null, default: true]
+  caminho_armazenamento varchar(500) [not null]
+  tipo_mime varchar(100) [not null]
+  tamanho_bytes bigint [not null]
+  lancamento_id uuid
+  imovel_id uuid
+  inquilino_id uuid
+  contrato_id uuid
+  enviado_por uuid [not null]
+  enviado_em timestamptz [not null, default: `now()`]
+  atualizado_por uuid
+  atualizado_em timestamptz
+  checks {
+    `tamanho_bytes <= 10485760`
+    `pendente_revisao or (tipo is not null and data_documento is not null)`
+    `lancamento_id is not null or imovel_id is not null or inquilino_id is not null or contrato_id is not null`
+  }
+}
+
+Table relatorios {
+  id uuid [pk, default: `gen_random_uuid()`]
+  nome varchar(160) [not null]
+  tipo tipo_relatorio [not null]
+  trimestre smallint
+  periodo_inicio date [not null]
+  periodo_fim date [not null]
+  total_entradas decimal(14,2) [not null]
+  total_saidas decimal(14,2) [not null]
+  saldo decimal(14,2) [not null]
+  qtd_lancamentos int [not null]
+  caminho_arquivo varchar(500) [not null]
+  gerado_por uuid [not null]
+  gerado_em timestamptz [not null, default: `now()`]
+}
+
+Table relatorio_lancamentos {
+  relatorio_id uuid [not null]
+  lancamento_id uuid [not null]
+  ordem int [not null]
+  indexes { (relatorio_id, lancamento_id) [pk] }
+}

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "default_agent": "db",
+  "experimental": { "todo": true },
+
+  // Harness: o agente nunca pode perguntar nem pedir autorização; comandos destrutivos ficam bloqueados.
+  "permissions": [
+    { "action": "question", "resource": "*", "effect": "deny" },
+    { "action": "read", "resource": "*.env", "effect": "deny" },
+    { "action": "read", "resource": "*.env.*", "effect": "deny" },
+    { "action": "shell", "resource": "git push *", "effect": "deny" },
+    { "action": "shell", "resource": "rm -rf *", "effect": "deny" },
+    { "action": "shell", "resource": "sudo *", "effect": "deny" }
+  ],
+
+  "agents": {
+    "db": {
+      "description": "Engenheiro de banco do ManuElo (autônomo, sem perguntas)",
+      "mode": "primary",
+      "steps": 200,
+      "system": "Siga o AGENTS.md. O estado do trabalho está em docs/db/progresso.md. Nunca faça perguntas nem peça autorização."
+    }
+  },
+
+  "commands": {
+    "continuar": {
+      "description": "Retoma o loop do banco de onde parou",
+      "template": "Leia AGENTS.md e docs/db/progresso.md e continue o protocolo de loop a partir da primeira tarefa pendente. Não faça perguntas."
+    }
+  }
+}
