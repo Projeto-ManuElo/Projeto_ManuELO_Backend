@@ -7,31 +7,51 @@
 #     ./scripts/aplicar-supabase.sh
 #
 # Opcoes:
-#   --seed    aplica db/seed/dev_seed.sql (somente dev/homologacao)
-#   --admin   aplica db/seed/primeiro_admin.sql com ADMIN_NOME, ADMIN_EMAIL e ADMIN_HASH
+#   --seed        aplica db/seed/dev_seed.sql (somente dev/homologacao)
+#   --admin       aplica db/seed/primeiro_admin.sql com ADMIN_NOME, ADMIN_EMAIL e ADMIN_HASH
+#   --url <URI>   informa a URI direto (sobrepoe SUPABASE_DB_URL)
+#
+# A URL tambem pode ser definida uma unica vez em ~/.config/manuelo/supabase.env:
+#   SUPABASE_DB_URL='postgresql://...'
 #
 # Aviso: este caminho NAO grava flyway_schema_history. Se a aplicacao for usar Flyway,
 # aplique em um banco limpo ou recrie o schema antes de subir o Spring Boot.
 set -eu
 
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+env_file="${XDG_CONFIG_HOME:-$HOME/.config}/manuelo/supabase.env"
+
+if [ -z "${SUPABASE_DB_URL:-}" ] && [ -z "${DATABASE_URL:-}" ] && [ -f "$env_file" ]; then
+  # shellcheck disable=SC1090
+  . "$env_file"
+fi
+
 url="${SUPABASE_DB_URL:-${DATABASE_URL:-}}"
 with_seed=0
 with_admin=0
 
-for arg in "$@"; do
-  case "$arg" in
+while [ "$#" -gt 0 ]; do
+  case "$1" in
     --seed) with_seed=1 ;;
     --admin) with_admin=1 ;;
+    --url)
+      shift
+      if [ "$#" -eq 0 ]; then
+        printf '--url exige uma URI\n' >&2
+        exit 2
+      fi
+      url=$1
+      ;;
     -h|--help)
-      sed -n '2,20p' "$0"
+      sed -n '2,25p' "$0"
       exit 0
       ;;
     *)
-      printf 'opcao desconhecida: %s\n' "$arg" >&2
+      printf 'opcao desconhecida: %s\n' "$1" >&2
       exit 2
       ;;
   esac
+  shift
 done
 
 if [ -z "$url" ]; then

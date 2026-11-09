@@ -40,11 +40,19 @@ select table_name from information_schema.tables
 4. Não use o Caminho A no mesmo banco.
 
 ## 4. Caminho C — script `psql`/Docker
-Requer `psql` ou Docker na máquina:
+Requer `psql` ou Docker na máquina. Defina a URL **uma vez** fora do repositório:
 
 ```bash
-export SUPABASE_DB_URL='postgresql://postgres.<ref>:<senha>@<host>:5432/postgres?sslmode=require'
+mkdir -p ~/.config/manuelo
+cat > ~/.config/manuelo/supabase.env <<'EOF'
+SUPABASE_DB_URL='postgresql://postgres.<ref>:<senha>@<host>:5432/postgres?sslmode=require'
+EOF
+chmod 600 ~/.config/manuelo/supabase.env
+```
 
+O script lê esse arquivo automaticamente. Depois:
+
+```bash
 # schema
 ./scripts/aplicar-supabase.sh
 
@@ -56,6 +64,12 @@ ADMIN_NOME='Administrador' \
 ADMIN_EMAIL='admin@fundacao.org' \
 ADMIN_HASH='$2a$10$...' \
 ./scripts/aplicar-supabase.sh --admin
+```
+
+Também dá para passar a URI direto, sem arquivo e sem `export`:
+
+```bash
+./scripts/aplicar-supabase.sh --url 'postgresql://...' --seed
 ```
 
 O script recusa a porta 6543 (Transaction pooler) e não grava `flyway_schema_history`. Se a aplicação
