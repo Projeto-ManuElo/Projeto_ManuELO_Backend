@@ -1,8 +1,8 @@
 # Progresso (memória do loop; a conversa não é memória)
 
-Iteração atual: 17 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
+Iteração atual: 18 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
 Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; docker e psql indisponíveis)
-Última atualização: T17 concluída
+Última atualização: T18 concluída
 
 ## Entendimento inicial (8 linhas)
 1. O ManuElo é um sistema financeiro/documental; o banco é PostgreSQL (Supabase) com migrations Flyway.
@@ -45,11 +45,19 @@ Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; doc
       psql/Docker (scripts/aplicar-supabase.sh). A criação do projeto continua manual (login).
 - [x] T17 Automação da conexão: o script lê ~/.config/manuelo/supabase.env e aceita --url; guia
       atualizado para definir a URI uma vez fora do repositório.
+- [x] T18 Guia seguro: troca do heredoc por editor (`nano`) para não gravar a URI/senha no histórico
+      do shell; requisito de `psql`/Docker explicitado.
 
 ## Bloqueios (tarefa travada: diagnóstico e o que já tentou)
 (nenhum)
 
 ## Log (uma entrada por iteração: tarefa, arquivos, resultado da verificação)
+### T18 — configuração da URI sem vazamento
+- Arquivos: db/supabase/README.md.
+- O guia não ensina mais `cat <<EOF` (que grava a senha no histórico); usa `nano` no arquivo
+  `~/.config/manuelo/supabase.env` com `chmod 600` e explica que o script mascara a URL.
+- Verificação de banco inalterada: 11 migrations, 13 testes, 0 falhas.
+
 ### T17 — configuração única da URI do Supabase
 - Arquivos: scripts/aplicar-supabase.sh; db/supabase/README.md.
 - O script agora carrega `~/.config/manuelo/supabase.env` (ou `$XDG_CONFIG_HOME`) quando nenhuma

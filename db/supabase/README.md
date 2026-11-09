@@ -40,15 +40,26 @@ select table_name from information_schema.tables
 4. Não use o Caminho A no mesmo banco.
 
 ## 4. Caminho C — script `psql`/Docker
-Requer `psql` ou Docker na máquina. Defina a URL **uma vez** fora do repositório:
+Requer `psql` (Ubuntu/Debian: `sudo apt install postgresql-client`) ou Docker. Defina a URL **uma vez**
+fora do repositório, sem digitar a senha no terminal:
 
 ```bash
 mkdir -p ~/.config/manuelo
-cat > ~/.config/manuelo/supabase.env <<'EOF'
+nano ~/.config/manuelo/supabase.env
+```
+
+No editor, cole uma linha e salve (Ctrl+O, Enter, Ctrl+X):
+
+```sh
 SUPABASE_DB_URL='postgresql://postgres.<ref>:<senha>@<host>:5432/postgres?sslmode=require'
-EOF
+```
+
+```bash
 chmod 600 ~/.config/manuelo/supabase.env
 ```
+
+Não use `cat <<EOF` nem `export` no terminal para isso: o comando inteiro (com a senha) ficaria no
+histórico do shell. O script mascara a URL no output e não grava nada no repositório.
 
 O script lê esse arquivo automaticamente. Depois:
 
