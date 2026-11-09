@@ -42,8 +42,13 @@ select table_name from information_schema.tables
 3. Rode `db/seed/primeiro_admin.sql` uma vez (ver comando abaixo).
 4. Não use o Caminho A no mesmo banco.
 
-## 4. Caminho C — script `psql`/Docker
-Requer `psql` (Ubuntu/Debian: `sudo apt install postgresql-client`) ou Docker.
+## 4. Caminho C — script `psql`/Docker/Node
+O script usa `psql`, Docker ou Node (node-postgres), o que estiver disponível. Se não houver `psql`
+nem Docker, instale a dependência Node uma vez:
+
+```bash
+npm install --prefix scripts
+```
 
 **Opção 1 (recomendada) — `.env` do projeto.** O script carrega esse arquivo automaticamente:
 

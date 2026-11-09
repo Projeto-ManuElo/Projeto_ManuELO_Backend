@@ -1,8 +1,8 @@
 # Progresso (memória do loop; a conversa não é memória)
 
-Iteração atual: 19 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
+Iteração atual: 20 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
 Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; docker e psql indisponíveis)
-Última atualização: T19 concluída
+Última atualização: T20 concluída
 
 ## Entendimento inicial (8 linhas)
 1. O ManuElo é um sistema financeiro/documental; o banco é PostgreSQL (Supabase) com migrations Flyway.
@@ -49,11 +49,26 @@ Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; doc
       do shell; requisito de `psql`/Docker explicitado.
 - [x] T19 Ambiente local: `.env.example` versionado, `.env` local ignorado, `.gitignore`, script lê o
       `.env` do projeto antes do config do usuário/CI, guia e integração atualizados.
+- [x] T20 Aplicador Node (sem sudo/psql) + correção do seed: `scripts/aplicar-supabase.mjs` com
+      `node-postgres`, dependência em `scripts/package.json`; seed passa a acompanhar 17 meses para
+      não marcar contratos pagos como atrasados.
 
 ## Bloqueios (tarefa travada: diagnóstico e o que já tentou)
 (nenhum)
 
 ## Log (uma entrada por iteração: tarefa, arquivos, resultado da verificação)
+### T20 — aplicador Node e correção do seed
+- Arquivos: scripts/aplicar-supabase.mjs; scripts/package.json; scripts/package-lock.json;
+  scripts/aplicar-supabase.sh; .gitignore; db/seed/dev_seed.sql; db/tests/11_seed_ficticio.sql;
+  db/supabase/README.md.
+- O ambiente não tem `sudo`/`apt-get` (runtime Flatpak). O script agora cai para Node quando não há
+  psql/Docker; `npm install --prefix scripts` trouxe `pg` 8.x. Testado contra Postgres embutido:
+  124 imóveis, 3040 movimentações, admin criado, `vw_home_indicadores` OK.
+- Correção: `acompanhar_pagamento_desde` do seed ficou em 17 meses, alinhado às 18 competências pagas
+  (m=0..17); antes todos os 110 contratos apareciam atrasados. Teste 11 agora exige >= 10 atrasados e
+  >= 80 contratos em dia.
+- Verificação: `11 migration(ões), 13 teste(s), 0 falha(s)` → VERIFICAÇÃO OK.
+
 ### T19 — .env do projeto
 - Arquivos: .env.example (versionado); .env (local, ignorado); .gitignore;
   scripts/aplicar-supabase.sh; db/supabase/README.md; docs/db/integracao-equipe.md.

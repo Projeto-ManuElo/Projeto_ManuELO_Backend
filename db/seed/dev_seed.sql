@@ -72,7 +72,7 @@ SELECT ('33000000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid,
        END,
        (800 + (n % 7) * 100)::numeric(14, 2),
        (5 + (n % 20))::smallint,
-       (date_trunc('month', current_date) - interval '18 months')::date,
+       (date_trunc('month', current_date) - interval '17 months')::date,
        (n % 37 = 0),
        CASE WHEN n % 37 = 0 THEN 'Ação judicial fictícia do contrato ' || n END,
        '34000000-0000-4000-8000-000000000001'

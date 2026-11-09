@@ -95,7 +95,14 @@ DECLARE
 BEGIN
   SELECT count(*) INTO n FROM vw_contratos_atrasados
    WHERE contrato_id::text LIKE '33000000-0000-4000-8000-%';
-  IF n < 1 THEN RAISE EXCEPTION 'seed deveria produzir contratos atrasados'; END IF;
+  IF n < 10 THEN RAISE EXCEPTION 'seed deveria produzir ao menos 10 contratos atrasados'; END IF;
+
+  SELECT count(*) INTO n FROM vw_contratos_situacao
+   WHERE contrato_id::text LIKE '33000000-0000-4000-8000-%'
+     AND NOT atrasado;
+  IF n < 80 THEN
+    RAISE EXCEPTION 'seed deveria ter contratos em dia (só % em dia)', n;
+  END IF;
 
   SELECT count(*) INTO n FROM vw_contratos_a_vencer
    WHERE contrato_id::text LIKE '33000000-0000-4000-8000-%';

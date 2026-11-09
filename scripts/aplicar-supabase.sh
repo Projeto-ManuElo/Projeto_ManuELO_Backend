@@ -1,6 +1,7 @@
 #!/usr/bin/env sh
 # Aplica as migrations do ManuElo em um banco Supabase.
-# Requer psql ou Docker. Nao cria o projeto Supabase (isso exige login na conta).
+# Usa psql, Docker ou Node (node-postgres) - o que estiver disponivel.
+# Nao cria o projeto Supabase (isso exige login na conta).
 #
 # Uso:
 #   SUPABASE_DB_URL='postgresql://postgres.<ref>:<senha>@<host>:5432/postgres?sslmode=require' \
@@ -20,6 +21,16 @@
 set -eu
 
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+
+# Sem psql e sem Docker: usa o aplicador Node (node-postgres), que nao precisa de sudo.
+if ! command -v psql >/dev/null 2>&1 && ! command -v docker >/dev/null 2>&1; then
+  if command -v node >/dev/null 2>&1; then
+    exec node "$root/scripts/aplicar-supabase.mjs" "$@"
+  fi
+  printf 'Instale psql, Docker ou Node para aplicar as migrations.\n' >&2
+  exit 1
+fi
+
 project_env="$root/.env"
 env_file="${XDG_CONFIG_HOME:-$HOME/.config}/manuelo/supabase.env"
 

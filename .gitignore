@@ -3,6 +3,9 @@
 .env.*
 !.env.example
 
+# Node (scripts)
+node_modules/
+
 # Java / Spring Boot
 target/
 build/

@@ -1,0 +1,9 @@
+{
+  "name": "manuelo-db-scripts",
+  "private": true,
+  "type": "module",
+  "description": "Aplicador de migrations do ManuElo no Supabase sem psql/Docker.",
+  "dependencies": {
+    "pg": "^8.13.1"
+  }
+}
