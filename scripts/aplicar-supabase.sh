@@ -11,7 +11,8 @@
 #   --admin       aplica db/seed/primeiro_admin.sql com ADMIN_NOME, ADMIN_EMAIL e ADMIN_HASH
 #   --url <URI>   informa a URI direto (sobrepoe SUPABASE_DB_URL)
 #
-# A URL tambem pode ser definida uma unica vez em ~/.config/manuelo/supabase.env:
+# A URL tambem pode ser definida no .env do projeto (copie de .env.example) ou,
+# uma unica vez, em ~/.config/manuelo/supabase.env:
 #   SUPABASE_DB_URL='postgresql://...'
 #
 # Aviso: este caminho NAO grava flyway_schema_history. Se a aplicacao for usar Flyway,
@@ -19,7 +20,16 @@
 set -eu
 
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+project_env="$root/.env"
 env_file="${XDG_CONFIG_HOME:-$HOME/.config}/manuelo/supabase.env"
+
+# 1) .env do projeto (dev local); 2) configuracao do usuario; 3) variavel de ambiente/CI.
+if [ -z "${SUPABASE_DB_URL:-}" ] && [ -z "${DATABASE_URL:-}" ] && [ -f "$project_env" ]; then
+  set -a
+  # shellcheck disable=SC1090
+  . "$project_env"
+  set +a
+fi
 
 if [ -z "${SUPABASE_DB_URL:-}" ] && [ -z "${DATABASE_URL:-}" ] && [ -f "$env_file" ]; then
   # shellcheck disable=SC1090

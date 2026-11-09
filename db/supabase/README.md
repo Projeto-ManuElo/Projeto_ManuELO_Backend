@@ -36,19 +36,34 @@ select table_name from information_schema.tables
 ## 3. Caminho B — Flyway (recomendado para a aplicação)
 1. Copie `db/migrations/V001..V011` para `src/main/resources/db/migration/`.
 2. Configure `DB_URL` com a URI do Session pooler (5432) e suba a aplicação; o Flyway aplica em ordem.
+   O Spring Boot **não lê `.env` sozinho**: carregue no terminal antes de rodar
+   (`set -a; . ./.env; set +a`) ou use a biblioteca `spring-dotenv`; em produção, use os secrets da
+   plataforma.
 3. Rode `db/seed/primeiro_admin.sql` uma vez (ver comando abaixo).
 4. Não use o Caminho A no mesmo banco.
 
 ## 4. Caminho C — script `psql`/Docker
-Requer `psql` (Ubuntu/Debian: `sudo apt install postgresql-client`) ou Docker. Defina a URL **uma vez**
-fora do repositório, sem digitar a senha no terminal:
+Requer `psql` (Ubuntu/Debian: `sudo apt install postgresql-client`) ou Docker.
+
+**Opção 1 (recomendada) — `.env` do projeto.** O script carrega esse arquivo automaticamente:
+
+```bash
+cp .env.example .env
+chmod 600 .env
+nano .env
+```
+
+Preencha `SUPABASE_DB_URL` (e `DB_URL`/`DB_USER`/`DB_PASSWORD` se for subir o Spring Boot). O `.env`
+já está no `.gitignore`; nunca commite.
+
+**Opção 2 — configuração do usuário** (fora do repositório):
 
 ```bash
 mkdir -p ~/.config/manuelo
 nano ~/.config/manuelo/supabase.env
 ```
 
-No editor, cole uma linha e salve (Ctrl+O, Enter, Ctrl+X):
+No editor, cole e salve (Ctrl+O, Enter, Ctrl+X):
 
 ```sh
 SUPABASE_DB_URL='postgresql://postgres.<ref>:<senha>@<host>:5432/postgres?sslmode=require'
@@ -61,7 +76,8 @@ chmod 600 ~/.config/manuelo/supabase.env
 Não use `cat <<EOF` nem `export` no terminal para isso: o comando inteiro (com a senha) ficaria no
 histórico do shell. O script mascara a URL no output e não grava nada no repositório.
 
-O script lê esse arquivo automaticamente. Depois:
+Ordem de leitura: `.env` do projeto → `~/.config/manuelo/supabase.env` → variável de ambiente/CI.
+Depois:
 
 ```bash
 # schema

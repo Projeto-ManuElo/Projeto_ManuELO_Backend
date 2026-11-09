@@ -1,0 +1,26 @@
+# Segredos locais (o modelo .env.example e versionado)
+.env
+.env.*
+!.env.example
+
+# Java / Spring Boot
+target/
+build/
+*.class
+*.jar
+*.war
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Runtime temporario da verificacao
+/tmp/

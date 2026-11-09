@@ -84,6 +84,19 @@ Use o parent do Spring Boot 3 e Java 21. Dependências mínimas:
 ### 1.2 `application.yml`
 Nunca grave credenciais no repositório. Use variáveis de ambiente (Railway/Render/Supabase).
 
+No desenvolvimento local, copie `.env.example` para `.env` (já ignorado pelo Git), preencha e carregue
+antes de subir a aplicação:
+
+```bash
+cp .env.example .env
+chmod 600 .env
+set -a; . ./.env; set +a
+./mvnw spring-boot:run
+```
+
+O Spring Boot não lê `.env` nativamente; use o `set -a` acima, a biblioteca `spring-dotenv` ou a
+configuração de ambiente da IDE. Em produção, cadastre as chaves como secrets da plataforma.
+
 ```yaml
 spring:
   datasource:

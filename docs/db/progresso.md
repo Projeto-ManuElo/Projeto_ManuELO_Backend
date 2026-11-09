@@ -1,8 +1,8 @@
 # Progresso (memória do loop; a conversa não é memória)
 
-Iteração atual: 18 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
+Iteração atual: 19 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
 Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; docker e psql indisponíveis)
-Última atualização: T18 concluída
+Última atualização: T19 concluída
 
 ## Entendimento inicial (8 linhas)
 1. O ManuElo é um sistema financeiro/documental; o banco é PostgreSQL (Supabase) com migrations Flyway.
@@ -47,11 +47,22 @@ Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; doc
       atualizado para definir a URI uma vez fora do repositório.
 - [x] T18 Guia seguro: troca do heredoc por editor (`nano`) para não gravar a URI/senha no histórico
       do shell; requisito de `psql`/Docker explicitado.
+- [x] T19 Ambiente local: `.env.example` versionado, `.env` local ignorado, `.gitignore`, script lê o
+      `.env` do projeto antes do config do usuário/CI, guia e integração atualizados.
 
 ## Bloqueios (tarefa travada: diagnóstico e o que já tentou)
 (nenhum)
 
 ## Log (uma entrada por iteração: tarefa, arquivos, resultado da verificação)
+### T19 — .env do projeto
+- Arquivos: .env.example (versionado); .env (local, ignorado); .gitignore;
+  scripts/aplicar-supabase.sh; db/supabase/README.md; docs/db/integracao-equipe.md.
+- Ordem de precedência: `.env` do projeto → `~/.config/manuelo/supabase.env` → variável de
+  ambiente/CI. `.env` está no `.gitignore`; o modelo `.env.example` é o único versionado.
+- O Spring Boot não lê `.env` sozinho; o guia mostra `set -a; . ./.env; set +a` (ou `spring-dotenv`).
+- Testes: `sh -n`, `--help`, rejeição de porta 6543 e confirmação de que `.env` é ignorado pelo Git.
+- Verificação de banco inalterada: 11 migrations, 13 testes, 0 falhas.
+
 ### T18 — configuração da URI sem vazamento
 - Arquivos: db/supabase/README.md.
 - O guia não ensina mais `cat <<EOF` (que grava a senha no histórico); usa `nano` no arquivo
