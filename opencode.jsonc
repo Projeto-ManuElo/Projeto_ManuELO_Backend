@@ -1,18 +1,22 @@
 {
-  "$schema": "https://opencode.ai/config.json",
+  "$schema": "https://opencode.ai",
   "model": "opencode/deepseek-v4.1-flash-free",
   "default_agent": "db",
   "experimental": { "todo": true },
 
-  // Harness: o agente nunca pode perguntar nem pedir autorização; comandos destrutivos ficam bloqueados.
-  "permissions": [
-    { "action": "question", "resource": "*", "effect": "deny" },
-    { "action": "read", "resource": "*.env", "effect": "deny" },
-    { "action": "read", "resource": "*.env.*", "effect": "deny" },
-    { "action": "shell", "resource": "git push *", "effect": "deny" },
-    { "action": "shell", "resource": "rm -rf *", "effect": "deny" },
-    { "action": "shell", "resource": "sudo *", "effect": "deny" }
-  ],
+  // Formato V1 correto: Objeto mapeando ferramentas específicas com efeito de bloqueio (deny)
+  "permission": {
+    "question": "deny",
+    "read": {
+      "*.env": "deny",
+      "*.env.*": "deny"
+    },
+    "bash": {
+      "git push *": "deny",
+      "rm -rf *": "deny",
+      "sudo *": "deny"
+    }
+  },
 
   "agents": {
     "db": {
