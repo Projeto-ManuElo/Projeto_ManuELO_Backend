@@ -1,8 +1,8 @@
 # Progresso (memória do loop; a conversa não é memória)
 
-Iteração atual: 21 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
+Iteração atual: 22 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
 Runtime usado: postgres embutido via Node (plano C; docker presente, mas `use_docker` perde a corrida do initdb)
-Última atualização: T21 concluída
+Última atualização: T23 concluída (build Maven único na raiz)
 
 ## Entendimento inicial (8 linhas)
 1. O ManuElo é um sistema financeiro/documental; o banco é PostgreSQL (Supabase) com migrations Flyway.
@@ -55,11 +55,41 @@ Runtime usado: postgres embutido via Node (plano C; docker presente, mas `use_do
 - [x] T21 Organização frontend/backend: cópia fiel dos 33 arquivos versionados do repositório de
       frontend para `frontend/` (original intacto, backend intacto) e análise de integração em
       `docs/db/integracao-estrutura.md`. Nenhuma integração implementada (DEC-17..DEC-19).
+- [x] T23 Consolidação do Maven: um único build na raiz compila `frontend/src/main/java`, copia os
+      recursos do frontend, empacota as migrations em `db/migration` e gera o JAR executável Vaadin
+      + Spring Boot. `frontend/pom.xml` removido (DEC-20..DEC-22). Sem alteração de Java, SQL ou
+      regras; build validado com `mvnw package`.
 
 ## Bloqueios (tarefa travada: diagnóstico e o que já tentou)
 (nenhum)
 
 ## Log (uma entrada por iteração: tarefa, arquivos, resultado da verificação)
+### T23 — consolidação do Maven na raiz
+- Arquivos: `pom.xml` (raiz); `frontend/pom.xml` (removido); `docs/db/decisoes.md` (DEC-20..DEC-22);
+  `docs/db/progresso.md`. Nenhum `.java`, `.sql`, `application.properties` ou `db/` alterado.
+- `pom.xml`: `build-helper-maven-plugin:3.6.1` (add-source de `frontend/src/main/java`); `<resource>`
+  de `frontend/src/main/resources` com `application.properties` excluído; dependência
+  `com.vaadin:vaadin` (como no frontend); `vaadin-maven-plugin` com
+  `<frontendDirectory>frontend/src/main/frontend</frontendDirectory>`;
+  `spring-boot-maven-plugin` com `<mainClass>com.Projeto.manuelo.ManueloApplication</mainClass>`.
+- Build: `mvnw -B -DskipTests package` → BUILD SUCCESS em 4min39 (Vite 27 s; 13 fontes compiladas;
+  11 migrations + 2 recursos do frontend em `target/classes`; JAR repackage com
+  `Start-Class: com.Projeto.manuelo.ManueloApplication`). Repetido com
+  `mvnw -B -DskipTests clean package` → BUILD SUCCESS em 4min27 (JAR de 106 MB, 15 `.class` de
+  `br.com.manuelo`, 11 migrations, `META-INF/VAADIN` em modo produção).
+- JAR executado sem `DB_URL`: Spring Boot 4.1.2 sobe o Tomcat e o contexto e falha apenas em
+  `dataSource`/`flyway` (`'url' must start with "jdbc"`), sem tocar em banco. Inicialização real
+  com banco não foi validada (sem DB nesta tarefa).
+- `mvnw -B -DskipTests test-compile` → BUILD SUCCESS. `dependency:tree` confirma `com.vaadin:vaadin:25.3.5`.
+- Verificação de banco (plano C, `node scripts/pg-verify.mjs`): `11 migration(ões), 13 teste(s),
+  0 falha(s)` → OK; `scripts/verificar-db.sh` não roda no bash do WSL por CRLF no working tree
+  (arquivo intocado).
+- Efeitos colaterais de build (não versionados): `package.json`, `package-lock.json`, `tsconfig.json`,
+  `types.d.ts`, `vite.config.ts`, `vite.generated.ts`, `node_modules/`, `src/main/bundles/prod.bundle`
+  na raiz, além de `frontend/target/` e `frontend/src/main/frontend/generated/`. O
+  `.vaadin-node-tasks.lock` preexistente foi apagado pelo próprio build (arquivo de trava efêmero);
+  não foi recriado para não forjar PID.
+
 ### T21 — organização frontend/backend e cópia do frontend
 - Arquivos: `frontend/**` (33 arquivos versionados copiados de
   `C:\Users\ronald\CESAR\Projeto_ManuELO_Frontend`); `docs/db/integracao-estrutura.md`;

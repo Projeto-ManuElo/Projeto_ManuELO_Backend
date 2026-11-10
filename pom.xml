@@ -60,6 +60,12 @@
 			<groupId>com.vaadin</groupId>
 			<artifactId>vaadin-spring-boot-starter</artifactId>
 		</dependency>
+		<!-- Conjunto de componentes Vaadin declarado pelo frontend (T23: incorporado ao Maven raiz).
+		     Versao gerenciada pelo vaadin-bom (25.3.5). -->
+		<dependency>
+			<groupId>com.vaadin</groupId>
+			<artifactId>vaadin</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.flywaydb</groupId>
 			<artifactId>flyway-database-postgresql</artifactId>
@@ -184,12 +190,47 @@
             <include>V*.sql</include>
         </includes>
     </resource>
+    <!-- Recursos do frontend Vaadin (META-INF/resources: styles.css, images/*).
+         application.properties NAO entra: a configuracao do backend (datasource/Flyway) e a
+         fonte da verdade e nao pode ser sobrescrita no classpath. Decisao em DEC-20. -->
+    <resource>
+        <directory>frontend/src/main/resources</directory>
+        <filtering>false</filtering>
+        <excludes>
+            <exclude>application.properties</exclude>
+        </excludes>
+    </resource>
 </resources>
 		<plugins>
+			<!-- T23: codigo Java do frontend (br.com.manuelo) e compilado a partir da raiz,
+			     sem mover nem duplicar arquivos. -->
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<version>3.6.1</version>
+				<executions>
+					<execution>
+						<id>add-frontend-source</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>add-source</goal>
+						</goals>
+						<configuration>
+							<sources>
+								<source>${project.basedir}/frontend/src/main/java</source>
+							</sources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>com.vaadin</groupId>
 				<artifactId>vaadin-maven-plugin</artifactId>
 				<version>${vaadin.version}</version>
+				<configuration>
+					<!-- O frontend continua sendo a fonte das telas, temas e assets. -->
+					<frontendDirectory>${project.basedir}/frontend/src/main/frontend</frontendDirectory>
+				</configuration>
 				<executions>
 					<execution>
 						<id>build-frontend</id>
@@ -202,6 +243,13 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<!-- T23: existem duas classes @SpringBootApplication no classpath consolidado
+					     (com.Projeto.manuelo.ManueloApplication e br.com.manuelo.Application).
+					     A entrada do artefato raiz continua sendo a do backend. Unificar a classe
+					     de boot e uma decisao de codigo da T24. -->
+					<mainClass>com.Projeto.manuelo.ManueloApplication</mainClass>
+				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

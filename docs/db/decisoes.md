@@ -64,3 +64,50 @@ Modelo de entrada:
 - Motivo: evitar sobrescrever trabalho alheio e manter a tarefa no clone/branch corretos; o conteúdo
   rastreado do backend é o mesmo commit-base.
 - Reverter: repetir a cópia (mesmo comando `git archive`) no outro clone e remover `frontend/` daqui.
+
+## DEC-20 build Maven único na raiz sem mover fontes nem duplicar classes
+- Contexto: T23 pede um único ponto de build na raiz; o pedido proíbe mover pacotes/renomear classes,
+  mas o código Vaadin está em `frontend/src/main/java/br/com/manuelo`.
+- Escolha: `build-helper-maven-plugin:3.6.1` (`add-source`) registra `frontend/src/main/java` como
+  raiz de código; `frontend/src/main/resources` entra como `<resource>` **excluindo**
+  `application.properties`. `com.vaadin:vaadin` foi incorporado (era declarado no frontend), e
+  `spring-boot-starter-test`/`browserless-test-spring` **não** foram adicionados (não há testes em
+  `frontend/src/test`; a raiz já tem os starters de teste granulares do Boot 4.1).
+- Motivo: cumpre o build único preservando os arquivos byte a byte; a exclusão do
+  `application.properties` evita que a configuração do frontend (sem datasource/Flyway) sobrescreva a
+  do backend no classpath — a raiz é a fonte da verdade de `spring.datasource`/`spring.flyway`.
+  Não adicionar repositórios `vaadin-directory`/`vaadin-prereleases` porque todos os artefatos
+  resolvem do Central (verificado com o build).
+- Reverter: remover o plugin `build-helper` e o `<resource>` de `frontend/src/main/resources` e
+  voltar ao build do backend apenas; a dependência `com.vaadin:vaadin` pode sair se o starter
+  `vaadin-spring-boot-starter` (que já traz `vaadin-core-internal`) bastar.
+
+## DEC-21 pasta `frontend/` continua fonte das telas; `npmFolder` fica na raiz
+- Contexto: o Vaadin 25.3.5 executa o Vite com diretório de trabalho = `${project.basedir}`. Ao
+  apontar `npmFolder`/`projectBasedir` para `frontend/`, o build falha no Windows porque o
+  `vite.generated.ts` gerado importa `./..\target/plugins/...` (a sequência `\t` vira tab e o módulo
+  não resolve); mantendo o `npmFolder` na raiz, importa `./target/plugins/...` e o Vite build passa.
+- Escolha: apenas `<frontendDirectory>${project.basedir}/frontend/src/main/frontend</frontendDirectory>`;
+  `npmFolder` permanece o padrão (raiz). O Vaadin gera na raiz `package.json`, `package-lock.json`,
+  `tsconfig.json`, `types.d.ts`, `vite.config.ts`, `vite.generated.ts`, `node_modules/` e
+  `src/main/bundles/prod.bundle` — artefatos de build, não versionados nesta tarefa.
+- Motivo: é a única combinação que compila as telas de `frontend/src/main/frontend` (inclusive
+  `animacoes.css`, que entra no bundle) e empacota `META-INF/VAADIN/**` no JAR, sem tocar em Java
+  nem mover arquivos. O `package.json` gerado tem o mesmo conteúdo do de `frontend/package.json`
+  (difere apenas no fim de linha).
+- Reverter: remover o `<frontendDirectory>` do `vaadin-maven-plugin` (volta a usar
+  `src/main/frontend` da raiz) e apagar os artefatos gerados na raiz. Quando o plugin corrigir o
+  separador de caminho no Windows, `npmFolder`/`projectBasedir` podem apontar para `frontend/`.
+
+## DEC-22 `frontend/pom.xml` removido e `mainClass` explícita no `spring-boot-maven-plugin`
+- Contexto: dois POMs independentes (raiz e `frontend/`) e duas classes `@SpringBootApplication`
+  (`com.Projeto.manuelo.ManueloApplication` e `br.com.manuelo.Application`) no classpath consolidado.
+- Escolha: apagar `frontend/pom.xml` (o `mvnw`/`.mvn` de `frontend/` ficam inertes, sem POM) e fixar
+  `<mainClass>com.Projeto.manuelo.ManueloApplication</mainClass>`.
+- Motivo: um único ponto de build (critério da T23) e `repackage` determinístico — sem `mainClass` o
+  plugin falha com "Unable to find a single main class". Preserva a entrada atual do artefato
+  `com.Projeto:manuelo`; as telas Vaadin são descobertas por varredura de classpath independente do
+  pacote da classe de boot.
+- Reverter: restaurar `frontend/pom.xml` com `git checkout -- frontend/pom.xml` (ou o backup em
+  `%TEMP%\frontend-pom.xml.bak`) e remover o `<mainClass>` do POM raiz. A unificação da classe de boot
+  (e do pacote das telas) é decisão de código da T24.
