@@ -1,8 +1,8 @@
 # Progresso (memória do loop; a conversa não é memória)
 
-Iteração atual: 20 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
-Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; docker e psql indisponíveis)
-Última atualização: T20 concluída
+Iteração atual: 21 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
+Runtime usado: postgres embutido via Node (plano C; docker presente, mas `use_docker` perde a corrida do initdb)
+Última atualização: T21 concluída
 
 ## Entendimento inicial (8 linhas)
 1. O ManuElo é um sistema financeiro/documental; o banco é PostgreSQL (Supabase) com migrations Flyway.
@@ -52,11 +52,29 @@ Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; doc
 - [x] T20 Aplicador Node (sem sudo/psql) + correção do seed: `scripts/aplicar-supabase.mjs` com
       `node-postgres`, dependência em `scripts/package.json`; seed passa a acompanhar 17 meses para
       não marcar contratos pagos como atrasados.
+- [x] T21 Organização frontend/backend: cópia fiel dos 33 arquivos versionados do repositório de
+      frontend para `frontend/` (original intacto, backend intacto) e análise de integração em
+      `docs/db/integracao-estrutura.md`. Nenhuma integração implementada (DEC-17..DEC-19).
 
 ## Bloqueios (tarefa travada: diagnóstico e o que já tentou)
 (nenhum)
 
 ## Log (uma entrada por iteração: tarefa, arquivos, resultado da verificação)
+### T21 — organização frontend/backend e cópia do frontend
+- Arquivos: `frontend/**` (33 arquivos versionados copiados de
+  `C:\Users\ronald\CESAR\Projeto_ManuELO_Frontend`); `docs/db/integracao-estrutura.md`;
+  `docs/db/decisoes.md` (DEC-17..DEC-19); `docs/db/progresso.md`.
+- Nada em `db/`, `src/`, `pom.xml`, `scripts/` ou `docker-compose.yml` foi alterado.
+- Cópia por `git archive HEAD | tar -x` (só versionados); fora `.git`, `target/`, `node_modules/`,
+  `src/main/frontend/generated/`, `.vscode/`, `.github/`. 33/33 com SHA-256 idêntico; origem com
+  `git status` limpo e HEAD `a335026`.
+- Conflitos: nenhum no destino (`frontend/` não existia); `pom.xml`, `README.md`, `.mvn/`,
+  `application.properties` e `mvnw` do frontend ficaram isolados sob `frontend/`.
+- Verificação: `11 migration(ões), 13 teste(s), 0 falha(s)` → VERIFICAÇÃO OK (plano C). O Docker está
+  disponível, mas `use_docker` falha com `FATAL: the database system is shutting down` porque
+  `pg_isready` responde no servidor temporário do `initdb`; corrigir em tarefa futura (aguardar o
+  healthcheck do container).
+
 ### T20 — aplicador Node e correção do seed
 - Arquivos: scripts/aplicar-supabase.mjs; scripts/package.json; scripts/package-lock.json;
   scripts/aplicar-supabase.sh; .gitignore; db/seed/dev_seed.sql; db/tests/11_seed_ficticio.sql;
