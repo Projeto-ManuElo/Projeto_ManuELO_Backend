@@ -54,3 +54,8 @@ HELP.md
 build/
 !**/src/main/**/build/
 !**/src/test/**/build/
+
+# Vaadin/Vite: gerados pelo build Maven consolidado (T23)
+/vite.generated.ts
+/src/main/bundles/
+/src/main/frontend/generated/
