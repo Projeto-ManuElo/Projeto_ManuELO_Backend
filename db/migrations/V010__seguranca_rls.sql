@@ -69,7 +69,10 @@ DECLARE
   t record;
 BEGIN
   FOR t IN
-    SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename
+    SELECT tablename FROM pg_tables
+     WHERE schemaname = 'public'
+       AND tablename <> 'flyway_schema_history'
+     ORDER BY tablename
   LOOP
     EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', t.tablename);
     EXECUTE format('DROP POLICY IF EXISTS manuelo_app_all ON public.%I', t.tablename);
