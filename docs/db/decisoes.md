@@ -111,3 +111,26 @@ Modelo de entrada:
 - Reverter: restaurar `frontend/pom.xml` com `git checkout -- frontend/pom.xml` (ou o backup em
   `%TEMP%\frontend-pom.xml.bak`) e remover o `<mainClass>` do POM raiz. A unificação da classe de boot
   (e do pacote das telas) é decisão de código da T24.
+
+## DEC-23 raiz é o local oficial das configurações npm, Vite e TypeScript
+- Contexto: a consolidação da T23 deixou duas cópias de cada configuração de frontend — uma na raiz,
+  efetivamente usada pelo build (a DEC-21 manteve `npmFolder` na raiz), e outra em `frontend/`,
+  herdada da cópia do repositório de frontend feita na T21. Nenhuma referência (POM, Java, scripts ou
+  config) aponta para as cópias de `frontend/`; a cópia de `vite.generated.ts` estava inválida
+  (`./..\target/...`).
+- Escolha: a raiz é o local oficial de `package.json`, `package-lock.json`, `tsconfig.json`,
+  `types.d.ts` e `vite.config.ts`, que passam a ser versionados. `vite.generated.ts`, `node_modules/`,
+  `src/main/bundles/` e `src/main/frontend/generated/` continuam ignorados, por serem gerados a cada
+  build. As cinco cópias de `frontend/` saem do índice com `git rm --cached`, preservadas no disco
+  nesta tarefa. O build Maven continua único na raiz (T23), com
+  `<frontendDirectory>frontend/src/main/frontend</frontendDirectory>` e `npmFolder` na raiz.
+- Motivo: versionar a configuração efetiva torna o build reproduzível — sem `package-lock.json`, um
+  clone limpo resolveria dependências de forma não determinística — e o próprio `tsconfig.json` /
+  `types.d.ts` informa "recommended to commit". Arquivo gerado não entra no controle de versão:
+  `vite.generated.ts` é sobrescrito a cada execução do `flow:prepare-frontend` e geraria diff eterno.
+  Manter duas cópias versionadas convidava à divergência silenciosa entre a configuração lida pelo
+  build e a configuração editada.
+- Reverter: `git rm --cached` dos cinco arquivos da raiz e `git add` das cinco cópias de `frontend/`
+  restaura o estado anterior (os arquivos físicos de `frontend/` nunca foram apagados). Se o plugin
+  corrigir o separador de caminho no Windows e `npmFolder` voltar para `frontend/`, as cópias de
+  `frontend/` passam a ser a fonte oficial e as da raiz deixam de ser versionadas.

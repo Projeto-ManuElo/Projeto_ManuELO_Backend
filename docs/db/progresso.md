@@ -2,7 +2,7 @@
 
 Iteração atual: 22 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
 Runtime usado: postgres embutido via Node (plano C; docker presente, mas `use_docker` perde a corrida do initdb)
-Última atualização: T23 concluída (build Maven único na raiz)
+Última atualização: T23.4 concluída (configurações Vaadin/Vite da raiz versionadas)
 
 ## Entendimento inicial (8 linhas)
 1. O ManuElo é um sistema financeiro/documental; o banco é PostgreSQL (Supabase) com migrations Flyway.
@@ -64,6 +64,33 @@ Runtime usado: postgres embutido via Node (plano C; docker presente, mas `use_do
 (nenhum)
 
 ## Log (uma entrada por iteração: tarefa, arquivos, resultado da verificação)
+### T23.4 — configurações Vaadin/Vite da raiz (P1, P2 e P8)
+- Arquivos: `package.json`, `package-lock.json`, `tsconfig.json`, `types.d.ts` e `vite.config.ts` da
+  raiz (P1, adicionados ao índice); as cinco cópias correspondentes em `frontend/` (P2, retiradas do
+  índice com `git rm --cached`, preservadas no disco); `docs/db/decisoes.md` (DEC-23);
+  `docs/db/progresso.md`. Nenhum `.java`, `.sql`, `pom.xml`, `application.properties` ou arquivo de
+  `db/` foi alterado.
+- Contexto: a T23.3 (commit `341d389`) já havia ignorado os artefatos gerados e desrastreado 460
+  arquivos de `src/main/frontend/generated/`; a auditoria da T23.4, somente leitura, classificou os
+  arquivos de configuração e propôs as ações P1..P8.
+- P1 executada: os cinco arquivos de configuração da raiz passam a ser versionados. São a fonte
+  efetiva do build (`npmFolder` = raiz desde a DEC-21) e o próprio `tsconfig.json`/`types.d.ts` traz
+  "recommended to commit". `vite.generated.ts` continua ignorado por ser sobrescrito a cada execução
+  do `flow:prepare-frontend`.
+- P2 executada: as cinco cópias de `frontend/` saíram do controle de versão sem serem apagadas do
+  disco (mesmo SHA-256 antes e depois). Nada as referencia — nem `pom.xml`, nem Java, nem scripts — e
+  a cópia de `vite.generated.ts` estava inválida (`./..\target/...`).
+- P8 executada: DEC-23 registra a raiz como local oficial das configurações npm, Vite e TypeScript, a
+  origem das cópias antigas de `frontend/` e a distinção entre arquivo de configuração-fonte e arquivo
+  gerado pelo Vaadin/Vite.
+- Nenhum commit e nenhum push foram feitos; as mudanças ficaram no índice e no working tree.
+- Pendentes: P4 (remover do disco as cópias de `frontend/`, `frontend/target/` e
+  `frontend/node_modules/`), P5 (`src/main/frontend/` estale), P6
+  (`frontend/src/main/bundles/README.md` e `dev.bundle`) e P7 (resíduo Maven/Docker de `frontend/`;
+  o `Dockerfile` chama `./mvnw` sem `frontend/pom.xml`).
+- Pendente de validação: build `mvnw -B -DskipTests package` depois das mudanças (não executado nesta
+  tarefa). Banco não afetado: nenhuma migration, seed ou teste alterado.
+
 ### T23 — consolidação do Maven na raiz
 - Arquivos: `pom.xml` (raiz); `frontend/pom.xml` (removido); `docs/db/decisoes.md` (DEC-20..DEC-22);
   `docs/db/progresso.md`. Nenhum `.java`, `.sql`, `application.properties` ou `db/` alterado.
