@@ -59,3 +59,4 @@ build/
 /vite.generated.ts
 /src/main/bundles/
 /src/main/frontend/generated/
+/.vaadin-node-tasks.lock

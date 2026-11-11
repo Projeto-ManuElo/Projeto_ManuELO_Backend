@@ -194,7 +194,7 @@
          application.properties NAO entra: a configuracao do backend (datasource/Flyway) e a
          fonte da verdade e nao pode ser sobrescrita no classpath. Decisao em DEC-20. -->
     <resource>
-        <directory>frontend/src/main/resources</directory>
+        <directory>ui/src/main/resources</directory>
         <filtering>false</filtering>
         <excludes>
             <exclude>application.properties</exclude>
@@ -202,8 +202,9 @@
     </resource>
 </resources>
 		<plugins>
-			<!-- T23: codigo Java do frontend (br.com.manuelo) e compilado a partir da raiz,
-			     sem mover nem duplicar arquivos. -->
+			<!-- T24: codigo Java do frontend (br.com.manuelo) e compilado a partir da raiz.
+			     A pasta copiada foi renomeada para ui/ para nao colidir com a deteccao
+			     de frontend legado do Vaadin. -->
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>build-helper-maven-plugin</artifactId>
@@ -217,7 +218,7 @@
 						</goals>
 						<configuration>
 							<sources>
-								<source>${project.basedir}/frontend/src/main/java</source>
+								<source>${project.basedir}/ui/src/main/java</source>
 							</sources>
 						</configuration>
 					</execution>
@@ -228,8 +229,8 @@
 				<artifactId>vaadin-maven-plugin</artifactId>
 				<version>${vaadin.version}</version>
 				<configuration>
-					<!-- O frontend continua sendo a fonte das telas, temas e assets. -->
-					<frontendDirectory>${project.basedir}/frontend/src/main/frontend</frontendDirectory>
+					<!-- T24: src/main/frontend e a fonte dos assets; ui/ contem Java e resources. -->
+					<frontendDirectory>${project.basedir}/src/main/frontend</frontendDirectory>
 				</configuration>
 				<executions>
 					<execution>

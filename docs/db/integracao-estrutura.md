@@ -1,5 +1,9 @@
 # Integração e organização da estrutura do projeto (T21)
 
+> Atualização T24 (10/11/2026): a pasta copiada `frontend/` foi renomeada para `ui/`; os assets
+> Vaadin foram movidos para o diretório padrão `src/main/frontend/`; o `Dockerfile` e o
+> `.dockerignore` foram para a raiz. Este documento permanece como registro do estado da T21.
+
 Data: 10/11/2026. Escopo desta entrega: **apenas analisar, copiar e organizar arquivos**. Nenhuma
 linha de Java, HTML, CSS, TypeScript, pom, migration ou configuração de runtime foi alterada, criada
 ou removida. O frontend original permaneceu intacto (ver §6).
@@ -266,3 +270,12 @@ clone: está em `main` (`ed2f9b9`) e tem alterações locais não commitadas (in
 `C:\Users\ronald\CESAR\Projeto_ManuELO_Backend`, que é o workspace da sessão, está limpo e no branch
 `featute/intregracao_front` (`72b0e5a`). Para não escrever em uma árvore de trabalho alheia e suja,
 a cópia foi feita no clone CESAR. Nada foi escrito em `C:\Users\ronald\Projetos\...`.
+
+## 11. Nota pós-integração (T24/DEC-25)
+
+A integração manteve as views em `br.com.manuelo` e o boot em `com.Projeto.manuelo`. O
+`VaadinServletContextInitializer` só varre as `AutoConfigurationPackages` (pacote da classe de
+boot) quando não há `@EnableVaadin`; por isso `vaadin.allowed-packages` não era suficiente e o
+`RouteRegistry` subia vazio (`No views found`). A correção definitiva é
+`@EnableVaadin("br.com.manuelo")` em `ManueloApplication`, com o shell único em
+`br.com.manuelo.AppShell`. As 8 rotas do frontend foram confirmadas no `RouteRegistry`.

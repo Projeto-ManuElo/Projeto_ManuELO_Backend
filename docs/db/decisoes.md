@@ -134,3 +134,46 @@ Modelo de entrada:
   restaura o estado anterior (os arquivos físicos de `frontend/` nunca foram apagados). Se o plugin
   corrigir o separador de caminho no Windows e `npmFolder` voltar para `frontend/`, as cópias de
   `frontend/` passam a ser a fonte oficial e as da raiz deixam de ser versionadas.
+
+## DEC-24 `frontend/` vira `ui/`; assets Vaadin vão para `src/main/frontend`
+- Contexto: a T23 manteve as telas em `frontend/src/main/frontend` e o `pom.xml` apontava
+  `<frontendDirectory>` para lá. O modo de desenvolvimento do Vaadin 25 trata qualquer pasta
+  `frontend/` na raiz como **frontend legado** e ignora o `frontendDirectory`; o build de produção
+  usa o `frontendDirectory`. Resultado: `@CssImport("./animacoes.css")` resolvia no build e falhava
+  no dev (ou vice-versa), com `[UNRESOLVED_IMPORT]`. Além disso, o `Dockerfile` e os wrappers
+  `ui/mvnw`/`ui/.mvn` ficaram sem `pom.xml` depois da T23.
+- Escolha: renomear a pasta copiada de `frontend/` para `ui/`; manter em `ui/` o Java
+  (`ui/src/main/java/br/com/manuelo`), os resources (`ui/src/main/resources`) e o bundle de
+  desenvolvimento; mover o único asset de frontend (`animacoes.css`) para o diretório padrão do
+  Vaadin, `src/main/frontend/`; apontar `<frontendDirectory>` para `${project.basedir}/src/main/frontend`;
+  atualizar `tsconfig.json`; mover `Dockerfile`/`.dockerignore` para a raiz; remover os wrappers
+  inertes `ui/mvnw`, `ui/mvnw.cmd` e `ui/.mvn`.
+- Motivo: o diretório padrão `src/main/frontend` é usado tanto pelo dev server quanto pelo
+  `build-frontend`, elimina o aviso de frontend legado e mantém uma única fonte para CSS/TS. O
+  `Dockerfile` na raiz usa o `pom.xml`/`mvnw` corretos no contexto de build, e o `.dockerignore`
+  passa a excluir `.env` (o antigo não excluía). As telas Java continuam em `br.com.manuelo`.
+- Reverter: `git mv ui frontend`, mover `src/main/frontend/animacoes.css` de volta para
+  `frontend/src/main/frontend/`, restaurar os wrappers com `git checkout -- frontend/mvnw
+  frontend/mvnw.cmd frontend/.mvn`, devolver `Dockerfile`/`.dockerignore` para `frontend/` e
+  restaurar os paths antigos em `pom.xml` e `tsconfig.json`.
+
+## DEC-25 `@EnableVaadin("br.com.manuelo")` define a raiz de varredura das rotas
+- Contexto: com o build único (T23/T24), o `@SpringBootApplication` está em
+  `com.Projeto.manuelo`, mas as views Vaadin estão em `br.com.manuelo`. Em dev o app subia e
+  `/` exibia `No views found`; o `RouteRegistry` registrava zero rotas. O log
+  `FullDependenciesScanner: Visited N classes` não indicava o problema. Causa raiz confirmada
+  por um `VaadinServiceInitListener` temporário: o `VaadinServletContextInitializer` usa como
+  raiz de varredura as `AutoConfigurationPackages` do Spring Boot (o pacote da classe de boot)
+  quando não há `VaadinScanPackages`; `vaadin.allowed-packages` apenas **restringe** a varredura,
+  não acrescenta pacotes externos.
+- Escolha: anotar `ManueloApplication` com `@EnableVaadin("br.com.manuelo")`; manter
+  `scanBasePackages = { "com.Projeto.manuelo", "br.com.manuelo" }` para os beans Spring. Remover
+  a implementação duplicada de `AppShellConfigurator`/`@StyleSheet` da classe de boot (o shell
+  oficial é `br.com.manuelo.AppShell`). Remover o `HomeView` de exemplo criado em
+  `com.Projeto.manuelo.views` (rota `""` concorrente, não versionado) e a cópia solta de
+  `src/main/resources/META-INF/resources/styles.css`.
+- Motivo: uma linha explícita resolve a descoberta de rotas sem mover/renomear as 13 classes do
+  frontend nem duplicar pacotes; o Spring continua escaneando os dois pacotes para beans.
+- Reverter: remover `@EnableVaadin` e mover as views para um subpacote de
+  `com.Projeto.manuelo`, ou registrar `VaadinScanPackages` manualmente. `vaadin.allowed-packages`
+  deve continuar contendo `br.com.manuelo`.

@@ -1,8 +1,8 @@
 # Progresso (memória do loop; a conversa não é memória)
 
-Iteração atual: 22 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
+Iteração atual: 23 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
 Runtime usado: postgres embutido via Node (plano C; docker presente, mas `use_docker` perde a corrida do initdb)
-Última atualização: T23.4 concluída (configurações Vaadin/Vite da raiz versionadas)
+Última atualização: T24 concluída (integração Vaadin: `ui/` + `src/main/frontend`)
 
 ## Entendimento inicial (8 linhas)
 1. O ManuElo é um sistema financeiro/documental; o banco é PostgreSQL (Supabase) com migrations Flyway.
@@ -59,11 +59,47 @@ Runtime usado: postgres embutido via Node (plano C; docker presente, mas `use_do
       recursos do frontend, empacota as migrations em `db/migration` e gera o JAR executável Vaadin
       + Spring Boot. `frontend/pom.xml` removido (DEC-20..DEC-22). Sem alteração de Java, SQL ou
       regras; build validado com `mvnw package`.
+- [x] T24 Integração Vaadin: renomeia `frontend/` para `ui/`, move assets para `src/main/frontend/`,
+      corrige `pom.xml`/`tsconfig.json`, move Dockerfile para a raiz, remove a classe de boot
+      duplicada, adiciona `scanBasePackages`, `SecurityConfig` temporário e baseline do Flyway;
+      valida dev (`/` 200) e `clean package -DskipTests` (DEC-24).
 
 ## Bloqueios (tarefa travada: diagnóstico e o que já tentou)
 (nenhum)
 
 ## Log (uma entrada por iteração: tarefa, arquivos, resultado da verificação)
+### T24 — integração Vaadin e execução local
+- Arquivos: `pom.xml`; `tsconfig.json`; `src/main/resources/application.properties`; `.gitignore`;
+  `.dockerignore`; `Dockerfile` (movido de `ui/`); `ui/**` (renomeado de `frontend/`);
+  `src/main/frontend/animacoes.css`; remoção de `ui/src/main/java/br/com/manuelo/Application.java`,
+  `ui/mvnw`, `ui/mvnw.cmd` e `ui/.mvn`; `src/main/java/com/Projeto/manuelo/config/SecurityConfig.java`;
+  `ManueloApplication.java`; `docs/db/decisoes.md` (DEC-24); `docs/db/integracao-estrutura.md`.
+- Causa raiz: o Vaadin trata `frontend/` como frontend legado no dev server e ignora
+  `<frontendDirectory>`; o build de produção usa o `frontendDirectory`. O CSS ficava em um caminho
+  para cada modo, gerando `[UNRESOLVED_IMPORT]` no Vite. O projeto também tinha duas classes
+  `@SpringBootApplication`, Spring Security bloqueando `/` e Flyway sem histórico no schema criado
+  pelo script SQL.
+- Correções: assets em `src/main/frontend/`; Java/resources em `ui/`; `scanBasePackages` inclui
+  `br.com.manuelo`; `SecurityConfig` libera todas as rotas (temporário, sem auth real);
+  `baseline-on-migrate`/`baseline-version=11`; `.env` local derivado de `SUPABASE_DB_URL`
+  (`DB_URL`, `DB_USER`, `DB_PASSWORD` preenchidos; segredo não versionado).
+- Verificação: `JAVA_HOME=/home/joaomiguel/.cache/manuelo/jdk21 ./mvnw -B clean package -DskipTests`
+  → BUILD SUCCESS (Vite 5,5 s; 13 fontes; JAR repackage). `spring-boot:run` contra Postgres embutido
+  (`127.0.0.1:39237/manuelo`) → `Started ManueloApplication`, `/` HTTP 200, sem erro do Vite;
+  `/tmp/app-ui2.log`. `mvnw test` falha apenas por ausência de Docker/Testcontainers.
+- P4/P7 resolvidos (wrappers inertes removidos; Dockerfile/.dockerignore na raiz); P5 resolvido
+  (`src/main/frontend/` agora é a fonte real); P6 mantido (`ui/src/main/bundles/` é bundle versionado
+  conforme o README do Vaadin).
+- Correção pós-validação: `/` exibia `No views found` porque o `RouteRegistry` não via
+  `br.com.manuelo`; `vaadin.allowed-packages` não acrescenta raízes de varredura. Adicionado
+  `@EnableVaadin("br.com.manuelo")`, removida a implementação duplicada de `AppShellConfigurator`
+  da classe de boot e o `HomeView` de exemplo em `com.Projeto.manuelo.views`. Confirmado por
+  listener temporário: 8 rotas registradas, incluindo `"" -> br.com.manuelo.LoginView` e
+  `home -> br.com.manuelo.HomeView` (DEC-25).
+- Pendentes: validar visualmente as telas em navegador; decidir auth real; trocar o baseline fixo
+  quando houver V012; `ui/README.md` e `ui/.mcp.json` continuam cópias históricas.
+- Nenhum commit/push nesta tarefa; working tree contém as mudanças.
+
 ### T23.4 — configurações Vaadin/Vite da raiz (P1, P2 e P8)
 - Arquivos: `package.json`, `package-lock.json`, `tsconfig.json`, `types.d.ts` e `vite.config.ts` da
   raiz (P1, adicionados ao índice); as cinco cópias correspondentes em `frontend/` (P2, retiradas do
