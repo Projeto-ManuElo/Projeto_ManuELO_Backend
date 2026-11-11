@@ -1,90 +1,78 @@
 package br.com.manuelo;
 
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.function.Consumer;
+
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
-import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.orderedlayout.FlexComponent;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.component.upload.Upload;
-import com.vaadin.flow.server.streams.UploadHandler;
-
-import java.util.function.Consumer;
 
 public class ImovelDialog extends Dialog {
 
-    public record DadosImovel(String endereco, String tipo, String status, String inquilino) {}
+    public record DadosImovel(String id, String endereco, String tipo, String status,
+            String inquilino, BigDecimal aluguel, String observacoes) {
+    }
 
-    private final H3 titulo = new H3("Adicionar Imóvel");
-    private final TextField endereco = new TextField("Endereço");
-    private final ComboBox<String> tipo = new ComboBox<>("Tipo");
-    private final ComboBox<String> status = new ComboBox<>("Status");
-    private final TextField inquilino = new TextField("Inquilino vinculado");
-    private final Button reformas = new Button("Reformas");
     private final Consumer<DadosImovel> aoSalvar;
-    private boolean editando = false;
+    private final TextField endereco = UiKit.text("Endereço", "Ex: Rua das Flores, 88");
+    private final ComboBox<String> tipo = UiKit.select("Tipo", "Escolha um tipo",
+            List.of("Apartamento", "Casa", "Comercial", "Terreno"));
+    private final ComboBox<String> status = UiKit.select("Status", "Selecione",
+            List.of("Alugado", "Vago", "Em manutenção"));
+    private final TextField inquilino = UiKit.text("Inquilino vinculado", "Buscar por nome ou documento");
+    private final Button reformas = UiKit.secondary("Reformas", e -> {
+        close();
+        UiKit.ir("imoveis/reformas");
+    });
+    private final Span titulo = new Span("Adicionar Imóvel");
+
+    private String idAtual;
+    private BigDecimal aluguelAtual = BigDecimal.ZERO;
+    private String observacoesAtuais = "";
 
     public ImovelDialog(Consumer<DadosImovel> aoSalvar) {
         this.aoSalvar = aoSalvar;
-        setWidth("520px");
+        addClassName("modal");
+        setWidth("620px");
+        setMaxWidth("94vw");
+        setMaxHeight("92vh");
         setCloseOnOutsideClick(false);
 
-        titulo.getStyle().set("margin", "0");
-
-        endereco.setPlaceholder("Ex: Rua das Flores, 88");
-        endereco.setWidthFull();
-        endereco.setRequiredIndicatorVisible(true);
-
-        tipo.setItems("Apartamento", "Casa", "Comercial");
-        tipo.setPlaceholder("Escolha um tipo");
-        tipo.setWidthFull();
-        tipo.setRequiredIndicatorVisible(true);
-
-        status.setItems("Alugado", "Vago", "Em manutenção");
-        status.setValue("Vago");
-        status.setWidthFull();
-
-        HorizontalLayout linha = new HorizontalLayout(tipo, status);
-        linha.setWidthFull();
-
-        inquilino.setPlaceholder("Buscar por nome ou documento");
-        inquilino.setWidthFull();
+        titulo.addClassName("modal-title");
+        Div heading = new Div(titulo);
+        heading.addClassName("modal-heading");
+        Div header = new Div(heading);
+        header.addClassName("modal-header");
+        header.add(UiKit.iconButton(VaadinIcon.CLOSE, "Fechar", e -> close()));
 
         Span rotuloContrato = new Span("Contrato");
-        rotuloContrato.getStyle().set("font-size", "var(--lumo-font-size-s)");
+        rotuloContrato.addClassName("form-label");
 
-        Upload upload = new Upload(UploadHandler.inMemory((metadata, bytes) -> {
-            // futuramente: guardar o arquivo (bytes) junto com o imóvel
-        }));
-        upload.setAcceptedMimeTypes("application/pdf", "image/png", "image/jpeg");
-        upload.setMaxFileSize(10 * 1024 * 1024);
-        upload.setDropLabel(new Span("Arraste o contrato aqui ou clique para selecionar"));
+        Div body = new Div(
+                endereco,
+                UiKit.formGrid(tipo, status),
+                inquilino,
+                rotuloContrato,
+                UiKit.upload("Arraste o contrato aqui ou clique para selecionar", "PDF, JPG ou PNG, até 10 MB"));
+        body.addClassName("modal-body");
+        body.addClassName("stack");
 
-        reformas.getStyle().set("background", "#1a1f44").set("color", "white");
-        reformas.addClickListener(e -> {
-            //(DESENVOLVER) abrir a tela de reformas do imóvel
-        });
+        Button cancelar = UiKit.secondary("Cancelar", e -> close());
+        Button salvar = UiKit.primary("Salvar", e -> salvar());
+        Div footer = UiKit.dialogFooter(reformas, cancelar, salvar);
 
-        Button cancelar = new Button("Cancelar", e -> close());
-        Button salvar = new Button("Salvar", e -> salvar());
-        salvar.getStyle().set("background", "#5b5bf0").set("color", "white");
-
-        HorizontalLayout botoes = new HorizontalLayout(reformas, cancelar, salvar);
-        botoes.setWidthFull();
-        botoes.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
-
-        VerticalLayout conteudo = new VerticalLayout(
-                titulo, endereco, linha, inquilino, rotuloContrato, upload, botoes);
-        conteudo.setPadding(false);
-        add(conteudo);
+        add(header, body, footer);
     }
 
-
     public void abrirNovo() {
-        editando = false;
+        idAtual = null;
+        aluguelAtual = BigDecimal.ZERO;
+        observacoesAtuais = "";
         titulo.setText("Adicionar Imóvel");
         endereco.clear();
         tipo.clear();
@@ -94,20 +82,17 @@ public class ImovelDialog extends Dialog {
         open();
     }
 
-    
-    public void abrirEdicao(DadosImovel d) {
-        editando = true;
+    public void abrirEdicao(DemoData.Imovel imovel) {
+        idAtual = imovel.id();
         titulo.setText("Editar Imóvel");
-        endereco.setValue(d.endereco() == null ? "" : d.endereco());
-        tipo.setValue(d.tipo());
-        status.setValue(d.status());
-        inquilino.setValue(d.inquilino() == null ? "" : d.inquilino());
+        aluguelAtual = imovel.aluguel();
+        observacoesAtuais = imovel.observacoes();
+        endereco.setValue(imovel.endereco() == null ? "" : imovel.endereco());
+        tipo.setValue(imovel.tipo());
+        status.setValue(imovel.status());
+        inquilino.setValue(imovel.inquilino() == null ? "" : imovel.inquilino());
         reformas.setVisible(true);
         open();
-    }
-
-    public boolean isEditando() {
-        return editando;
     }
 
     private void salvar() {
@@ -116,8 +101,9 @@ public class ImovelDialog extends Dialog {
         if (endereco.isEmpty() || tipo.isEmpty()) {
             return;
         }
-        aoSalvar.accept(new DadosImovel(
-                endereco.getValue(), tipo.getValue(), status.getValue(), inquilino.getValue()));
+        aoSalvar.accept(new DadosImovel(idAtual, endereco.getValue(), tipo.getValue(),
+                status.getValue() == null || status.getValue().isBlank() ? "Vago" : status.getValue(),
+                inquilino.getValue(), aluguelAtual, observacoesAtuais));
         close();
     }
 }

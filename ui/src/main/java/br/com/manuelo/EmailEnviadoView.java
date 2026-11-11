@@ -1,83 +1,26 @@
 package br.com.manuelo;
 
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.dependency.CssImport;
-import com.vaadin.flow.component.html.H1;
-import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.icon.Icon;
-import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.orderedlayout.FlexComponent;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
-@CssImport("./animacoes.css")
 @Route("email-enviado")
-@PageTitle("Email Enviado")
-public class EmailEnviadoView extends HorizontalLayout {
+@PageTitle("Email enviado")
+public class EmailEnviadoView extends AuthLayout {
 
     public EmailEnviadoView() {
-        setSizeFull();
-        setPadding(false);
-        setSpacing(false);
+        form.addClassName("auth-form-center");
+        titulo("Email de Redefinição de Senha Enviado!", null);
+        form.add(checkCircle());
 
-        // Lado esquerdo
-        Image logo = new Image("images/logo.png", "Brasão");
-        logo.setWidth("200px");
-        Span nome = new Span("Fundação Manoel Cruz");
-        nome.getStyle().set("font-size", "2rem").set("font-family", "serif");
-
-        VerticalLayout esquerda = new VerticalLayout(logo, nome);
-        esquerda.setWidth("50%");
-        esquerda.setHeight("100%");
-        esquerda.setAlignItems(FlexComponent.Alignment.CENTER);
-        esquerda.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
-        esquerda.getStyle().set("background", "#fff9e8");
-
-        // Lado direito
-        H1 titulo = new H1("Email de Redefinição de Senha Enviado!");
-        titulo.getStyle().set("color", "white").set("text-align", "center");
-
-        Icon check = VaadinIcon.CHECK.create();
-        check.setSize("80px");
-        check.getStyle().set("color", "#1a1f44");
-        check.addClassName("check-aprovacao");
-
-        Span circulo = new Span(check);
-        circulo.addClassName("circulo-aprovacao");
-        circulo.getStyle()
-                .set("background", "#e0e0e0")
-                .set("border-radius", "50%")
-                .set("width", "160px")
-                .set("height", "160px")
-                .set("display", "flex")
-                .set("align-items", "center")
-                .set("justify-content", "center")
-                .set("margin-top", "30px")
-                .set("margin-bottom", "30px");
-
-        Button retornar = new Button("Retornar");
-        retornar.setWidth("60%");
-        retornar.getStyle().set("background", "#fff9e8").set("color", "#1a1f44");
-        retornar.addClickListener(e -> retornar.getUI().ifPresent(ui -> ui.navigate("")));
+        Button retornar = UiKit.primary("Retornar", e -> UiKit.ir(""));
+        retornar.addClassName("auth-submit");
+        form.add(retornar);
 
         Span aviso = new Span("Veja seu email e redefina sua senha a partir do email recebido");
-        aviso.getStyle().set("color", "white").set("text-align", "center").set("font-size", "0.8rem");
-
-        VerticalLayout form = new VerticalLayout(titulo, circulo, retornar, aviso);
-        form.setWidth("400px");
-        form.setPadding(false);
-        form.setAlignItems(FlexComponent.Alignment.CENTER);
-
-        VerticalLayout direita = new VerticalLayout(form);
-        direita.setWidth("50%");
-        direita.setHeight("100%");
-        direita.setAlignItems(FlexComponent.Alignment.CENTER);
-        direita.setJustifyContentMode(FlexComponent.JustifyContentMode.CENTER);
-        direita.getStyle().set("background", "#171A34");
-
-        add(esquerda, direita);
+        aviso.addClassName("auth-note");
+        aviso.addClassName("auth-note-sm");
+        form.add(aviso);
     }
 }

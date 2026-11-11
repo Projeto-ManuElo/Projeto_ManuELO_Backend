@@ -1,135 +1,87 @@
 package br.com.manuelo;
 
-import com.vaadin.flow.component.Component;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
-import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.component.grid.GridVariant;
-import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
-import com.vaadin.flow.component.orderedlayout.FlexComponent;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Route(value = "imoveis", layout = MainLayout.class)
 @PageTitle("Imóveis")
-public class ImoveisView extends VerticalLayout implements BeforeEnterObserver {
+public class ImoveisView extends Div implements BeforeEnterObserver {
 
-    record Imovel(String endereco, String tipo, String inquilino, String status) {}
-
-    private final Grid<Imovel> grid = new Grid<>();
-    private final TextField endereco = new TextField("Endereço");
-    private final ComboBox<String> tipo = new ComboBox<>("Tipo");
-    private final ComboBox<String> status = new ComboBox<>("Status");
-    private final TextField inquilino = new TextField("Inquilino vinculado");
-    private final ImovelDialog dialog = new ImovelDialog(this::salvarImovel);
+    private final List<DemoData.Imovel> imoveis = DemoData.imoveis();
+    private final TextField endereco = UiKit.text("Endereço", "Rua, número, bairro");
+    private final ComboBox<String> tipo = UiKit.select("Tipo", "Todos",
+            List.of("Apartamento", "Casa", "Comercial", "Terreno"));
+    private final ComboBox<String> status = UiKit.select("Status", "Todos",
+            List.of("Alugado", "Vago", "Em manutenção"));
+    private final TextField inquilino = UiKit.text("Inquilino vinculado", "Buscar por nome ou documento");
+    private final Div tabela = new Div();
+    private final ImovelDialog dialog;
 
     public ImoveisView() {
-        setSizeFull();
-        setPadding(true);
-        getStyle().set("background", "#fff9e8").set("flex", "1").set("overflow", "auto");
+        addClassName("page");
+        dialog = new ImovelDialog(this::salvarImovel);
 
-        add(criarTopo(), criarFiltros(), criarTabela());
+        Button exportar = UiKit.secondary("Exportar", e -> UiKit.aviso("Exportação gerada com sucesso."));
+        Button novo = UiKit.primaryIcon("Novo Imóvel", VaadinIcon.PLUS, e -> dialog.abrirNovo());
+        add(UiKit.header("Imóveis", null, exportar, novo));
 
-        atualizarImoveis(new ArrayList<>());    }
+        add(criarFiltros());
+        add(criarTabelaCard());
+        renderizar();
+    }
 
-    // Lê o ?filtro=... da URL e preenche o campo Status
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
         limparFiltros();
         event.getLocation().getQueryParameters().getParameters()
                 .getOrDefault("filtro", List.of()).stream().findFirst()
-                .ifPresent(f -> {
-                    switch (f) {
+                .ifPresent(filtro -> {
+                    switch (filtro) {
                         case "alugado" -> status.setValue("Alugado");
                         case "vago" -> status.setValue("Vago");
                         case "manutencao" -> status.setValue("Em manutenção");
-                        default -> { }
+                        default -> {
+                        }
                     }
-                    aplicarFiltros();
+                    renderizar();
                 });
     }
 
-    private Component criarTopo() {
-        H2 titulo = new H2("Imóveis");
-        Button exportar = new Button("Exportar");
-        Button novo = new Button("+ Novo Imóvel", e -> dialog.abrirNovo());
-        novo.getStyle().set("background", "#5b5bf0").set("color", "white");
+    private Div criarFiltros() {
+        tipo.setItemLabelGenerator(item -> item);
+        Div acoes = new Div(
+                UiKit.secondary("Cancelar", e -> {
+                    limparFiltros();
+                    renderizar();
+                }),
+                UiKit.primary("Filtrar", e -> renderizar()));
+        acoes.addClassName("form-actions");
 
-        HorizontalLayout topo = new HorizontalLayout(titulo, new HorizontalLayout(exportar, novo));
-        topo.setWidthFull();
-        topo.setJustifyContentMode(FlexComponent.JustifyContentMode.BETWEEN);
-        topo.setAlignItems(FlexComponent.Alignment.CENTER);
-        return topo;
+        Div grid = UiKit.formGrid(
+                endereco,
+                tipo,
+                status,
+                inquilino);
+        endereco.addClassName("full");
+        inquilino.addClassName("full");
+        return UiKit.card(UiKit.cardHeader("Filtros", null), grid, acoes);
     }
 
-    private Component criarFiltros() {
-        H2 titulo = new H2("Filtros");
-        titulo.getStyle().set("font-size", "1rem").set("margin", "0");
-
-        endereco.setPlaceholder("Rua, número, bairro");
-        endereco.setWidthFull();
-
-        tipo.setItems("Apartamento", "Casa", "Comercial");
-        tipo.setPlaceholder("Todos");
-        tipo.setWidthFull();
-
-        status.setItems("Alugado", "Vago", "Em manutenção");
-        status.setPlaceholder("Todos");
-        status.setWidthFull();
-
-        HorizontalLayout linha = new HorizontalLayout(tipo, status);
-        linha.setWidthFull();
-
-        inquilino.setPlaceholder("Buscar por nome ou documento");
-        inquilino.setWidthFull();
-
-        Button cancelar = new Button("Cancelar", e -> limparFiltros());
-        Button filtrar = new Button("Filtrar", e -> aplicarFiltros());
-        filtrar.getStyle().set("background", "#5b5bf0").set("color", "white");
-
-        HorizontalLayout botoes = new HorizontalLayout(cancelar, filtrar);
-        botoes.setWidthFull();
-        botoes.setJustifyContentMode(FlexComponent.JustifyContentMode.END);
-
-        VerticalLayout caixa = new VerticalLayout(titulo, endereco, linha, inquilino, botoes);
-        caixa.setWidthFull();
-        caixa.getStyle().set("background", "white").set("border-radius", "10px");
-        return caixa;
-    }
-
-    private Component criarTabela() {
-        grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
-        grid.addColumn(Imovel::endereco).setHeader("Endereço");
-        grid.addColumn(Imovel::tipo).setHeader("Tipo");
-        grid.addColumn(i -> i.inquilino() == null || i.inquilino().isBlank() ? "-" : i.inquilino())
-                .setHeader("Inquilino");
-        grid.addComponentColumn(i -> badge(i.status())).setHeader("Status");
-        grid.setEmptyStateText("Nenhum imóvel cadastrado");
-        grid.setHeight("300px");
-
-        // Clicar na linha abre o modal de edição
-        grid.addItemClickListener(e -> {
-            Imovel i = e.getItem();
-            dialog.abrirEdicao(new ImovelDialog.DadosImovel(
-                    i.endereco(), i.tipo(), i.status(), i.inquilino()));
-        });
-
-        H2 titulo = new H2("Imóveis cadastrados");
-        titulo.getStyle().set("font-size", "1rem").set("margin", "0");
-
-        VerticalLayout caixa = new VerticalLayout(titulo, grid);
-        caixa.setWidthFull();
-        caixa.getStyle().set("background", "white").set("border-radius", "10px");
-        return caixa;
+    private Div criarTabelaCard() {
+        tabela.addClassName("table");
+        return UiKit.card(UiKit.cardHeader("Imóveis cadastrados", null), tabela);
     }
 
     private void limparFiltros() {
@@ -139,38 +91,70 @@ public class ImoveisView extends VerticalLayout implements BeforeEnterObserver {
         inquilino.clear();
     }
 
-    //filtrar de verdade quando houver banco
-    private void aplicarFiltros() {
-        // futuramente: buscar usando endereco, tipo, status e inquilino
-    }
+    private void renderizar() {
+        tabela.removeAll();
+        tabela.add(UiKit.tableHead("cols-imoveis", "Endereço", "Tipo", "Inquilino", "Status"));
 
-    // Chamado pelo botão Salvar do modal
-    private void salvarImovel(ImovelDialog.DadosImovel d) {
-        if (dialog.isEditando()) {
-            //atualizar o imóvel existente no banco
-        } else {
-            //criar um novo imóvel no banco
+        List<DemoData.Imovel> filtrados = imoveis.stream()
+                .filter(this::corresponde)
+                .toList();
+
+        if (filtrados.isEmpty()) {
+            tabela.add(UiKit.emptyState("Nenhum imóvel encontrado", "Ajuste os filtros e tente novamente."));
+            return;
+        }
+
+        for (DemoData.Imovel imovel : filtrados) {
+            Div linha = UiKit.tableRow("cols-imoveis",
+                    new Span(imovel.endereco()),
+                    UiKit.muted(imovel.tipo()),
+                    imovel.inquilino() == null || imovel.inquilino().isBlank()
+                            ? UiKit.muted("-")
+                            : new Span(imovel.inquilino()),
+                    UiKit.badge(imovel.status()));
+            linha.addClassName("clickable");
+            linha.addClickListener(e -> dialog.abrirEdicao(imovel));
+            tabela.add(linha);
         }
     }
 
-    // Ponto de ligação com o backend
-    public void atualizarImoveis(List<Imovel> lista) {
-        grid.setItems(lista);
+    private boolean corresponde(DemoData.Imovel imovel) {
+        String enderecoFiltro = endereco.getValue() == null ? "" : endereco.getValue().trim().toLowerCase(Locale.ROOT);
+        String inquilinoFiltro = inquilino.getValue() == null ? "" : inquilino.getValue().trim().toLowerCase(Locale.ROOT);
+        if (!enderecoFiltro.isBlank() && !imovel.endereco().toLowerCase(Locale.ROOT).contains(enderecoFiltro)) {
+            return false;
+        }
+        if (!inquilinoFiltro.isBlank()
+                && !imovel.inquilino().toLowerCase(Locale.ROOT).contains(inquilinoFiltro)) {
+            return false;
+        }
+        if (tipo.getValue() != null && !tipo.getValue().isBlank() && !tipo.getValue().equals(imovel.tipo())) {
+            return false;
+        }
+        if (status.getValue() != null && !status.getValue().isBlank() && !status.getValue().equals(imovel.status())) {
+            return false;
+        }
+        return true;
     }
 
-    private Span badge(String texto) {
-        String cor = switch (texto) {
-            case "Alugado" -> "#00a884";
-            case "Vago" -> "#f59e0b";
-            default -> "#e11d48";
-        };
-        Span b = new Span(texto);
-        b.getStyle()
-                .set("color", cor)
-                .set("border", "1px solid " + cor)
-                .set("border-radius", "6px")
-                .set("padding", "2px 8px")
-                .set("font-size", "0.7rem");
-        return b;
+    private void salvarImovel(ImovelDialog.DadosImovel dados) {
+        DemoData.Imovel novo = new DemoData.Imovel(
+                dados.id() == null ? String.valueOf(System.currentTimeMillis()) : dados.id(),
+                dados.endereco(), dados.tipo(), dados.status(), dados.inquilino(),
+                dados.aluguel(), dados.observacoes());
+
+        boolean atualizado = false;
+        for (int i = 0; i < imoveis.size(); i++) {
+            if (imoveis.get(i).id().equals(novo.id())) {
+                imoveis.set(i, novo);
+                atualizado = true;
+                break;
+            }
+        }
+        if (!atualizado) {
+            imoveis.add(novo);
+        }
+        renderizar();
+        UiKit.aviso("Imóvel salvo com sucesso.");
     }
 }
