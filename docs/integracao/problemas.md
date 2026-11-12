@@ -315,3 +315,15 @@ Modelo de bloco (copie para cada problema):
 - Status: ABERTO
 - Tentativas: 0/3
 - Commit:
+
+## P-027 Edição/filtros de inquilinos e rollback não cobertos (A-21)
+- Severidade: MEDIA
+- Camada: front + qa
+- Evidência: filtros de /inquilinos continuam em memória; a edição exibe fiador/imóvel/aluguel/caução e os descarta; o teste usa savepoint e não prova falha após INSERTs; reuso de fiador sem teste.
+- Causa raiz: escopo mínimo de A-21; upload real adiado para A-50.
+- Reprodução: editar inquilino e tentar alterar fiador/imóvel; filtrar no banco; forçar EXCLUDE de contrato.
+- Dono: front + qa
+- Critério de aceite: filtros via SQL; edição do vínculo/fiador suportada ou campos ocultos; teste de rollback pós-INSERT.
+- Status: ABERTO
+- Tentativas: 0/3
+- Commit:

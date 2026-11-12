@@ -11,6 +11,9 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
+import com.Projeto.manuelo.servico.InquilinoCadastroService;
+
+import br.com.manuelo.dados.ImovelRepositorio;
 import br.com.manuelo.dados.InquilinoRepositorio;
 
 @Route(value = "inquilinos", layout = MainLayout.class)
@@ -18,6 +21,7 @@ import br.com.manuelo.dados.InquilinoRepositorio;
 public class InquilinosView extends Div {
 
     private final InquilinoRepositorio repositorio;
+    private final InquilinoCadastroService cadastro;
     private List<DemoData.Inquilino> inquilinos;
     private final TextField nome = UiKit.text("Nome", "Ex: João Miguel");
     private final TextField cpf = UiKit.text("CPF", "Ex: xxx.yyy.zzz.xz");
@@ -25,11 +29,13 @@ public class InquilinosView extends Div {
     private final Div tabela = new Div();
     private final InquilinoDialog dialog;
 
-    public InquilinosView(InquilinoRepositorio repositorio) {
+    public InquilinosView(InquilinoRepositorio repositorio, InquilinoCadastroService cadastro,
+            ImovelRepositorio imoveis) {
         this.repositorio = repositorio;
+        this.cadastro = cadastro;
         this.inquilinos = repositorio.listar();
         addClassName("page");
-        dialog = new InquilinoDialog(this::salvar);
+        dialog = new InquilinoDialog(imoveis.opcoes(), this::salvar);
 
         Button novo = UiKit.primaryIcon("Novo Inquilino", VaadinIcon.PLUS, e -> dialog.abrirNovo());
         add(UiKit.header("Inquilinos", null, novo));
@@ -99,8 +105,10 @@ public class InquilinosView extends Div {
 
     private void salvar(InquilinoDialog.DadosInquilino dados) {
         try {
-            repositorio.salvar(new InquilinoRepositorio.Dados(dados.id(), dados.nome(),
-                    dados.cpf(), dados.email(), dados.telefone()));
+            cadastro.salvar(new InquilinoCadastroService.Dados(dados.id(), dados.nome(),
+                    dados.cpf(), dados.email(), dados.telefone(), dados.nomeFiador(),
+                    dados.documentoFiador(), dados.emailFiador(), dados.imovelId(),
+                    dados.aluguel(), dados.diaVencimento(), dados.caucao(), null));
             inquilinos = repositorio.listar();
             renderizar();
             UiKit.aviso("Inquilino salvo com sucesso.");

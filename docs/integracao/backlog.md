@@ -35,6 +35,7 @@ Status: PENDENTE | EM_ANDAMENTO | CONCLUIDO | BLOQUEADO. Dono: ordem banco -> ba
   **CONCLUIDO** (filtros SQL + ImovelDetalheDialog + ImoveisFiltrosTest 6/6; ressalvas em P-026).
 - A-21 /inquilinos: lista, filtros (nome, CPF, e-mail), adicionar/editar com fiador, imóvel vinculado, valor da caução
   e upload do recibo da caução. Aceite: um envio cria inquilino, fiador, contrato e depósito de caução na mesma transação.
+  **CONCLUIDO** (InquilinoCadastroService transacional; InquilinoCadastroTest 4/4; upload pendente A-50; ressalvas P-027).
 - A-22 Reformas do imóvel: histórico (data, descrição, valor, responsável do período derivado) e + Novo Registro.
 
 ## S3 Contratos e caução

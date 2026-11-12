@@ -1,9 +1,11 @@
 package br.com.manuelo;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.function.Consumer;
 
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
@@ -11,10 +13,13 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.component.textfield.TextField;
 
+import br.com.manuelo.dados.ImovelRepositorio;
+
 public class InquilinoDialog extends Dialog {
 
     public record DadosInquilino(String id, String nome, String cpf, String email, String telefone,
-            String endereco, String imovel, String status, BigDecimal caucao) {
+            String imovelId, BigDecimal aluguel, int diaVencimento, String nomeFiador,
+            String documentoFiador, String emailFiador, BigDecimal caucao) {
     }
 
     private final Consumer<DadosInquilino> aoSalvar;
@@ -25,16 +30,21 @@ public class InquilinoDialog extends Dialog {
     private final TextField nomeFiador = UiKit.text("Nome do fiador", "Ex: João Miguel Oliveira de Souza");
     private final TextField cpfFiador = UiKit.text("CPF do fiador", "ex: 123.xxx.xxx.123");
     private final EmailField emailFiador = UiKit.email("Email do fiador", "ex: jteste@gmail.com");
-    private final TextField endereco = UiKit.text("Endereço Vinculado", "Buscar por endereço");
+    private final ComboBox<ImovelRepositorio.Opcao> imovel;
     private final TextField telefone = UiKit.text("Telefone", "Ex: (11) 99999-9999");
+    private final TextField valorAluguel = UiKit.text("Valor do aluguel", "R$ 0,00");
+    private final TextField diaVencimento = UiKit.text("Dia de vencimento", "Ex: 5");
     private final TextField valorCaucao = UiKit.text("Valor do cação", "R$ 0,00");
 
     private String idAtual;
-    private String statusAtual = "Alugado";
-    private String imovelAtual = "";
 
-    public InquilinoDialog(Consumer<DadosInquilino> aoSalvar) {
+    public InquilinoDialog(List<ImovelRepositorio.Opcao> imoveis, Consumer<DadosInquilino> aoSalvar) {
         this.aoSalvar = aoSalvar;
+        imovel = new ComboBox<>("Imóvel vinculado");
+        imovel.setItems(imoveis);
+        imovel.setItemLabelGenerator(ImovelRepositorio.Opcao::rotulo);
+        imovel.setPlaceholder("Selecione o imóvel");
+        imovel.setWidthFull();
         addClassName("modal");
         setWidth("780px");
         setMaxWidth("94vw");
@@ -58,9 +68,10 @@ public class InquilinoDialog extends Dialog {
                 UiKit.formGrid(cpf, email),
                 nomeFiador,
                 UiKit.formGrid(cpfFiador, emailFiador),
-                endereco,
+                imovel,
                 telefone,
                 contrato,
+                UiKit.formGrid(valorAluguel, diaVencimento),
                 UiKit.upload("Arraste o contrato aqui ou clique para selecionar", "PDF, JPG ou PNG, até 10 MB"),
                 valorCaucao,
                 recibo,
@@ -76,8 +87,6 @@ public class InquilinoDialog extends Dialog {
 
     public void abrirNovo() {
         idAtual = null;
-        statusAtual = "Alugado";
-        imovelAtual = "";
         titulo.setText("Adicionar Inquilino");
         nome.clear();
         cpf.clear();
@@ -85,43 +94,81 @@ public class InquilinoDialog extends Dialog {
         nomeFiador.clear();
         cpfFiador.clear();
         emailFiador.clear();
-        endereco.clear();
+        imovel.clear();
         telefone.clear();
+        valorAluguel.clear();
+        diaVencimento.setValue("5");
         valorCaucao.clear();
         open();
     }
 
     public void abrirEdicao(DemoData.Inquilino inquilino) {
         idAtual = inquilino.id();
-        statusAtual = inquilino.status();
-        imovelAtual = inquilino.imovel();
         titulo.setText("Editar Inquilino");
         nome.setValue(inquilino.nome());
         cpf.setValue(inquilino.cpf());
         email.setValue(inquilino.email());
-        endereco.setValue(inquilino.endereco());
+        nomeFiador.clear();
+        cpfFiador.clear();
+        emailFiador.clear();
+        imovel.clear();
         telefone.setValue(inquilino.telefone());
+        valorAluguel.clear();
+        diaVencimento.setValue("5");
         valorCaucao.setValue(inquilino.caucao() == null ? "" : inquilino.caucao().toPlainString());
         open();
     }
 
     private void salvar() {
+        boolean novo = idAtual == null || idAtual.isBlank();
+        BigDecimal aluguel = moeda(valorAluguel.getValue());
+        Integer dia = dia(diaVencimento.getValue());
+
         nome.setInvalid(nome.isEmpty());
         cpf.setInvalid(cpf.isEmpty());
         email.setInvalid(email.isEmpty());
-        if (nome.isEmpty() || cpf.isEmpty() || email.isEmpty()) {
+        boolean imovelInvalido = novo && imovel.getValue() == null;
+        boolean aluguelInvalido = novo && (aluguel == null || aluguel.signum() <= 0);
+        boolean diaInvalido = novo && (dia == null || dia < 1 || dia > 31);
+        imovel.setInvalid(imovelInvalido);
+        valorAluguel.setInvalid(aluguelInvalido);
+        diaVencimento.setInvalid(diaInvalido);
+
+        if (nome.isEmpty() || cpf.isEmpty() || email.isEmpty()
+                || imovelInvalido || aluguelInvalido || diaInvalido) {
             return;
         }
-        BigDecimal caucao = BigDecimal.ZERO;
-        if (valorCaucao.getValue() != null && !valorCaucao.getValue().isBlank()) {
-            try {
-                caucao = new BigDecimal(valorCaucao.getValue().replace(".", "").replace(",", "."));
-            } catch (NumberFormatException ignored) {
-                caucao = BigDecimal.ZERO;
-            }
+
+        BigDecimal caucao = moeda(valorCaucao.getValue());
+        if (caucao == null) {
+            caucao = BigDecimal.ZERO;
         }
+        String imovelId = imovel.getValue() == null ? null : imovel.getValue().id();
         aoSalvar.accept(new DadosInquilino(idAtual, nome.getValue(), cpf.getValue(), email.getValue(),
-                telefone.getValue(), endereco.getValue(), imovelAtual, statusAtual, caucao));
+                telefone.getValue(), imovelId, aluguel, dia == null ? 5 : dia,
+                nomeFiador.getValue(), cpfFiador.getValue(), emailFiador.getValue(), caucao));
         close();
+    }
+
+    private Integer dia(String texto) {
+        if (texto == null || texto.isBlank()) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(texto.trim());
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private BigDecimal moeda(String texto) {
+        if (texto == null || texto.isBlank()) {
+            return null;
+        }
+        try {
+            return new BigDecimal(texto.replace(".", "").replace(",", "."));
+        } catch (NumberFormatException ex) {
+            return null;
+        }
     }
 }
