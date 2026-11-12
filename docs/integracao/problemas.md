@@ -291,3 +291,15 @@ Modelo de bloco (copie para cada problema):
 - Status: ABERTO
 - Tentativas: 0/3
 - Commit:
+
+## P-025 Senha padrão de admin em application.properties (DEC-I04)
+- Severidade: MEDIA
+- Camada: back
+- Evidência: `manuelo.admin.senha=${MANUELO_ADMIN_SENHA:admin123}` cria admin mesmo sem variáveis de ambiente.
+- Causa raiz: conveniência de dev herdada do T25; o perfil test sobrescreve com qa-admin-123.
+- Reprodução: subir sem MANUELO_ADMIN_* e conferir admin@manuelo.local criado.
+- Dono: back
+- Critério de aceite: sem variáveis, nenhum admin é criado (apenas warn); dev documentado no README/.env.example.
+- Status: ABERTO
+- Tentativas: 0/3
+- Commit:
