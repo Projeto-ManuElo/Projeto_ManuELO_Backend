@@ -4,14 +4,21 @@ import java.io.Serializable;
 
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+import com.Projeto.manuelo.seguranca.UsuarioDetalhes;
 import com.vaadin.flow.spring.scopes.VaadinSessionScope;
 
 /**
  * Usuário autenticado na sessão Vaadin. A sessão é a fronteira de autenticação do app:
  * o HTTP continua liberado para os recursos estáticos do Vaadin, mas as telas protegidas
  * passam pelo {@code MainLayout}, que redireciona para o login quando não há usuário.
+ *
+ * A-10: além de {@link #entrar}/{@link #sair}, a sessão se sincroniza sob demanda com o
+ * {@code SecurityContext} do Spring (Authentication com principal {@link UsuarioDetalhes}),
+ * para que o login via AuthenticationManager reflita aqui sem depender só da view.
  */
 @Component
 @Scope(value = VaadinSessionScope.VAADIN_SESSION_SCOPE_NAME, proxyMode = ScopedProxyMode.TARGET_CLASS)
@@ -27,19 +34,24 @@ public class SessaoUsuario implements Serializable {
     private String emailRecuperacao;
 
     public boolean autenticado() {
-        return usuario != null;
+        return usuario() != null;
     }
 
     public UsuarioSessao usuario() {
+        if (usuario == null) {
+            usuario = usuarioDoSecurityContext();
+        }
         return usuario;
     }
 
     public String id() {
-        return usuario == null ? null : usuario.id();
+        UsuarioSessao atual = usuario();
+        return atual == null ? null : atual.id();
     }
 
     public boolean administrador() {
-        return usuario != null && usuario.administrador();
+        UsuarioSessao atual = usuario();
+        return atual != null && atual.administrador();
     }
 
     public void entrar(UsuarioSessao usuario) {
@@ -61,5 +73,22 @@ public class SessaoUsuario implements Serializable {
 
     public void encerrarRecuperacao() {
         this.emailRecuperacao = null;
+    }
+
+    private UsuarioSessao usuarioDoSecurityContext() {
+        try {
+            Authentication autenticacao = SecurityContextHolder.getContext().getAuthentication();
+            if (autenticacao == null || !autenticacao.isAuthenticated()
+                    || !(autenticacao.getPrincipal() instanceof UsuarioDetalhes detalhes)) {
+                return null;
+            }
+            return new UsuarioSessao(
+                    detalhes.getId() == null ? null : detalhes.getId().toString(),
+                    detalhes.getNome(),
+                    detalhes.getEmail(),
+                    detalhes.getPerfil() == null ? null : detalhes.getPerfil().name());
+        } catch (RuntimeException ex) {
+            return null;
+        }
     }
 }

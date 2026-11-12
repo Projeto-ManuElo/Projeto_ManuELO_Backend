@@ -17,17 +17,21 @@ import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.RouterLayout;
 import com.vaadin.flow.router.RouterLink;
 
+import com.Projeto.manuelo.seguranca.LoginService;
+
 import br.com.manuelo.dados.Dominio;
 import br.com.manuelo.dados.SessaoUsuario;
 
 public class MainLayout extends Div implements RouterLayout, AfterNavigationObserver, BeforeEnterObserver {
 
     private final SessaoUsuario sessao;
+    private final LoginService loginService;
     private final Map<String, RouterLink> links = new LinkedHashMap<>();
     private final Div conteudo = new Div();
 
-    public MainLayout(SessaoUsuario sessao) {
+    public MainLayout(SessaoUsuario sessao, LoginService loginService) {
         this.sessao = sessao;
+        this.loginService = loginService;
         addClassName("app-shell");
         Div sidebar = criarSidebar();
         conteudo.addClassName("app-content");
@@ -94,6 +98,7 @@ public class MainLayout extends Div implements RouterLayout, AfterNavigationObse
         usuario.getElement().setAttribute("title", "Sair");
         usuario.addClickListener(e -> UiKit.confirmar("Sair do sistema?", "Você precisará entrar novamente.",
                 "Sair", () -> {
+                    loginService.logout();
                     sessao.sair();
                     UI.getCurrent().navigate("");
                 }));

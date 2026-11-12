@@ -15,6 +15,7 @@ Status: PENDENTE | EM_ANDAMENTO | CONCLUIDO | BLOQUEADO. Dono: ordem banco -> ba
 - A-10 Spring Security real: UserDetailsService, BCrypt, login/logout, rotas protegidas (públicas: login, cadastro,
   aguardando-aprovacao, recuperar-senha, redefinir-senha), papéis ADMINISTRADOR/COLABORADOR, status gate.
   Aceite: login ATIVO entra; PENDENTE e INATIVO não; senha errada falha; rota protegida redireciona ao login.
+  **CONCLUIDO** (UserDetailsService/AuthenticationManager reais; `SegurancaAutenticacaoTest` 10/0/1; juiz 8/8).
 - A-11 Cadastro real: grava usuarios com status PENDENTE_APROVACAO e perfil COLABORADOR; e-mail único; redireciona
   a /aguardando-aprovacao. Aceite: registro existe no banco após reiniciar o contexto.
 - A-12 Tela /usuarios (só ADMINISTRADOR): lista pendentes e ativos, aprova (aprovado_por/em), reprova/inativa, altera perfil.

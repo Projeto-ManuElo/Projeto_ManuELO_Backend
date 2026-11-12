@@ -17,6 +17,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.Projeto.manuelo.seguranca.UsuarioDetalhes;
+
 /**
  * Auditoria JPA (DEC-I11): criado_por/atualizado_por vêm do SecurityContext.
  * Sem autenticação o auditor é vazio; nenhum usuário é inventado.
@@ -49,6 +51,10 @@ public class JpaAuditingConfig {
             Object principal = authentication.getPrincipal();
             if (principal instanceof UUID uuid) {
                 return Optional.of(uuid);
+            }
+            if (principal instanceof UsuarioDetalhes usuarioDetalhes
+                    && usuarioDetalhes.getId() != null) {
+                return Optional.of(usuarioDetalhes.getId());
             }
 
             String identificador = null;
