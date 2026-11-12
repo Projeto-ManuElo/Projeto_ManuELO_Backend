@@ -7,11 +7,19 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
+import br.com.manuelo.dados.HomeRepositorio;
+import br.com.manuelo.dados.MovimentacaoRepositorio;
+
 @Route(value = "home", layout = MainLayout.class)
 @PageTitle("Visão geral")
 public class HomeView extends Div {
 
-    public HomeView() {
+    private final HomeRepositorio indicadores;
+    private final MovimentacaoRepositorio movimentacoes;
+
+    public HomeView(HomeRepositorio indicadores, MovimentacaoRepositorio movimentacoes) {
+        this.indicadores = indicadores;
+        this.movimentacoes = movimentacoes;
         addClassName("page");
 
         Button exportar = UiKit.secondary("Exportar", e -> UiKit.aviso("Exportação gerada com sucesso."));
@@ -19,15 +27,17 @@ public class HomeView extends Div {
                 e -> UiKit.ir("movimentacao-financeira"));
         add(UiKit.header("Visão geral", null, exportar, novo));
 
+        HomeRepositorio.Indicadores i = indicadores.indicadores();
         Div kpis = new Div(
-                UiKit.kpi("Imóveis alugados", "24", "#0E9F6E", VaadinIcon.TRENDING_UP,
-                        "imoveis?filtro=alugado", "1 em manutenção", "#0E9F6E"),
-                UiKit.kpi("Imóveis cadastrados", "27", "#F5A623", VaadinIcon.BUILDING,
-                        "imoveis", "3 vagos", "#F5A623"),
-                UiKit.kpi("Contratos próximos do vencimentos", "3", "#7A5AF8", VaadinIcon.FILE_TEXT,
-                        "contratos?filtro=vencendo", "Aguardando resolução", "#3538CD"),
-                UiKit.kpi("Contratos atrasados", "4", "#F04438", VaadinIcon.MONEY,
-                        "contratos?filtro=atrasados", "2 mais de uma semana sem pagar", "#F04438"));
+                UiKit.kpi("Imóveis alugados", String.valueOf(i.alugados()), "#0E9F6E", VaadinIcon.TRENDING_UP,
+                        "imoveis?filtro=alugado", i.manutencao() + " em manutenção", "#0E9F6E"),
+                UiKit.kpi("Imóveis cadastrados", String.valueOf(i.cadastrados()), "#F5A623", VaadinIcon.BUILDING,
+                        "imoveis", i.vagos() + " vagos", "#F5A623"),
+                UiKit.kpi("Contratos próximos do vencimentos", String.valueOf(i.aVencer()), "#7A5AF8",
+                        VaadinIcon.FILE_TEXT, "contratos?filtro=vencendo", "Aguardando resolução", "#3538CD"),
+                UiKit.kpi("Contratos atrasados", String.valueOf(i.atrasados()), "#F04438", VaadinIcon.MONEY,
+                        "contratos?filtro=atrasados",
+                        i.atrasadosCriticos() + " mais de uma semana sem pagar", "#F04438"));
         kpis.addClassName("kpi-grid");
         add(kpis);
 
@@ -39,7 +49,7 @@ public class HomeView extends Div {
         tabela.addClassName("table");
         tabela.add(UiKit.tableHead("cols-home", "Data", "Descrição", "Categoria", "Valor"));
 
-        for (DemoData.Movimentacao movimentacao : DemoData.homeMovimentacoes()) {
+        for (DemoData.Movimentacao movimentacao : movimentacoes.listar(10)) {
             Span valor = UiKit.money(movimentacao.valor(), true);
             valor.addClassName("amount");
             Div linha = UiKit.tableRow("cols-home",
@@ -51,9 +61,8 @@ public class HomeView extends Div {
         }
 
         Button verTudo = UiKit.secondary("Ver tudo", e -> UiKit.ir("movimentacao-financeira"));
-        Div card = UiKit.card(
+        return UiKit.card(
                 UiKit.cardHeader("Movimentação recentes", "Últimas movimentações registradas no sistema", verTudo),
                 tabela);
-        return card;
     }
 }

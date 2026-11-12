@@ -15,11 +15,14 @@ import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
+import br.com.manuelo.dados.ImovelRepositorio;
+
 @Route(value = "imoveis", layout = MainLayout.class)
 @PageTitle("Imóveis")
 public class ImoveisView extends Div implements BeforeEnterObserver {
 
-    private final List<DemoData.Imovel> imoveis = DemoData.imoveis();
+    private final ImovelRepositorio repositorio;
+    private List<DemoData.Imovel> imoveis;
     private final TextField endereco = UiKit.text("Endereço", "Rua, número, bairro");
     private final ComboBox<String> tipo = UiKit.select("Tipo", "Todos",
             List.of("Apartamento", "Casa", "Comercial", "Terreno"));
@@ -29,7 +32,9 @@ public class ImoveisView extends Div implements BeforeEnterObserver {
     private final Div tabela = new Div();
     private final ImovelDialog dialog;
 
-    public ImoveisView() {
+    public ImoveisView(ImovelRepositorio repositorio) {
+        this.repositorio = repositorio;
+        this.imoveis = repositorio.listar();
         addClassName("page");
         dialog = new ImovelDialog(this::salvarImovel);
 
@@ -44,6 +49,7 @@ public class ImoveisView extends Div implements BeforeEnterObserver {
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
+        imoveis = repositorio.listar();
         limparFiltros();
         event.getLocation().getQueryParameters().getParameters()
                 .getOrDefault("filtro", List.of()).stream().findFirst()
@@ -138,23 +144,15 @@ public class ImoveisView extends Div implements BeforeEnterObserver {
     }
 
     private void salvarImovel(ImovelDialog.DadosImovel dados) {
-        DemoData.Imovel novo = new DemoData.Imovel(
-                dados.id() == null ? String.valueOf(System.currentTimeMillis()) : dados.id(),
-                dados.endereco(), dados.tipo(), dados.status(), dados.inquilino(),
-                dados.aluguel(), dados.observacoes());
-
-        boolean atualizado = false;
-        for (int i = 0; i < imoveis.size(); i++) {
-            if (imoveis.get(i).id().equals(novo.id())) {
-                imoveis.set(i, novo);
-                atualizado = true;
-                break;
-            }
+        try {
+            repositorio.salvar(new ImovelRepositorio.Dados(dados.id(), dados.logradouro(),
+                    dados.numero(), dados.complemento(), dados.bairro(), dados.cidade(), dados.uf(),
+                    dados.cep(), dados.tipo(), dados.status()));
+            imoveis = repositorio.listar();
+            renderizar();
+            UiKit.aviso("Imóvel salvo com sucesso.");
+        } catch (RuntimeException ex) {
+            UiKit.erro(ex.getMessage());
         }
-        if (!atualizado) {
-            imoveis.add(novo);
-        }
-        renderizar();
-        UiKit.aviso("Imóvel salvo com sucesso.");
     }
 }

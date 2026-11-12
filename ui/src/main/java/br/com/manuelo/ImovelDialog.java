@@ -14,8 +14,9 @@ import com.vaadin.flow.component.textfield.TextField;
 
 public class ImovelDialog extends Dialog {
 
-    public record DadosImovel(String id, String endereco, String tipo, String status,
-            String inquilino, BigDecimal aluguel, String observacoes) {
+    public record DadosImovel(String id, String logradouro, String numero, String complemento,
+            String bairro, String cidade, String uf, String cep, String tipo, String status,
+            BigDecimal aluguel, String observacoes) {
     }
 
     private final Consumer<DadosImovel> aoSalvar;
@@ -34,6 +35,14 @@ public class ImovelDialog extends Dialog {
     private String idAtual;
     private BigDecimal aluguelAtual = BigDecimal.ZERO;
     private String observacoesAtuais = "";
+    private String enderecoOriginal = "";
+    private String logradouroAtual = "";
+    private String numeroAtual = "";
+    private String complementoAtual = "";
+    private String bairroAtual = "Centro";
+    private String cidadeAtual = "Aracaju";
+    private String ufAtual = "SE";
+    private String cepAtual = "";
 
     public ImovelDialog(Consumer<DadosImovel> aoSalvar) {
         this.aoSalvar = aoSalvar;
@@ -49,6 +58,9 @@ public class ImovelDialog extends Dialog {
         Div header = new Div(heading);
         header.addClassName("modal-header");
         header.add(UiKit.iconButton(VaadinIcon.CLOSE, "Fechar", e -> close()));
+
+        inquilino.setReadOnly(true);
+        inquilino.setPlaceholder("Definido pelo contrato vigente");
 
         Span rotuloContrato = new Span("Contrato");
         rotuloContrato.addClassName("form-label");
@@ -73,6 +85,14 @@ public class ImovelDialog extends Dialog {
         idAtual = null;
         aluguelAtual = BigDecimal.ZERO;
         observacoesAtuais = "";
+        enderecoOriginal = "";
+        logradouroAtual = "";
+        numeroAtual = "";
+        complementoAtual = "";
+        bairroAtual = "Centro";
+        cidadeAtual = "Aracaju";
+        ufAtual = "SE";
+        cepAtual = "";
         titulo.setText("Adicionar Imóvel");
         endereco.clear();
         tipo.clear();
@@ -87,7 +107,15 @@ public class ImovelDialog extends Dialog {
         titulo.setText("Editar Imóvel");
         aluguelAtual = imovel.aluguel();
         observacoesAtuais = imovel.observacoes();
-        endereco.setValue(imovel.endereco() == null ? "" : imovel.endereco());
+        logradouroAtual = imovel.logradouro();
+        numeroAtual = imovel.numero();
+        complementoAtual = imovel.complemento() == null ? "" : imovel.complemento();
+        bairroAtual = imovel.bairro();
+        cidadeAtual = imovel.cidade();
+        ufAtual = imovel.uf();
+        cepAtual = imovel.cep() == null ? "" : imovel.cep();
+        enderecoOriginal = imovel.endereco();
+        endereco.setValue(enderecoOriginal == null ? "" : enderecoOriginal);
         tipo.setValue(imovel.tipo());
         status.setValue(imovel.status());
         inquilino.setValue(imovel.inquilino() == null ? "" : imovel.inquilino());
@@ -101,9 +129,24 @@ public class ImovelDialog extends Dialog {
         if (endereco.isEmpty() || tipo.isEmpty()) {
             return;
         }
-        aoSalvar.accept(new DadosImovel(idAtual, endereco.getValue(), tipo.getValue(),
+
+        String logradouro = logradouroAtual;
+        String numero = numeroAtual;
+        String complemento = complementoAtual;
+        String bairro = bairroAtual;
+        String texto = endereco.getValue().trim();
+        if (!texto.equals(enderecoOriginal)) {
+            String[] partes = br.com.manuelo.dados.ImovelRepositorio.separarEndereco(texto);
+            logradouro = partes[0];
+            numero = partes[1];
+            complemento = partes[2] == null ? "" : partes[2];
+            bairro = partes[3];
+        }
+
+        aoSalvar.accept(new DadosImovel(idAtual, logradouro, numero, complemento, bairro,
+                cidadeAtual, ufAtual, cepAtual, tipo.getValue(),
                 status.getValue() == null || status.getValue().isBlank() ? "Vago" : status.getValue(),
-                inquilino.getValue(), aluguelAtual, observacoesAtuais));
+                aluguelAtual, observacoesAtuais));
         close();
     }
 }

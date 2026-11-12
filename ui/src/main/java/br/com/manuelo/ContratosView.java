@@ -17,11 +17,14 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.QueryParameters;
 import com.vaadin.flow.router.Route;
 
+import br.com.manuelo.dados.ContratoRepositorio;
+
 @Route(value = "contratos", layout = MainLayout.class)
 @PageTitle("Contratos")
 public class ContratosView extends Div implements BeforeEnterObserver {
 
-    private final List<DemoData.Contrato> contratos = DemoData.contratos();
+    private final ContratoRepositorio repositorio;
+    private List<DemoData.Contrato> contratos;
     private final TextField nome = UiKit.text("Nome", "Ex: João Miguel");
     private final TextField cpf = UiKit.text("CPF", "Ex: xxx.yyy.zzz.xz");
     private final TextField email = UiKit.text("Email", "Ex: joao@wmail.com");
@@ -31,7 +34,9 @@ public class ContratosView extends Div implements BeforeEnterObserver {
     private final Div tabela = new Div();
     private final ContratoDialog dialog;
 
-    public ContratosView() {
+    public ContratosView(ContratoRepositorio repositorio) {
+        this.repositorio = repositorio;
+        this.contratos = repositorio.listar();
         addClassName("page");
         dialog = new ContratoDialog(this::adicionarContrato);
 
@@ -45,6 +50,7 @@ public class ContratosView extends Div implements BeforeEnterObserver {
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
+        contratos = repositorio.listar();
         limpar();
         event.getLocation().getQueryParameters().getParameters()
                 .getOrDefault("filtro", List.of()).stream().findFirst()
@@ -140,13 +146,14 @@ public class ContratosView extends Div implements BeforeEnterObserver {
     }
 
     private void adicionarContrato(ContratoDialog.DadosContrato dados) {
-        LocalDate vencimento = dados.vencimento() == null ? LocalDate.now().plusMonths(12) : dados.vencimento();
-        int dias = (int) java.time.temporal.ChronoUnit.DAYS.between(LocalDate.now(), vencimento);
-        String status = dias < 0 ? "Atrasado" : dias <= 30 ? "A vencer" : "Ativo";
-        contratos.add(0, new DemoData.Contrato(String.valueOf(System.currentTimeMillis()),
-                dados.nome(), dados.cpf(), dados.email(), vencimento, dias, dados.endereco(), status,
-                dados.aluguel()));
-        renderizar();
-        UiKit.aviso("Contrato criado com sucesso.");
+        try {
+            String id = repositorio.criar(dados);
+            contratos = repositorio.listar();
+            renderizar();
+            UiKit.aviso("Contrato criado com sucesso.");
+            UI.getCurrent().navigate(ContratoDetalheView.class, QueryParameters.of("id", id));
+        } catch (RuntimeException ex) {
+            UiKit.erro(ex.getMessage());
+        }
     }
 }

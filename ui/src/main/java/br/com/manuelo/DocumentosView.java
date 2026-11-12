@@ -12,11 +12,14 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
+import br.com.manuelo.dados.DocumentoRepositorio;
+
 @Route(value = "documentos", layout = MainLayout.class)
 @PageTitle("Documentos")
 public class DocumentosView extends Div {
 
-    private final List<DemoData.Documento> documentos = DemoData.documentos();
+    private final DocumentoRepositorio repositorio;
+    private List<DemoData.Documento> documentos;
     private final TextField nome = UiKit.text("Nome", "nome do inquilino, sobrenome");
     private final ComboBox<String> tipoDocumento = UiKit.select("Tipo de documento", "Todos",
             List.of("Contrato", "Comprovante", "Laudo", "Cadastro"));
@@ -24,9 +27,12 @@ public class DocumentosView extends Div {
             List.of("Entrada", "Saída"));
     private final TextField nomeArquivo = UiKit.text("Nome", "nome do inquilino, sobrenome");
     private final Div lista = new Div();
-    private final DocumentoDialog dialog = new DocumentoDialog(this::adicionar);
+    private final DocumentoDialog dialog;
 
-    public DocumentosView() {
+    public DocumentosView(DocumentoRepositorio repositorio) {
+        this.repositorio = repositorio;
+        this.documentos = repositorio.listar(60);
+        this.dialog = new DocumentoDialog(repositorio.opcoes(), this::adicionar);
         addClassName("page");
 
         Button adicionar = UiKit.primaryIcon("Adicionar documento", VaadinIcon.PLUS, e -> dialog.abrir());
@@ -103,9 +109,13 @@ public class DocumentosView extends Div {
     }
 
     private void adicionar(DocumentoDialog.DadosDocumento dados) {
-        documentos.add(0, new DemoData.Documento(dados.nome(), "Enviado agora • " + dados.tipo(),
-                dados.tipo(), "Concluído"));
-        renderizar();
-        UiKit.aviso("Documento adicionado com sucesso.");
+        try {
+            repositorio.salvar(dados.nome(), dados.tipo(), dados.data(), dados.vinculo());
+            documentos = repositorio.listar(60);
+            renderizar();
+            UiKit.aviso("Documento adicionado com sucesso.");
+        } catch (RuntimeException ex) {
+            UiKit.erro(ex.getMessage());
+        }
     }
 }

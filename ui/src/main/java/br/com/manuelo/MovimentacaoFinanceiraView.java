@@ -2,7 +2,9 @@ package br.com.manuelo;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -13,13 +15,19 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
+import br.com.manuelo.dados.ContratoRepositorio;
+import br.com.manuelo.dados.MovimentacaoRepositorio;
+
 @Route(value = "movimentacao-financeira", layout = MainLayout.class)
 @PageTitle("Movimentação Financeira")
 public class MovimentacaoFinanceiraView extends Div {
 
-    private final List<DemoData.Movimentacao> movimentacoes = DemoData.movimentacoes();
+    private final MovimentacaoRepositorio repositorio;
+    private final Map<String, String> contratosPorRotulo = new LinkedHashMap<>();
+    private List<DemoData.Movimentacao> movimentacoes;
     private final ComboBox<String> categoria = UiKit.select("Categoria", "Selecione uma categoria",
             List.of("Aluguel", "Caução", "Multa", "Manutenção", "Tributos", "Reforma", "Outros"));
+    private final ComboBox<String> contrato = UiKit.select("Contrato", "Selecione o contrato", List.of());
     private final ComboBox<String> forma = UiKit.select("Forma de pagamento", "Selecione a forma de pagamento",
             List.of("Pix", "Boleto", "Dinheiro", "Transferência"));
     private final TextField valor = UiKit.text("Valor", "R$ 0,00");
@@ -32,8 +40,18 @@ public class MovimentacaoFinanceiraView extends Div {
     private final Button registrar = UiKit.primary("Registrar Entrada", e -> registrar());
     private boolean tipoEntrada = true;
 
-    public MovimentacaoFinanceiraView() {
+    public MovimentacaoFinanceiraView(MovimentacaoRepositorio repositorio,
+            ContratoRepositorio contratoRepositorio) {
+        this.repositorio = repositorio;
+        this.movimentacoes = repositorio.listar(200);
         addClassName("page");
+
+        for (ContratoRepositorio.Opcao opcao : contratoRepositorio.opcoes()) {
+            contratosPorRotulo.put(opcao.rotulo(), opcao.id());
+        }
+        contrato.setItems(contratosPorRotulo.keySet());
+        contrato.setVisible(false);
+        categoria.addValueChangeListener(e -> contrato.setVisible("Aluguel".equals(e.getValue())));
 
         Button exportar = UiKit.secondary("Exportar extrato", e -> UiKit.aviso("Extrato exportado com sucesso."));
         add(UiKit.header("Movimentação Financeira", null, exportar, pesquisar));
@@ -52,7 +70,7 @@ public class MovimentacaoFinanceiraView extends Div {
         comprovante.addClassName("full");
         comprovante.addClassName("stack");
 
-        Div grid = UiKit.formGrid(categoria, forma, valor, data, descricao, comprovante);
+        Div grid = UiKit.formGrid(categoria, contrato, forma, valor, data, descricao, comprovante);
         Button cancelar = UiKit.secondary("Cancelar", e -> limpar());
         Div acoes = new Div(registrar, cancelar);
         acoes.addClassName("form-actions");
@@ -85,12 +103,16 @@ public class MovimentacaoFinanceiraView extends Div {
             categoria.setItems(List.of("Manutenção", "Tributos", "Reforma", "Outros"));
         }
         categoria.clear();
+        contrato.clear();
+        contrato.setVisible(false);
         pesquisar.setVisible(!tipoEntrada);
         registrar.setText(tipoEntrada ? "Registrar Entrada" : "Registrar saída");
     }
 
     private void limpar() {
         categoria.clear();
+        contrato.clear();
+        contrato.setVisible(false);
         forma.clear();
         valor.clear();
         data.clear();
@@ -118,16 +140,21 @@ public class MovimentacaoFinanceiraView extends Div {
         String tipo = tipoEntrada ? "Entrada" : "Saída";
         String categoriaTexto = categoria.getValue() == null ? "Outros" : categoria.getValue();
         LocalDate dataMovimento = data.getValue() == null ? LocalDate.now() : data.getValue();
+        String contratoId = contrato.getValue() == null ? null : contratosPorRotulo.get(contrato.getValue());
 
         UiKit.confirmar("Confirmar Lançamento?",
                 "Você tem certeza de que todas as informações estão corretas? Após essa confirmação o lançamento só será editável para o administrador.",
                 "Confirmar", tipoEntrada, () -> {
-                    BigDecimal assinado = tipoEntrada ? valorNumerico : valorNumerico.negate();
-                    movimentacoes.add(0, new DemoData.Movimentacao(dataMovimento, descricao.getValue(),
-                            categoriaTexto, assinado));
-                    renderizar();
-                    limpar();
-                    UiKit.aviso(tipo + " registrada com sucesso.");
+                    try {
+                        repositorio.registrar(tipoEntrada, categoriaTexto, contratoId, valorNumerico,
+                                dataMovimento, descricao.getValue(), forma.getValue());
+                        movimentacoes = repositorio.listar(200);
+                        renderizar();
+                        limpar();
+                        UiKit.aviso(tipo + " registrada com sucesso.");
+                    } catch (RuntimeException ex) {
+                        UiKit.erro(ex.getMessage());
+                    }
                 });
     }
 

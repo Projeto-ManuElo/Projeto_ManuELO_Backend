@@ -1,8 +1,8 @@
 # Progresso (memória do loop; a conversa não é memória)
 
-Iteração atual: 23 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
+Iteração atual: 24 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
 Runtime usado: postgres embutido via Node (plano C; docker presente, mas `use_docker` perde a corrida do initdb)
-Última atualização: T24 concluída (integração Vaadin: `ui/` + `src/main/frontend`)
+Última atualização: T25 concluída (persistência, autenticação e telas ligadas ao banco)
 
 ## Entendimento inicial (8 linhas)
 1. O ManuElo é um sistema financeiro/documental; o banco é PostgreSQL (Supabase) com migrations Flyway.
@@ -63,11 +63,36 @@ Runtime usado: postgres embutido via Node (plano C; docker presente, mas `use_do
       corrige `pom.xml`/`tsconfig.json`, move Dockerfile para a raiz, remove a classe de boot
       duplicada, adiciona `scanBasePackages`, `SecurityConfig` temporário e baseline do Flyway;
       valida dev (`/` 200) e `clean package -DskipTests` (DEC-24).
+- [x] T25 Persistência e autenticação: repositórios JdbcClient em `br.com.manuelo.dados`, login com
+      BCrypt e sessão Vaadin, cadastro/aprovação de usuários, CRUD real de imóveis/inquilinos/
+      contratos, movimentações, documentos, reformas, home e relatórios; V012 telefone do inquilino
+      (DEC-26..DEC-30).
 
 ## Bloqueios (tarefa travada: diagnóstico e o que já tentou)
 (nenhum)
 
 ## Log (uma entrada por iteração: tarefa, arquivos, resultado da verificação)
+### T25 — persistência, autenticação e telas ligadas ao banco
+- Arquivos: `db/migrations/V012__inquilino_telefone.sql`; `db/tests/13_inquilino_telefone.sql`;
+  `ui/src/main/java/br/com/manuelo/dados/*` (Dominio, SessaoUsuario, AutenticacaoService e
+  repositórios de usuário, imóvel, inquilino, contrato, movimentação, documento, reforma, home e
+  relatório); `config/AdminInicial.java`; `SecurityConfig`; views/dialogs de login, cadastro,
+  recuperação/redefinição, imóveis, inquilinos, contratos, detalhe, movimentação, documentos,
+  reformas, home, relatórios e `UsuariosView`; `AGENTS.md`.
+- Verificação: `./scripts/verificar-db.sh` → `12 migration(ões), 14 teste(s), 0 falha(s)`.
+  `./mvnw -B clean package -DskipTests` → BUILD SUCCESS. App em `:8081` (Postgres local `:55433`):
+  16 rotas respondem 200 sem erro no log. E2E Playwright: login admin, criação de imóvel e
+  inquilino, entrada financeira e relatório PDF (arquivo em `/tmp/manuelo-relatorios` + registro
+  em `relatorios`), cadastro → aprovação por `/usuarios` → login do novo usuário; dados seguem
+  após reiniciar o app; 13 logins seguidos sem esgotar o pool.
+- Correções durante a verificação: `SessaoUsuario` com proxy de escopo (singletons não resolvem
+  bean de sessão no boot); casts explícitos para enums (`tipo_imovel`, `status_imovel`,
+  `tipo_movimentacao`, `categoria_movimentacao`, `forma_pagamento`, `tipo_documento`,
+  `tipo_relatorio`); `AutenticacaoService.login` usa `.list()` em vez de `.stream()` (vazava
+  conexão do Hikari).
+- Decisões: DEC-26 (JdbcClient sem JPA), DEC-27 (sessão Vaadin), DEC-28 (admin inicial por env),
+  DEC-29 (`/usuarios`), DEC-30 (Laudo/relatórios).
+
 ### T24 — integração Vaadin e execução local
 - Arquivos: `pom.xml`; `tsconfig.json`; `src/main/resources/application.properties`; `.gitignore`;
   `.dockerignore`; `Dockerfile` (movido de `ui/`); `ui/**` (renomeado de `frontend/`);

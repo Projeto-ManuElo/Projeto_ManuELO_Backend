@@ -11,27 +11,39 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
+import br.com.manuelo.dados.ReformaRepositorio;
+
 @Route(value = "imoveis/reformas", layout = MainLayout.class)
 @PageTitle("Histórico de reformas")
 public class ReformasView extends Div {
 
     private static final DateTimeFormatter DATA_ANO = DateTimeFormatter.ofPattern("dd MMM yyyy", UiKit.PT_BR);
 
-    private final List<DemoData.Reforma> reformas = DemoData.reformas();
+    private final ReformaRepositorio repositorio;
+    private final ReformaRepositorio.ImovelInfo imovel;
+    private List<DemoData.Reforma> reformas;
     private final Div tabela = new Div();
-    private final ReformaDialog dialog = new ReformaDialog(this::adicionar);
+    private final ReformaDialog dialog;
 
-    public ReformasView() {
+    public ReformasView(ReformaRepositorio repositorio) {
+        this.repositorio = repositorio;
+        this.imovel = repositorio.imovelPadrao();
+        this.reformas = imovel == null ? List.of() : repositorio.listar(imovel.id());
+        this.dialog = new ReformaDialog(this::adicionar);
         addClassName("page");
 
         Button exportar = UiKit.secondary("Exportar", e -> UiKit.aviso("Exportação gerada com sucesso."));
-        Button novo = UiKit.primaryIcon("Novo Registro", VaadinIcon.PLUS, e -> dialog.abrir());
+        Button novo = UiKit.primaryIcon("Novo Registro", VaadinIcon.PLUS,
+                e -> dialog.abrir(imovel == null ? "" : imovel.proprietario()));
         add(UiKit.header("Imóveis", null, exportar, novo));
+
+        String subtitulo = imovel == null ? null
+                : "Proprietário atual: " + (imovel.proprietario() == null ? "sem contrato vigente"
+                        : imovel.proprietario()) + "; " + imovel.endereco();
 
         tabela.addClassName("table");
         Div card = UiKit.card(
-                UiKit.cardHeader("Histórico de reformas",
-                        "Proprietário atual: Leocardi Daniel Oliveira de Oliveira; Apto 302, ED. Aurora",
+                UiKit.cardHeader("Histórico de reformas", subtitulo,
                         UiKit.secondary("Ver tudo", e -> UiKit.aviso("Histórico completo em preparação."))),
                 tabela);
         add(card);
@@ -41,6 +53,11 @@ public class ReformasView extends Div {
     private void renderizar() {
         tabela.removeAll();
         tabela.add(UiKit.tableHead("cols-reformas", "Data", "Descrição", "Proprietário do período", "Valor"));
+        if (reformas.isEmpty()) {
+            tabela.add(UiKit.emptyState("Nenhuma reforma registrada",
+                    "Use o botão Novo Registro para adicionar."));
+            return;
+        }
         for (DemoData.Reforma reforma : reformas) {
             String data = reforma.data().getYear() >= 2025
                     ? UiKit.diaMes(reforma.data())
@@ -58,8 +75,17 @@ public class ReformasView extends Div {
     }
 
     private void adicionar(DemoData.Reforma reforma) {
-        reformas.add(0, reforma);
-        renderizar();
-        UiKit.aviso("Registro de reforma adicionado.");
+        if (imovel == null) {
+            UiKit.erro("Cadastre um imóvel antes de registrar reformas.");
+            return;
+        }
+        try {
+            repositorio.salvar(imovel.id(), reforma.data(), reforma.descricao(), reforma.valor());
+            reformas = repositorio.listar(imovel.id());
+            renderizar();
+            UiKit.aviso("Registro de reforma adicionado.");
+        } catch (RuntimeException ex) {
+            UiKit.erro(ex.getMessage());
+        }
     }
 }

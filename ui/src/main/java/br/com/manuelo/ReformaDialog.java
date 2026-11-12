@@ -37,16 +37,18 @@ public class ReformaDialog extends Dialog {
 
         Div body = new Div(UiKit.formGrid(data, valor, descricao, proprietario));
         body.addClassName("modal-body");
+        proprietario.setReadOnly(true);
+        proprietario.setPlaceholder("Definido pelo contrato vigente");
 
         Button cancelar = UiKit.secondary("Cancelar", e -> close());
         Button salvar = UiKit.primary("Salvar", e -> salvar());
         add(header, body, UiKit.dialogFooter(cancelar, salvar));
     }
 
-    public void abrir() {
+    public void abrir(String proprietarioAtual) {
         data.clear();
         descricao.clear();
-        proprietario.clear();
+        proprietario.setValue(proprietarioAtual == null ? "" : proprietarioAtual);
         valor.clear();
         open();
     }

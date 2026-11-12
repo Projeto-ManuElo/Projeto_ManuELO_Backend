@@ -175,5 +175,51 @@ Modelo de entrada:
 - Motivo: uma linha explícita resolve a descoberta de rotas sem mover/renomear as 13 classes do
   frontend nem duplicar pacotes; o Spring continua escaneando os dois pacotes para beans.
 - Reverter: remover `@EnableVaadin` e mover as views para um subpacote de
-  `com.Projeto.manuelo`, ou registrar `VaadinScanPackages` manualmente. `vaadin.allowed-packages`
+  `com.Projeto.manuelo`, ou registrar `VaadinScanPackages` manualmente.   `vaadin.allowed-packages`
   deve continuar contendo `br.com.manuelo`.
+
+## DEC-26 persistência explícita com JdbcClient, sem JPA
+- Contexto: as telas usavam listas fixas de `DemoData`; nada era gravado. O schema é a fonte da
+  verdade e tem triggers, enums e constraints que o Hibernate não representa.
+- Escolha: repositórios em `br.com.manuelo.dados` com `JdbcClient` e SQL explícito; os records de
+  `DemoData` viram DTOs de exibição preenchidos pelos repositórios. `ddl-auto=validate` continua.
+- Motivo: SQL direto respeita enums/triggers/views existentes e evita mapeamento duplicado;
+  as telas mudam pouco (trocam a lista fixa pela consulta).
+- Reverter: criar entidades JPA e repositórios Spring Data, mantendo as mesmas consultas/regras;
+  remover `dados/*Repositorio` e ajustar as views.
+
+## DEC-27 autenticação de sessão Vaadin com HTTP liberado
+- Contexto: `SecurityConfig` liberava tudo e o login só navegava para `/home`; não havia usuário.
+- Escolha: `SessaoUsuario` com `@VaadinSessionScope` guarda o usuário autenticado; o login consulta
+  `usuarios`, valida BCrypt e o status; `MainLayout` implementa `BeforeEnterObserver` e redireciona
+  para `/` sem sessão. O HTTP permanece `permitAll` para os recursos estáticos do Vaadin.
+- Motivo: o Vaadin precisa do bootstrap/estáticos sem autenticação HTTP; a fronteira de acesso fica
+  na navegação das rotas com layout. Evita formulário Spring Security concorrente com o login Figma.
+- Reverter: habilitar `formLogin`/`oauth2` no `SecurityConfig` e trocar o gate do `MainLayout` por
+  `@PreAuthorize`/regras de request; remover `SessaoUsuario`.
+
+## DEC-28 administrador inicial por variáveis de ambiente
+- Contexto: o seed mantém hashes inválidos de propósito e não havia credencial de acesso real.
+- Escolha: `AdminInicial` cria um usuário ATIVO/ADMINISTRADOR na primeira subida a partir de
+  `MANUELO_ADMIN_EMAIL`/`MANUELO_ADMIN_SENHA` (padrão de dev `admin@manuelo.local` / `admin123`).
+- Motivo: permite testar login/cadastro/aprovação sem colocar hash de senha no repositório; trocar
+  as variáveis em produção é suficiente.
+- Reverter: remover o bean `AdminInicial` e criar o administrador com `db/seed/primeiro_admin.sql`
+  ou com um script operacional.
+
+## DEC-29 tela /usuarios para aprovação (fora do Figma)
+- Contexto: o cadastro cria `PENDENTE_APROVACAO`, mas não existia rota para o administrador aprovar.
+- Escolha: adicionar `/usuarios` (visível só para ADMINISTRADOR) com aprovar/inativar. Reaproveita
+  o `UiKit`/tabela existentes e mantém as telas do Figma intactas.
+- Motivo: fecha o fluxo de cadastro ponta a ponta sem alterar as telas originais.
+- Reverter: remover `UsuariosView` e o item de menu; aprovar via SQL (`UPDATE usuarios ...`).
+
+## DEC-30 "Laudo" e relatórios
+- Contexto: o formulário de documentos oferece "Laudo", mas `tipo_documento` não tem esse valor; o
+  botão de relatório não gravava nada.
+- Escolha: mapear "Laudo" para `DOCUMENTO_CONTABIL` (sem alterar o enum) e registrar o relatório em
+  `relatorios`/`relatorio_movimentacoes`/`relatorio_contratos`, gerando PDF ou XLSX em
+  `${java.io.tmpdir}/manuelo-relatorios`.
+- Motivo: preserva o enum já testado e dá destino real ao botão, sem armazenar binários no banco.
+- Reverter: adicionar `LAUDO` ao enum em nova migration (não transacional) e/ou remover a geração
+  de arquivo, mantendo só o registro do relatório.

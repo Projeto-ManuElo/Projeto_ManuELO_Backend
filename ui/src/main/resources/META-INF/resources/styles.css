@@ -908,6 +908,10 @@ vaadin-button.icon-button:hover {
     grid-template-columns: 122px minmax(0, 1.7fr) 1.35fr 120px;
 }
 
+.cols-usuarios {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) 130px 120px 190px;
+}
+
 .extrato .table-head {
     text-transform: uppercase;
     font-size: 13px;
@@ -1417,7 +1421,8 @@ vaadin-button.segment.active {
     .cols-inquilinos,
     .cols-contratos,
     .cols-extrato,
-    .cols-reformas {
+    .cols-reformas,
+    .cols-usuarios {
         grid-template-columns: 1fr;
     }
 }

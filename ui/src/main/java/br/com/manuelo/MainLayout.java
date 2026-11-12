@@ -5,25 +5,40 @@ import java.util.Map;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.HasElement;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.router.AfterNavigationEvent;
 import com.vaadin.flow.router.AfterNavigationObserver;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.RouterLayout;
 import com.vaadin.flow.router.RouterLink;
 
-public class MainLayout extends Div implements RouterLayout, AfterNavigationObserver {
+import br.com.manuelo.dados.Dominio;
+import br.com.manuelo.dados.SessaoUsuario;
 
+public class MainLayout extends Div implements RouterLayout, AfterNavigationObserver, BeforeEnterObserver {
+
+    private final SessaoUsuario sessao;
     private final Map<String, RouterLink> links = new LinkedHashMap<>();
     private final Div conteudo = new Div();
 
-    public MainLayout() {
+    public MainLayout(SessaoUsuario sessao) {
+        this.sessao = sessao;
         addClassName("app-shell");
         Div sidebar = criarSidebar();
         conteudo.addClassName("app-content");
         add(sidebar, conteudo);
+    }
+
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        if (!sessao.autenticado()) {
+            event.rerouteTo("");
+        }
     }
 
     private Div criarSidebar() {
@@ -55,18 +70,33 @@ public class MainLayout extends Div implements RouterLayout, AfterNavigationObse
         nav.add(item(VaadinIcon.FOLDER, "Documentos", DocumentosView.class, "documentos"));
         nav.add(item(VaadinIcon.BAR_CHART, "Relatórios", RelatoriosView.class, "relatorios"));
 
+        if (sessao.administrador()) {
+            nav.add(secao("Administração"));
+            nav.add(item(VaadinIcon.USER_CHECK, "Usuários", UsuariosView.class, "usuarios"));
+        }
+
+        SessaoUsuario.UsuarioSessao usuarioSessao = sessao.usuario();
+        String nomeUsuarioTexto = usuarioSessao == null ? "Visitante" : usuarioSessao.nome();
+        String perfil = usuarioSessao == null ? "" : Dominio.perfil(usuarioSessao.perfil());
+
         Div usuario = new Div();
         usuario.addClassName("sidebar-user");
-        Div avatar = new Div(new Span("AF"));
+        Div avatar = new Div(new Span(Dominio.iniciais(nomeUsuarioTexto)));
         avatar.addClassName("sidebar-avatar");
         Div dados = new Div();
         dados.addClassName("sidebar-user-copy");
-        Span nomeUsuario = new Span("Ana Ferreira");
+        Span nomeUsuario = new Span(nomeUsuarioTexto);
         nomeUsuario.addClassName("sidebar-user-name");
-        Span cargo = new Span("Administradora");
+        Span cargo = new Span(perfil);
         cargo.addClassName("sidebar-user-role");
         dados.add(nomeUsuario, cargo);
         usuario.add(avatar, dados);
+        usuario.getElement().setAttribute("title", "Sair");
+        usuario.addClickListener(e -> UiKit.confirmar("Sair do sistema?", "Você precisará entrar novamente.",
+                "Sair", () -> {
+                    sessao.sair();
+                    UI.getCurrent().navigate("");
+                }));
 
         sidebar.add(marca, nav, usuario);
         return sidebar;

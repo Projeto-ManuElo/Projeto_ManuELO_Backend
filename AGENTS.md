@@ -1,12 +1,17 @@
-# ManuElo: banco de dados (agente autônomo)
+# ManuElo: banco e aplicação (agente autônomo)
 
 Você trabalha sozinho. Ninguém responde perguntas neste projeto.
 Nunca pergunte, nunca peça autorização, nunca espere confirmação. Decida, registre e avance.
 
 ## Escopo
-Só o banco: migrations (db/migrations/V001__nome.sql, compatíveis com Flyway), constraints, triggers,
-views, seed fictício (db/seed), testes (db/tests) e docs (docs/db). Não crie código Java nem telas.
-Só altere db/, docs/db/, scripts/ e docker-compose.yml.
+Banco e aplicação no mesmo repositório:
+- Banco: migrations (db/migrations/V001__nome.sql, compatíveis com Flyway), constraints, triggers,
+  views, seed fictício (db/seed), testes (db/tests) e docs (docs/db).
+- Backend: Spring Boot em src/main/java (configuração, segurança, bootstrap).
+- Telas: Vaadin em ui/src/main/java/br/com/manuelo; CSS/assets em ui/src/main/resources e
+  src/main/frontend.
+- Também: scripts/ e docker-compose.yml.
+Nunca invente dados reais. Seed só fictício. Segredos fora do repositório (use .env).
 
 ## Leitura progressiva (leia só o que a tarefa pede)
 1. docs/CONTEXTO.md: fonte da verdade (modelo, regras, decisões DEC-nn, telas)
@@ -34,12 +39,32 @@ Toda tabela editável: criado_por, criado_em, atualizado_por, atualizado_em.
 Migration já commitada nunca é editada: crie a próxima versão.
 Sem dados reais. Seed só fictício. Segredos fora do repositório.
 
-## Verificação (única definição de pronto)
-./scripts/verificar-db.sh sai com código 0. Ele: sobe Postgres limpo, aplica db/migrations em ordem,
-roda db/tests/*.sql, derruba e refaz tudo do zero.
-Todo CHECK, trigger, constraint e view tem um teste que passa e um que DEVE falhar.
-Runtime: docker compose; se indisponível, Postgres local (initdb em pasta temporária); se também
-indisponível, PGlite via Node. Registre qual foi usado em progresso.md.
+## Persistência e autenticação (camada da aplicação)
+- Repositórios em br.com.manuelo.dados usam JdbcClient/JdbcTemplate e SQL explícito. Não crie
+  @Entity/JpaRepository: o schema é a fonte da verdade e `spring.jpa.hibernate.ddl-auto=validate`.
+- Os records de DemoData são modelos de exibição. Views e repositórios se comunicam por eles;
+  não recoloque listas fixas nas telas.
+- Autenticação é de sessão Vaadin: SessaoUsuario (@VaadinSessionScope) guarda o usuário; MainLayout
+  implementa BeforeEnterObserver e redireciona para o login sem sessão. O HTTP segue liberado
+  (SecurityConfig) para os recursos estáticos do Vaadin.
+- Cadastro cria usuário PENDENTE_APROVACAO; a tela /usuarios (só ADMINISTRADOR) aprova ou inativa.
+- Administrador inicial: AdminInicial cria o usuário de MANUELO_ADMIN_EMAIL/MANUELO_ADMIN_SENHA
+  (padrão de dev admin@manuelo.local / admin123) se ele não existir. Troque em produção.
+- Senhas sempre com BCryptPasswordEncoder. O seed mantém hashes inválidos de propósito.
+- Uploads gravam apenas metadados em documentos (nome, mime, tamanho, caminho lógico); os bytes
+  do arquivo ainda não são armazenados.
+
+## Verificação (definição de pronto)
+1. `./scripts/verificar-db.sh` sai com código 0: sobe Postgres limpo, aplica migrations em ordem,
+   roda db/tests/*.sql, derruba e refaz tudo do zero.
+   Todo CHECK, trigger, constraint e view tem um teste que passa e um que DEVE falhar.
+2. `./mvnw -B clean package -DskipTests` compila o backend e as telas.
+3. Smoke das rotas com o app rodando (todas devem responder 200 e sem erro no log):
+   `/`, `/cadastro`, `/aprovacao`, `/recuperar-senha`, `/email-enviado`, `/redefinir-senha`,
+   `/home`, `/imoveis`, `/inquilinos`, `/contratos`, `/documentos`,
+   `/movimentacao-financeira`, `/relatorios`, `/imoveis/reformas`, `/contratos/detalhe`.
+Runtime do banco: docker compose; se indisponível, Postgres local (initdb em pasta temporária);
+se também indisponível, PGlite via Node. Registre qual foi usado em progresso.md.
 Nunca marque tarefa como concluída sem rodar o script e registrar a saída resumida.
 
 ## Ritmo

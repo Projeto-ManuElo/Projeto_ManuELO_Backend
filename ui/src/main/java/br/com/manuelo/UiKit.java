@@ -425,6 +425,17 @@ public final class UiKit {
         notification.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
     }
 
+    public static void erro(String mensagem) {
+        String texto = mensagem == null || mensagem.isBlank()
+                ? "Não foi possível concluir a operação."
+                : mensagem;
+        if (texto.length() > 220) {
+            texto = texto.substring(0, 217) + "...";
+        }
+        Notification notification = Notification.show(texto, 5000, Notification.Position.BOTTOM_END);
+        notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
+    }
+
     public static void ir(String rota) {
         UI.getCurrent().navigate(rota);
     }

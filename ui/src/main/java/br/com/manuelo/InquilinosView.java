@@ -11,18 +11,23 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
+import br.com.manuelo.dados.InquilinoRepositorio;
+
 @Route(value = "inquilinos", layout = MainLayout.class)
 @PageTitle("Inquilinos")
 public class InquilinosView extends Div {
 
-    private final List<DemoData.Inquilino> inquilinos = DemoData.inquilinos();
+    private final InquilinoRepositorio repositorio;
+    private List<DemoData.Inquilino> inquilinos;
     private final TextField nome = UiKit.text("Nome", "Ex: João Miguel");
     private final TextField cpf = UiKit.text("CPF", "Ex: xxx.yyy.zzz.xz");
     private final TextField email = UiKit.text("Email", "Ex: joao@wmail.com");
     private final Div tabela = new Div();
     private final InquilinoDialog dialog;
 
-    public InquilinosView() {
+    public InquilinosView(InquilinoRepositorio repositorio) {
+        this.repositorio = repositorio;
+        this.inquilinos = repositorio.listar();
         addClassName("page");
         dialog = new InquilinoDialog(this::salvar);
 
@@ -93,22 +98,14 @@ public class InquilinosView extends Div {
     }
 
     private void salvar(InquilinoDialog.DadosInquilino dados) {
-        DemoData.Inquilino novo = new DemoData.Inquilino(
-                dados.id() == null ? String.valueOf(System.currentTimeMillis()) : dados.id(),
-                dados.nome(), dados.cpf(), dados.email(), dados.telefone(),
-                dados.endereco(), dados.imovel(), dados.status(), dados.caucao());
-        boolean atualizado = false;
-        for (int i = 0; i < inquilinos.size(); i++) {
-            if (inquilinos.get(i).id().equals(novo.id())) {
-                inquilinos.set(i, novo);
-                atualizado = true;
-                break;
-            }
+        try {
+            repositorio.salvar(new InquilinoRepositorio.Dados(dados.id(), dados.nome(),
+                    dados.cpf(), dados.email(), dados.telefone()));
+            inquilinos = repositorio.listar();
+            renderizar();
+            UiKit.aviso("Inquilino salvo com sucesso.");
+        } catch (RuntimeException ex) {
+            UiKit.erro(ex.getMessage());
         }
-        if (!atualizado) {
-            inquilinos.add(novo);
-        }
-        renderizar();
-        UiKit.aviso("Inquilino salvo com sucesso.");
     }
 }
