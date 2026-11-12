@@ -16,12 +16,16 @@ import com.vaadin.flow.router.QueryParameters;
 import com.vaadin.flow.router.Route;
 
 import br.com.manuelo.dados.ContratoRepositorio;
+import br.com.manuelo.dados.ImovelRepositorio;
+
+import com.Projeto.manuelo.servico.ContratoCadastroService;
 
 @Route(value = "contratos", layout = MainLayout.class)
 @PageTitle("Contratos")
 public class ContratosView extends Div implements BeforeEnterObserver {
 
     private final ContratoRepositorio repositorio;
+    private final ContratoCadastroService cadastro;
     private final TextField nome = UiKit.text("Nome", "Ex: João Miguel");
     private final TextField cpf = UiKit.text("CPF", "Ex: xxx.yyy.zzz.xz");
     private final TextField imovel = UiKit.text("Imóvel", "Ex: Aurora");
@@ -31,10 +35,12 @@ public class ContratosView extends Div implements BeforeEnterObserver {
     private final Div tabela = new Div();
     private final ContratoDialog dialog;
 
-    public ContratosView(ContratoRepositorio repositorio) {
+    public ContratosView(ContratoRepositorio repositorio, ContratoCadastroService cadastro,
+            ImovelRepositorio imoveis) {
         this.repositorio = repositorio;
+        this.cadastro = cadastro;
         addClassName("page");
-        dialog = new ContratoDialog(this::adicionarContrato);
+        dialog = new ContratoDialog(imoveis.opcoes(), this::adicionarContrato);
 
         Button novo = UiKit.primaryIcon("Novo Contrato", VaadinIcon.PLUS, e -> dialog.abrir());
         add(UiKit.header("Contratos", null, novo));
@@ -132,7 +138,7 @@ public class ContratosView extends Div implements BeforeEnterObserver {
 
     private void adicionarContrato(ContratoDialog.DadosContrato dados) {
         try {
-            String id = repositorio.criar(dados);
+            String id = cadastro.criar(dados.paraServico());
             renderizar();
             UiKit.aviso("Contrato criado com sucesso.");
             UI.getCurrent().navigate(ContratoDetalheView.class, QueryParameters.of("id", id));

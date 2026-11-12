@@ -17,6 +17,9 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.component.textfield.TextField;
 
 import br.com.manuelo.dados.ContratoRepositorio;
+import br.com.manuelo.dados.ImovelRepositorio;
+
+import com.Projeto.manuelo.servico.ContratoCadastroService;
 
 @Route(value = "contratos/detalhe", layout = MainLayout.class)
 @PageTitle("Detalhes do contrato")
@@ -26,12 +29,15 @@ public class ContratoDetalheView extends Div implements BeforeEnterObserver {
             Locale.forLanguageTag("pt-BR"));
 
     private final ContratoRepositorio repositorio;
+    private final ContratoCadastroService cadastro;
     private final ContratoDialog novoContrato;
     private ContratoRepositorio.Detalhe contrato;
 
-    public ContratoDetalheView(ContratoRepositorio repositorio) {
+    public ContratoDetalheView(ContratoRepositorio repositorio, ContratoCadastroService cadastro,
+            ImovelRepositorio imoveis) {
         this.repositorio = repositorio;
-        this.novoContrato = new ContratoDialog(this::criarContrato);
+        this.cadastro = cadastro;
+        this.novoContrato = new ContratoDialog(imoveis.opcoes(), this::criarContrato);
         addClassName("page");
     }
 
@@ -51,7 +57,7 @@ public class ContratoDetalheView extends Div implements BeforeEnterObserver {
 
     private void criarContrato(ContratoDialog.DadosContrato dados) {
         try {
-            String id = repositorio.criar(dados);
+            String id = cadastro.criar(dados.paraServico());
             UiKit.aviso("Contrato criado com sucesso.");
             UI.getCurrent().navigate(ContratoDetalheView.class, QueryParameters.of("id", id));
         } catch (RuntimeException ex) {
