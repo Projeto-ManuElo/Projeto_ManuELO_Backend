@@ -31,7 +31,11 @@ public class ImovelRepositorio {
     }
 
     public List<DemoData.Imovel> listar() {
-        return jdbc.sql("""
+        return listar(null, null, null, null);
+    }
+
+    public List<DemoData.Imovel> listar(String endereco, String tipo, String status, String inquilino) {
+        StringBuilder sql = new StringBuilder("""
                 SELECT v.id::text AS id, v.logradouro, v.numero, v.complemento, v.bairro,
                        v.cidade, v.uf, v.cep, v.tipo::text AS tipo,
                        v.status_exibicao, v.inquilino_atual_nome,
@@ -46,30 +50,69 @@ public class ImovelRepositorio {
                      ORDER BY c.inicio DESC
                      LIMIT 1
                   ) cv ON true
-                 ORDER BY v.logradouro, v.numero
-                """)
-                .query((rs, row) -> {
-                    String observacoes = rs.getString("cidade") + "/" + rs.getString("uf");
-                    String cep = rs.getString("cep");
-                    if (cep != null && !cep.isBlank()) {
-                        observacoes += " • CEP " + cep;
-                    }
-                    return new DemoData.Imovel(
-                            rs.getString("id"),
-                            rs.getString("logradouro"),
-                            rs.getString("numero"),
-                            rs.getString("complemento"),
-                            rs.getString("bairro"),
-                            rs.getString("cidade"),
-                            rs.getString("uf"),
-                            cep,
-                            Dominio.tipoImovel(rs.getString("tipo")),
-                            Dominio.statusImovel(rs.getString("status_exibicao")),
-                            rs.getString("inquilino_atual_nome"),
-                            rs.getBigDecimal("aluguel"),
-                            observacoes);
-                })
-                .list();
+                 WHERE 1 = 1
+                """);
+        String enderecoFiltro = normalizar(endereco);
+        String tipoFiltro = normalizar(tipo);
+        String statusFiltro = normalizar(status);
+        String inquilinoFiltro = normalizar(inquilino);
+
+        if (enderecoFiltro != null) {
+            sql.append(" AND (v.logradouro ILIKE :endereco OR v.numero ILIKE :endereco")
+                    .append(" OR v.bairro ILIKE :endereco)");
+        }
+        if (tipoFiltro != null) {
+            sql.append(" AND v.tipo::text = :tipo");
+            tipoFiltro = Dominio.tipoImovelEnum(tipoFiltro);
+        }
+        if (statusFiltro != null) {
+            sql.append(" AND v.status_exibicao ILIKE :status");
+            statusFiltro = Dominio.statusImovelEnum(statusFiltro);
+        }
+        if (inquilinoFiltro != null) {
+            sql.append(" AND v.inquilino_atual_nome ILIKE :inquilino");
+        }
+        sql.append(" ORDER BY v.logradouro, v.numero");
+
+        JdbcClient.StatementSpec spec = jdbc.sql(sql.toString());
+        if (enderecoFiltro != null) {
+            spec = spec.param("endereco", "%" + enderecoFiltro + "%");
+        }
+        if (tipoFiltro != null) {
+            spec = spec.param("tipo", tipoFiltro);
+        }
+        if (statusFiltro != null) {
+            spec = spec.param("status", statusFiltro);
+        }
+        if (inquilinoFiltro != null) {
+            spec = spec.param("inquilino", "%" + inquilinoFiltro + "%");
+        }
+
+        return spec.query((rs, row) -> {
+            String observacoes = rs.getString("cidade") + "/" + rs.getString("uf");
+            String cep = rs.getString("cep");
+            if (cep != null && !cep.isBlank()) {
+                observacoes += " • CEP " + cep;
+            }
+            return new DemoData.Imovel(
+                    rs.getString("id"),
+                    rs.getString("logradouro"),
+                    rs.getString("numero"),
+                    rs.getString("complemento"),
+                    rs.getString("bairro"),
+                    rs.getString("cidade"),
+                    rs.getString("uf"),
+                    cep,
+                    Dominio.tipoImovel(rs.getString("tipo")),
+                    Dominio.statusImovel(rs.getString("status_exibicao")),
+                    rs.getString("inquilino_atual_nome"),
+                    rs.getBigDecimal("aluguel"),
+                    observacoes);
+        }).list();
+    }
+
+    private String normalizar(String valor) {
+        return valor == null || valor.isBlank() ? null : valor.trim();
     }
 
     public List<Opcao> opcoes() {

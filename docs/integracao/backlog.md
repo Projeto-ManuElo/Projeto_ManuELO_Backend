@@ -32,6 +32,7 @@ Status: PENDENTE | EM_ANDAMENTO | CONCLUIDO | BLOQUEADO. Dono: ordem banco -> ba
 ## S2 Imóveis, inquilinos, fiadores e reformas
 - A-20 /imoveis: lista, filtros opcionais (endereço, tipo, status, inquilino vinculado), cadastro, edição, detalhe com
   contrato vigente. Aceite: criar e editar persistem; filtros retornam o subconjunto certo.
+  **CONCLUIDO** (filtros SQL + ImovelDetalheDialog + ImoveisFiltrosTest 6/6; ressalvas em P-026).
 - A-21 /inquilinos: lista, filtros (nome, CPF, e-mail), adicionar/editar com fiador, imóvel vinculado, valor da caução
   e upload do recibo da caução. Aceite: um envio cria inquilino, fiador, contrato e depósito de caução na mesma transação.
 - A-22 Reformas do imóvel: histórico (data, descrição, valor, responsável do período derivado) e + Novo Registro.

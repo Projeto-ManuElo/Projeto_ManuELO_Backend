@@ -303,3 +303,15 @@ Modelo de bloco (copie para cada problema):
 - Status: ABERTO
 - Tentativas: 0/3
 - Commit:
+
+## P-026 Detalhe do imóvel incompleto e filtro de tipo case-sensitive (A-20)
+- Severidade: BAIXA
+- Camada: front
+- Evidência: `ImovelDetalheDialog` omite cidade/UF/CEP, dia de vencimento e depósitos de caução; `ImovelRepositorio` compara `v.tipo::text = :tipo` (case-sensitive) e `%`/`_` não são escapados.
+- Causa raiz: escopo mínimo de A-20; aceite do backlog cumprido.
+- Reprodução: filtrar tipo "casa" (minúsculo) e abrir um imóvel com contrato.
+- Dono: front
+- Critério de aceite: detalhe completo conforme CONTEXTO; filtro case-insensitive e com escape de curingas.
+- Status: ABERTO
+- Tentativas: 0/3
+- Commit:

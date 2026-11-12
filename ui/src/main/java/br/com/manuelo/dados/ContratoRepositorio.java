@@ -91,31 +91,64 @@ public class ContratoRepositorio {
                  WHERE v.contrato_id = :id
                 """)
                 .param("id", UUID.fromString(id))
-                .query((rs, row) -> new Detalhe(
-                        rs.getString("id"),
-                        rs.getString("inquilino_nome"),
-                        Dominio.formatarDocumento(rs.getString("inquilino_documento")),
-                        rs.getString("inquilino_email"),
-                        rs.getString("imovel_endereco"),
-                        Dominio.situacaoContrato(rs.getBoolean("atrasado"),
-                                rs.getString("situacao_validade")),
-                        rs.getBigDecimal("valor_aluguel"),
-                        rs.getObject("inicio", LocalDate.class),
-                        rs.getObject("fim", LocalDate.class),
-                        rs.getInt("dia_vencimento"),
-                        rs.getBoolean("possui_acao_judicial"),
-                        rs.getString("acao_judicial_descricao"),
-                        rs.getString("fiador_nome"),
-                        rs.getString("fiador_documento") == null ? null
-                                : Dominio.formatarDocumento(rs.getString("fiador_documento")),
-                        rs.getString("fiador_email"),
-                        rs.getString("fiador_telefone") == null ? null
-                                : Dominio.formatarTelefone(rs.getString("fiador_telefone")),
-                        rs.getBigDecimal("caucao_depositos"),
-                        rs.getBigDecimal("caucao_saldo"),
-                        rs.getString("imovel_id")))
+                .query((rs, row) -> mapear(rs))
                 .list();
         return encontrados.isEmpty() ? null : encontrados.get(0);
+    }
+
+    public Detalhe buscarVigentePorImovel(String imovelId) {
+        if (imovelId == null || imovelId.isBlank()) {
+            return null;
+        }
+        List<Detalhe> encontrados = jdbc.sql("""
+                SELECT v.contrato_id::text AS id, v.inquilino_nome, v.inquilino_documento,
+                       v.inquilino_email, v.imovel_endereco, v.valor_aluguel, v.inicio, v.fim,
+                       v.dia_vencimento, v.atrasado, v.situacao_validade, v.imovel_id::text AS imovel_id,
+                       c.possui_acao_judicial, c.acao_judicial_descricao,
+                       f.nome AS fiador_nome, f.documento AS fiador_documento,
+                       f.email AS fiador_email, f.telefone AS fiador_telefone,
+                       COALESCE(sc.total_depositos, 0) AS caucao_depositos,
+                       COALESCE(sc.saldo, 0) AS caucao_saldo
+                  FROM vw_contratos_situacao v
+                  JOIN contratos c ON c.id = v.contrato_id
+                  LEFT JOIN fiadores f ON f.id = v.fiador_id
+                  LEFT JOIN vw_saldo_caucao sc ON sc.contrato_id = v.contrato_id
+                 WHERE v.imovel_id = :id
+                   AND v.inicio <= current_date
+                   AND (v.fim IS NULL OR v.fim >= current_date)
+                 ORDER BY v.inicio DESC
+                 LIMIT 1
+                """)
+                .param("id", UUID.fromString(imovelId))
+                .query((rs, row) -> mapear(rs))
+                .list();
+        return encontrados.isEmpty() ? null : encontrados.get(0);
+    }
+
+    private Detalhe mapear(java.sql.ResultSet rs) throws java.sql.SQLException {
+        return new Detalhe(
+                rs.getString("id"),
+                rs.getString("inquilino_nome"),
+                Dominio.formatarDocumento(rs.getString("inquilino_documento")),
+                rs.getString("inquilino_email"),
+                rs.getString("imovel_endereco"),
+                Dominio.situacaoContrato(rs.getBoolean("atrasado"),
+                        rs.getString("situacao_validade")),
+                rs.getBigDecimal("valor_aluguel"),
+                rs.getObject("inicio", LocalDate.class),
+                rs.getObject("fim", LocalDate.class),
+                rs.getInt("dia_vencimento"),
+                rs.getBoolean("possui_acao_judicial"),
+                rs.getString("acao_judicial_descricao"),
+                rs.getString("fiador_nome"),
+                rs.getString("fiador_documento") == null ? null
+                        : Dominio.formatarDocumento(rs.getString("fiador_documento")),
+                rs.getString("fiador_email"),
+                rs.getString("fiador_telefone") == null ? null
+                        : Dominio.formatarTelefone(rs.getString("fiador_telefone")),
+                rs.getBigDecimal("caucao_depositos"),
+                rs.getBigDecimal("caucao_saldo"),
+                rs.getString("imovel_id"));
     }
 
     public String criar(br.com.manuelo.ContratoDialog.DadosContrato dados) {

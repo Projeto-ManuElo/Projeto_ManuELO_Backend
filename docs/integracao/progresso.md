@@ -1,7 +1,7 @@
 # Progresso (memória do loop; a conversa não é memória)
 
-Iteração: 13 | Orçamento: 120 | Runtime: postgres local embutido (porta 55433; sem Docker/psql na máquina)
-Última atualização: A-14 concluído; A-15 pendente; iniciando S2
+Iteração: 14 | Orçamento: 120 | Runtime: postgres local embutido (porta 55433; sem Docker/psql na máquina)
+Última atualização: A-20 concluído; próxima A-21/A-22
 
 ## Entendimento inicial (8 linhas)
 1. O pacote ManuElo_Equipe_Completa foi copiado para a raiz: AGENTS.md, opencode.jsonc, .opencode/agents e docs/integracao.
@@ -18,11 +18,11 @@ Iteração: 13 | Orçamento: 120 | Runtime: postgres local embutido (porta 55433
 - [x] F1 Mapa: mapa.md completo (auditoria com evidências)
 - [x] F2 Plano: backlog conferido e ordenado (S0 -> S8, ordem por dependência mantida)
 - [x] S0 Fundação: A-01/A-02/A-03 concluídos; juiz EXIT 0
-- [ ] F3 Construção: itens concluídos 8 / 25
+- [ ] F3 Construção: itens concluídos 9 / 25
 - [ ] F4 Fecho: A-90, juiz verde, RELATORIO-FINAL.md
 
 ## Item em andamento
-A-15 auditoria (fechar com S2) e A-20 /imoveis — dono: back + front + qa; tentativa 1.
+A-15 auditoria (fechar com S2) e A-21 /inquilinos — dono: back + front + qa; tentativa 1.
 
 ## Log (uma linha por iteração: fase, item, agente, resultado do juiz)
 - Iteração 1: pacote da equipe instalado; baseline T25 commitada (b33ff36); F0 despachada (QA + mapeador).
@@ -37,4 +37,5 @@ A-15 auditoria (fechar com S2) e A-20 /imoveis — dono: back + front + qa; tent
 - Iteração 10: A-11/A-12 re-revisados e APROVADOS; juiz 8/8; commit ad3c2a5.
 - Iteração 11: A-13 — token SHA-256/1h/uso único, entrega SMTP/dev, front lê query param; RecuperacaoSenhaTest 7/7; revisão APROVADA com ressalvas.
 - Iteração 12: A-13 endurecido (só ATIVO, falha de envio neutra, invalidação de pendentes) e testes 10/10; juiz 8/8; commit 3755325.
-- Iteração 13: A-14 — BootstrapAdminTest 3/3 e suíte com 40 testes; juiz 8/8; commit pendente.
+- Iteração 13: A-14 — BootstrapAdminTest 3/3 e suíte com 40 testes; juiz 8/8; commit cb06f03.
+- Iteração 14: A-20 — filtros SQL + detalhe com contrato vigente; ImoveisFiltrosTest 6/6; revisão APROVADA; juiz 8/8.

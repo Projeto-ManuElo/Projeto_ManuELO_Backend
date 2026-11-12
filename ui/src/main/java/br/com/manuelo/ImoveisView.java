@@ -1,8 +1,6 @@
 package br.com.manuelo;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -15,6 +13,7 @@ import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
+import br.com.manuelo.dados.ContratoRepositorio;
 import br.com.manuelo.dados.ImovelRepositorio;
 
 @Route(value = "imoveis", layout = MainLayout.class)
@@ -22,7 +21,7 @@ import br.com.manuelo.dados.ImovelRepositorio;
 public class ImoveisView extends Div implements BeforeEnterObserver {
 
     private final ImovelRepositorio repositorio;
-    private List<DemoData.Imovel> imoveis;
+    private final ContratoRepositorio contratos;
     private final TextField endereco = UiKit.text("Endereço", "Rua, número, bairro");
     private final ComboBox<String> tipo = UiKit.select("Tipo", "Todos",
             List.of("Apartamento", "Casa", "Comercial", "Terreno"));
@@ -32,9 +31,9 @@ public class ImoveisView extends Div implements BeforeEnterObserver {
     private final Div tabela = new Div();
     private final ImovelDialog dialog;
 
-    public ImoveisView(ImovelRepositorio repositorio) {
+    public ImoveisView(ImovelRepositorio repositorio, ContratoRepositorio contratos) {
         this.repositorio = repositorio;
-        this.imoveis = repositorio.listar();
+        this.contratos = contratos;
         addClassName("page");
         dialog = new ImovelDialog(this::salvarImovel);
 
@@ -49,7 +48,6 @@ public class ImoveisView extends Div implements BeforeEnterObserver {
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
-        imoveis = repositorio.listar();
         limparFiltros();
         event.getLocation().getQueryParameters().getParameters()
                 .getOrDefault("filtro", List.of()).stream().findFirst()
@@ -61,8 +59,8 @@ public class ImoveisView extends Div implements BeforeEnterObserver {
                         default -> {
                         }
                     }
-                    renderizar();
                 });
+        renderizar();
     }
 
     private Div criarFiltros() {
@@ -101,9 +99,8 @@ public class ImoveisView extends Div implements BeforeEnterObserver {
         tabela.removeAll();
         tabela.add(UiKit.tableHead("cols-imoveis", "Endereço", "Tipo", "Inquilino", "Status"));
 
-        List<DemoData.Imovel> filtrados = imoveis.stream()
-                .filter(this::corresponde)
-                .toList();
+        List<DemoData.Imovel> filtrados = repositorio.listar(
+                endereco.getValue(), tipo.getValue(), status.getValue(), inquilino.getValue());
 
         if (filtrados.isEmpty()) {
             tabela.add(UiKit.emptyState("Nenhum imóvel encontrado", "Ajuste os filtros e tente novamente."));
@@ -119,28 +116,13 @@ public class ImoveisView extends Div implements BeforeEnterObserver {
                             : new Span(imovel.inquilino()),
                     UiKit.badge(imovel.status()));
             linha.addClassName("clickable");
-            linha.addClickListener(e -> dialog.abrirEdicao(imovel));
+            linha.addClickListener(e -> new ImovelDetalheDialog(imovel, contratos, this::editarImovel).open());
             tabela.add(linha);
         }
     }
 
-    private boolean corresponde(DemoData.Imovel imovel) {
-        String enderecoFiltro = endereco.getValue() == null ? "" : endereco.getValue().trim().toLowerCase(Locale.ROOT);
-        String inquilinoFiltro = inquilino.getValue() == null ? "" : inquilino.getValue().trim().toLowerCase(Locale.ROOT);
-        if (!enderecoFiltro.isBlank() && !imovel.endereco().toLowerCase(Locale.ROOT).contains(enderecoFiltro)) {
-            return false;
-        }
-        if (!inquilinoFiltro.isBlank()
-                && !imovel.inquilino().toLowerCase(Locale.ROOT).contains(inquilinoFiltro)) {
-            return false;
-        }
-        if (tipo.getValue() != null && !tipo.getValue().isBlank() && !tipo.getValue().equals(imovel.tipo())) {
-            return false;
-        }
-        if (status.getValue() != null && !status.getValue().isBlank() && !status.getValue().equals(imovel.status())) {
-            return false;
-        }
-        return true;
+    private void editarImovel(DemoData.Imovel imovel) {
+        dialog.abrirEdicao(imovel);
     }
 
     private void salvarImovel(ImovelDialog.DadosImovel dados) {
@@ -148,7 +130,6 @@ public class ImoveisView extends Div implements BeforeEnterObserver {
             repositorio.salvar(new ImovelRepositorio.Dados(dados.id(), dados.logradouro(),
                     dados.numero(), dados.complemento(), dados.bairro(), dados.cidade(), dados.uf(),
                     dados.cep(), dados.tipo(), dados.status()));
-            imoveis = repositorio.listar();
             renderizar();
             UiKit.aviso("Imóvel salvo com sucesso.");
         } catch (RuntimeException ex) {
