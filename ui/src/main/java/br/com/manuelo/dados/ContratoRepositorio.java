@@ -3,8 +3,10 @@ package br.com.manuelo.dados;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -39,13 +41,54 @@ public class ContratoRepositorio {
     }
 
     public List<DemoData.Contrato> listar() {
-        return jdbc.sql("""
+        return listar(null, null, null, null, null);
+    }
+
+    public List<DemoData.Contrato> listar(String nome, String cpf, String imovel, String validade,
+            String situacao) {
+        StringBuilder sql = new StringBuilder("""
                 SELECT contrato_id::text AS id, inquilino_nome, inquilino_documento, inquilino_email,
                        imovel_endereco, valor_aluguel, fim, atrasado, situacao_validade,
                        COALESCE(dias_para_vencer, 0) AS dias
                   FROM vw_contratos_situacao
-                 ORDER BY fim NULLS LAST, inquilino_nome
-                """)
+                 WHERE 1 = 1
+                """);
+        Map<String, Object> params = new LinkedHashMap<>();
+
+        if (nome != null && !nome.isBlank()) {
+            sql.append(" AND lower(inquilino_nome) LIKE lower(:nome) ESCAPE '\\'");
+            params.put("nome", "%" + like(nome.trim()) + "%");
+        }
+        String cpfDigitos = cpf == null ? "" : cpf.replaceAll("\\D", "");
+        if (!cpfDigitos.isEmpty()) {
+            sql.append(" AND regexp_replace(inquilino_documento, '\\D', '', 'g') LIKE :cpf");
+            params.put("cpf", "%" + cpfDigitos + "%");
+        }
+        if (imovel != null && !imovel.isBlank()) {
+            sql.append(" AND lower(imovel_endereco) LIKE lower(:imovel) ESCAPE '\\'");
+            params.put("imovel", "%" + like(imovel.trim()) + "%");
+        }
+        if (validade != null && !validade.isBlank()) {
+            LocalDate data = dataValidade(validade.trim());
+            if (data != null) {
+                sql.append(" AND fim = :validadeData");
+                params.put("validadeData", data);
+            } else {
+                sql.append(" AND to_char(fim, 'DD/MM/YYYY') LIKE :validade ESCAPE '\\'");
+                params.put("validade", "%" + like(validade.trim()) + "%");
+            }
+        }
+        if ("Atrasado".equals(situacao)) {
+            sql.append(" AND atrasado");
+        } else if ("A vencer".equals(situacao)) {
+            sql.append(" AND situacao_validade = 'A_VENCER'");
+        } else if ("Ativo".equals(situacao)) {
+            sql.append(" AND NOT atrasado AND situacao_validade <> 'A_VENCER'");
+        }
+        sql.append(" ORDER BY fim NULLS LAST, inquilino_nome");
+
+        return jdbc.sql(sql.toString())
+                .params(params)
                 .query((rs, row) -> new DemoData.Contrato(
                         rs.getString("id"),
                         rs.getString("inquilino_nome"),
@@ -58,6 +101,18 @@ public class ContratoRepositorio {
                                 rs.getString("situacao_validade")),
                         rs.getBigDecimal("valor_aluguel")))
                 .list();
+    }
+
+    private static String like(String texto) {
+        return texto.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+    }
+
+    private static LocalDate dataValidade(String texto) {
+        try {
+            return LocalDate.parse(texto, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        } catch (RuntimeException ex) {
+            return null;
+        }
     }
 
     public List<Opcao> opcoes() {

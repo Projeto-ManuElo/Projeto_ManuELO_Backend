@@ -1,8 +1,6 @@
 package br.com.manuelo;
 
-import java.time.LocalDate;
 import java.util.List;
-import java.util.Locale;
 
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -24,10 +22,9 @@ import br.com.manuelo.dados.ContratoRepositorio;
 public class ContratosView extends Div implements BeforeEnterObserver {
 
     private final ContratoRepositorio repositorio;
-    private List<DemoData.Contrato> contratos;
     private final TextField nome = UiKit.text("Nome", "Ex: João Miguel");
     private final TextField cpf = UiKit.text("CPF", "Ex: xxx.yyy.zzz.xz");
-    private final TextField email = UiKit.text("Email", "Ex: joao@wmail.com");
+    private final TextField imovel = UiKit.text("Imóvel", "Ex: Aurora");
     private final TextField validade = UiKit.text("Validade do contrato", "Ex: xx/xx/xx26");
     private final ComboBox<String> situacao = UiKit.select("Situação", "Ex: Atrasado ou não",
             List.of("Ativo", "A vencer", "Atrasado"));
@@ -36,7 +33,6 @@ public class ContratosView extends Div implements BeforeEnterObserver {
 
     public ContratosView(ContratoRepositorio repositorio) {
         this.repositorio = repositorio;
-        this.contratos = repositorio.listar();
         addClassName("page");
         dialog = new ContratoDialog(this::adicionarContrato);
 
@@ -50,7 +46,6 @@ public class ContratosView extends Div implements BeforeEnterObserver {
 
     @Override
     public void beforeEnter(BeforeEnterEvent event) {
-        contratos = repositorio.listar();
         limpar();
         event.getLocation().getQueryParameters().getParameters()
                 .getOrDefault("filtro", List.of()).stream().findFirst()
@@ -62,8 +57,8 @@ public class ContratosView extends Div implements BeforeEnterObserver {
                         default -> {
                         }
                     }
-                    renderizar();
                 });
+        renderizar();
     }
 
     private Div criarFiltros() {
@@ -76,7 +71,7 @@ public class ContratosView extends Div implements BeforeEnterObserver {
         acoes.addClassName("form-actions");
 
         nome.addClassName("full");
-        Div grid = UiKit.formGrid(nome, cpf, email, validade, situacao);
+        Div grid = UiKit.formGrid(nome, cpf, imovel, validade, situacao);
         return UiKit.card(UiKit.cardHeader("Filtros", null), grid, acoes);
     }
 
@@ -88,7 +83,7 @@ public class ContratosView extends Div implements BeforeEnterObserver {
     private void limpar() {
         nome.clear();
         cpf.clear();
-        email.clear();
+        imovel.clear();
         validade.clear();
         situacao.clear();
     }
@@ -97,16 +92,15 @@ public class ContratosView extends Div implements BeforeEnterObserver {
         tabela.removeAll();
         tabela.add(UiKit.tableHead("cols-contratos", "Nome", "Validade", "Endereço", "CPF", "Email"));
 
-        List<DemoData.Contrato> filtrados = contratos.stream()
-                .filter(this::corresponde)
-                .toList();
+        List<DemoData.Contrato> contratos = repositorio.listar(valor(nome), valor(cpf),
+                valor(imovel), valor(validade), situacao.getValue());
 
-        if (filtrados.isEmpty()) {
+        if (contratos.isEmpty()) {
             tabela.add(UiKit.emptyState("Nenhum contrato encontrado", "Ajuste os filtros e tente novamente."));
             return;
         }
 
-        for (DemoData.Contrato contrato : filtrados) {
+        for (DemoData.Contrato contrato : contratos) {
             Span validadeSpan = new Span(UiKit.data(contrato.vencimento()) + "  " + textoDias(contrato.dias()));
             Div linha = UiKit.tableRow("cols-contratos",
                     new Span(contrato.inquilino()),
@@ -125,20 +119,11 @@ public class ContratosView extends Div implements BeforeEnterObserver {
         if (dias == 0) {
             return "Hoje";
         }
-        return dias > 0 ? "Faltar " + dias + " dias" : "Atrasado " + Math.abs(dias) + " dias";
-    }
-
-    private boolean corresponde(DemoData.Contrato contrato) {
-        String n = valor(nome).toLowerCase(Locale.ROOT);
-        String c = valor(cpf).toLowerCase(Locale.ROOT);
-        String e = valor(email).toLowerCase(Locale.ROOT);
-        String v = valor(validade).toLowerCase(Locale.ROOT);
-        return (n.isBlank() || contrato.inquilino().toLowerCase(Locale.ROOT).contains(n))
-                && (c.isBlank() || contrato.cpf().toLowerCase(Locale.ROOT).contains(c))
-                && (e.isBlank() || contrato.email().toLowerCase(Locale.ROOT).contains(e))
-                && (v.isBlank() || UiKit.data(contrato.vencimento()).contains(v))
-                && (situacao.getValue() == null || situacao.getValue().isBlank()
-                        || situacao.getValue().equals(contrato.situacao()));
+        if (dias > 0) {
+            return dias == 1 ? "Falta 1 dia" : "Faltam " + dias + " dias";
+        }
+        int atraso = Math.abs(dias);
+        return atraso == 1 ? "Atrasado há 1 dia" : "Atrasado há " + atraso + " dias";
     }
 
     private String valor(TextField field) {
@@ -148,7 +133,6 @@ public class ContratosView extends Div implements BeforeEnterObserver {
     private void adicionarContrato(ContratoDialog.DadosContrato dados) {
         try {
             String id = repositorio.criar(dados);
-            contratos = repositorio.listar();
             renderizar();
             UiKit.aviso("Contrato criado com sucesso.");
             UI.getCurrent().navigate(ContratoDetalheView.class, QueryParameters.of("id", id));
