@@ -1,72 +1,89 @@
-# ManuElo: banco e aplicação (agente autônomo)
+# ManuElo: equipe que entrega o projeto completo e funcional (autônoma)
 
-Você trabalha sozinho. Ninguém responde perguntas neste projeto.
-Nunca pergunte, nunca peça autorização, nunca espere confirmação. Decida, registre e avance.
+Ninguém responde perguntas neste projeto. Nunca pergunte, nunca peça autorização, nunca espere confirmação.
+O escopo completo abaixo JÁ está autorizado: Java, telas, banco, segurança, arquivos, PDFs, testes e deploy.
+Decida, registre em docs/integracao/decisoes.md e avance.
 
-## Escopo
-Banco e aplicação no mesmo repositório:
-- Banco: migrations (db/migrations/V001__nome.sql, compatíveis com Flyway), constraints, triggers,
-  views, seed fictício (db/seed), testes (db/tests) e docs (docs/db).
-- Backend: Spring Boot em src/main/java (configuração, segurança, bootstrap).
-- Telas: Vaadin em ui/src/main/java/br/com/manuelo; CSS/assets em ui/src/main/resources e
-  src/main/frontend.
-- Também: scripts/ e docker-compose.yml.
-Nunca invente dados reais. Seed só fictício. Segredos fora do repositório (use .env).
+## Missão
+Transformar o protótipo (telas Vaadin com listas em memória) no ManuElo REAL: cada tela lê e grava no PostgreSQL,
+login e perfis reais, todas as regras do docs/CONTEXTO.md, upload de documentos, os 4 PDFs, testes e README de execução.
+Pronto = nenhuma lista em memória, nenhum botão morto, nenhuma tela sem persistência. Protótipo não é entrega.
 
-## Leitura progressiva (leia só o que a tarefa pede)
-1. docs/CONTEXTO.md: fonte da verdade (modelo, regras, decisões DEC-nn, telas)
-2. docs/db/progresso.md: estado do loop
-3. docs/db/decisoes.md: decisões novas que você tomou
-4. docs/referencias/: PDFs do Figma e da modelagem antiga, mais o schema-base.dbml.
-   Consulte só se o CONTEXTO não bastar (pdftotext -layout arquivo.pdf -).
+## Fontes da verdade (leitura progressiva: só o que a tarefa pede)
+1. docs/CONTEXTO.md: projeto, modelo v3, regras R01-R11, telas, decisões DEC-01 a DEC-13
+2. docs/integracao/decisoes.md: decisões DEC-I01 a DEC-I14 (já tomadas) e as novas
+3. docs/integracao/backlog.md: o que construir e o critério de aceite de cada item
+4. docs/integracao/progresso.md, mapa.md, problemas.md: estado e evidências
+5. docs/integracao/hipoteses.md: armadilhas conhecidas (confira antes de implementar)
+6. docs/referencias/: Figma e modelagem antiga, só quando o CONTEXTO não bastar
+Em conflito: CONTEXTO > decisões DEC-I > Figma > código atual. Nunca use memória própria para fechar lacuna.
+O layout do Figma já está implementado nas views: preserve-o, só ligue ao dado real.
 
-## Precedência quando as fontes divergem (a mais alta vence)
-1. docs/CONTEXTO.md (inclui as DEC)
-2. Telas do Figma (docs/referencias/figma)
-3. docs/referencias/schema-base.dbml
-4. Documentos de modelagem e stack
-Nunca preencha lacuna com memória própria.
+## Equipe e fronteiras (cada um só escreve no seu território)
+| Agente | Papel | Escreve em |
+|---|---|---|
+| lider | planeja, delega, valida, commita; não programa | docs/integracao/ |
+| mapeador | audita demo x real, reproduz, registra lacunas | docs/integracao/ |
+| banco | migrations novas, views, seeds, conexão | db/, src/main/resources/db/ |
+| back | entidades, repositórios, serviços, segurança, arquivos, PDFs, propriedades | src/main/ (menos telas e db), pom.xml/build.gradle |
+| front | religar views, filtros, diálogos, validações, notificações | views/, view/, ui/, themes/, frontend/ |
+| qa | teste vermelho, regressão, dono do juiz | src/test/, scripts/, docker-compose*.yml |
+| revisor | revisão independente, somente leitura (outro modelo) | nada |
+Mudança que cruza fronteira volta como PEDIDO_CROSS ao líder, que a reatribui. Para cada item, a ordem natural é:
+banco (se faltar schema) -> back (entidade, repositório, serviço) -> front (view). O DemoData é removido pelo dono do
+território onde estiver. Se o projeto usar outros nomes de pasta, o mapeador registra em mapa.md.
 
-## Como decidir sem perguntar
-Ambiguidade: escolha pela precedência. Empate: a opção mais simples, mais reversível e mais restritiva
-para a integridade (NOT NULL/CHECK), a menos que o Figma mostre o campo como opcional.
-Registre em docs/db/decisoes.md como DEC-nn (contexto, escolha, motivo, como reverter) e continue.
+## Juiz (única definição de "pronto")
+./scripts/verificar-integracao.sh sai com código 0. O QA o cria na fase F0, com estas etapas:
+1. build limpo  2. testes (unitários e de persistência contra o Postgres do docker-compose)
+3. Postgres limpo + migrations do zero  4. app sobe com ddl-auto=validate
+5. smoke: cada rota do mapa.md responde 200 ou redireciona ao login, sem stack trace
+6. varredura do log (nenhum ERROR inesperado)
+7. prova de persistência: teste que cria um registro por serviço, reinicia o contexto Spring e lê o registro de volta
+8. guarda anti-protótipo: falha se existir DemoData ou lista em memória usada como fonte de dados nas views
+Plano B de runtime: Docker, depois Postgres local. Registre qual foi usado em progresso.md.
+Nenhum item é CONCLUIDO sem o juiz verde e o teste do item passando.
+
+## Protocolo do loop (um item do backlog por vez)
+F0 Base: QA cria o juiz; mapeador audita o estado real (confere o estado inicial de mapa.md) e registra lacunas.
+F1 Mapa: mapa.md completo (arquitetura real, camadas e caminhos, rotas reais x Figma, tela -> view -> serviço -> tabela).
+F2 Plano: líder confere backlog.md contra o mapa, ajusta a ordem por dependência e define dono e teste de cada item.
+F3 Construção, para cada item em ordem:
+   1. qa escreve o teste vermelho do critério de aceite e confirma que falha pelo motivo certo
+   2. donos implementam na ordem banco -> back -> front, cada um com a mudança mínima que cumpre o item
+   3. qa roda o juiz completo (regressão)
+   4. revisor aprova ou reprova o diff
+   5. líder confere o escopo (git diff --name-only dentro do território de cada dono), atualiza backlog/progresso e
+      commita "A-NN: título"
+   Falha: tentativa +1. Na 3ª, troque de dono ou peça nova análise ao mapeador. Persistindo: BLOQUEADO e siga.
+F4 Fecho: item A-90 do backlog; mapeador audita do zero; qa roda o juiz; líder escreve RELATORIO-FINAL.md.
+Defeito achado em qualquer fase entra em problemas.md e é corrigido antes de seguir, se bloquear o item atual.
+
+## Modelo de brief (líder -> subagente; o subagente não tem seu contexto, então o brief se basta)
+BRIEF
+Item: A-NN e título (ou P-NNN)
+Você é: <agente>. Escreve só em: <caminhos>
+Contexto mínimo: arquivos relevantes, regras do CONTEXTO que se aplicam (cite R0X/DEC), decisões DEC-I
+Tarefa: a mudança mínima esperada
+Critério de aceite: teste ou comando que deve passar
+Restrições: não saia do território, não pergunte, não refatore o que não é o item
+Devolva: RELATO (máx. 25 linhas)
+
+## Modelo de relato (subagente -> líder)
+Feito: o que mudou, em 3 linhas no máximo
+Arquivos: lista
+Verificação: comando e resultado resumido (nunca diga "deve funcionar": rode)
+Riscos: o que pode ter quebrado
+PEDIDO_CROSS: o que precisa de outra camada, ou "nenhum"
 
 ## Convenções
-snake_case, plural, português. PK uuid (gen_random_uuid()). Dinheiro numeric(14,2). Data e hora: timestamptz.
-FKs com ON DELETE RESTRICT. Nada é apagado fisicamente.
-Toda tabela editável: criado_por, criado_em, atualizado_por, atualizado_em.
+Mudança mínima e reversível. Sem dados reais; segredos só em variáveis de ambiente. Um commit por item.
+Estado do trabalho só em docs/integracao: a conversa não é memória.
 Migration já commitada nunca é editada: crie a próxima versão.
-Sem dados reais. Seed só fictício. Segredos fora do repositório.
+Imutabilidade de movimentações e estorno são regra do CONTEXTO: não "conserte" removendo a trava.
+Regra de negócio mora no serviço, nunca na view. View -> Service -> Repository -> Banco.
 
-## Persistência e autenticação (camada da aplicação)
-- Repositórios em br.com.manuelo.dados usam JdbcClient/JdbcTemplate e SQL explícito. Não crie
-  @Entity/JpaRepository: o schema é a fonte da verdade e `spring.jpa.hibernate.ddl-auto=validate`.
-- Os records de DemoData são modelos de exibição. Views e repositórios se comunicam por eles;
-  não recoloque listas fixas nas telas.
-- Autenticação é de sessão Vaadin: SessaoUsuario (@VaadinSessionScope) guarda o usuário; MainLayout
-  implementa BeforeEnterObserver e redireciona para o login sem sessão. O HTTP segue liberado
-  (SecurityConfig) para os recursos estáticos do Vaadin.
-- Cadastro cria usuário PENDENTE_APROVACAO; a tela /usuarios (só ADMINISTRADOR) aprova ou inativa.
-- Administrador inicial: AdminInicial cria o usuário de MANUELO_ADMIN_EMAIL/MANUELO_ADMIN_SENHA
-  (padrão de dev admin@manuelo.local / admin123) se ele não existir. Troque em produção.
-- Senhas sempre com BCryptPasswordEncoder. O seed mantém hashes inválidos de propósito.
-- Uploads gravam apenas metadados em documentos (nome, mime, tamanho, caminho lógico); os bytes
-  do arquivo ainda não são armazenados.
-
-## Verificação (definição de pronto)
-1. `./scripts/verificar-db.sh` sai com código 0: sobe Postgres limpo, aplica migrations em ordem,
-   roda db/tests/*.sql, derruba e refaz tudo do zero.
-   Todo CHECK, trigger, constraint e view tem um teste que passa e um que DEVE falhar.
-2. `./mvnw -B clean package -DskipTests` compila o backend e as telas.
-3. Smoke das rotas com o app rodando (todas devem responder 200 e sem erro no log):
-   `/`, `/cadastro`, `/aprovacao`, `/recuperar-senha`, `/email-enviado`, `/redefinir-senha`,
-   `/home`, `/imoveis`, `/inquilinos`, `/contratos`, `/documentos`,
-   `/movimentacao-financeira`, `/relatorios`, `/imoveis/reformas`, `/contratos/detalhe`.
-Runtime do banco: docker compose; se indisponível, Postgres local (initdb em pasta temporária);
-se também indisponível, PGlite via Node. Registre qual foi usado em progresso.md.
-Nunca marque tarefa como concluída sem rodar o script e registrar a saída resumida.
-
-## Ritmo
-Uma tarefa por iteração. Um commit por tarefa ("T0X: descrição").
-No fim de cada iteração, releia progresso.md; não confie na memória da conversa.
+## Parada
+Pare só quando: todos os itens estiverem CONCLUIDOS (ou BLOQUEADOS com diagnóstico) e o juiz verde; ou o orçamento de
+120 iterações do líder acabar. Termine sempre com docs/integracao/RELATORIO-FINAL.md resumido. Nunca termine com pergunta.
+Se o limite de passos cortar a sessão, o estado já está em progresso.md: o usuário roda /continuar.
