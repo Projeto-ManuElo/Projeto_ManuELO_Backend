@@ -25,8 +25,8 @@ public class ReformaRepositorio {
         this.sessao = sessao;
     }
 
-    public ImovelInfo imovelPadrao() {
-        List<ImovelInfo> encontrados = jdbc.sql("""
+    public List<ImovelInfo> listarImoveis() {
+        return jdbc.sql("""
                 SELECT im.id::text AS id,
                        im.logradouro || ', ' || im.numero AS endereco,
                        (SELECT iq.nome
@@ -39,11 +39,14 @@ public class ReformaRepositorio {
                          LIMIT 1) AS proprietario
                   FROM imoveis im
                  ORDER BY im.logradouro, im.numero
-                 LIMIT 1
                 """)
                 .query((rs, row) -> new ImovelInfo(rs.getString("id"), rs.getString("endereco"),
                         rs.getString("proprietario")))
                 .list();
+    }
+
+    public ImovelInfo imovelPadrao() {
+        List<ImovelInfo> encontrados = listarImoveis();
         return encontrados.isEmpty() ? null : encontrados.get(0);
     }
 

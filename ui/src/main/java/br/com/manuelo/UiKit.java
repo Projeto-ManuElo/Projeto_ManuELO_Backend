@@ -97,6 +97,26 @@ public final class UiKit {
         return header;
     }
 
+    public static Div cardHeaderComSubtitulo(String titulo, Span subtitulo, Component... acoes) {
+        Div textos = new Div();
+        textos.addClassName("card-heading");
+        H3 h = new H3(titulo);
+        h.addClassName("card-title");
+        textos.add(h);
+        if (subtitulo != null) {
+            subtitulo.addClassName("card-subtitle");
+            textos.add(subtitulo);
+        }
+        Div header = new Div(textos);
+        header.addClassName("card-header");
+        if (acoes.length > 0) {
+            Div direita = new Div(acoes);
+            direita.addClassName("card-actions");
+            header.add(direita);
+        }
+        return header;
+    }
+
     public static Div row(Component... children) {
         Div row = new Div(children);
         row.addClassName("row");

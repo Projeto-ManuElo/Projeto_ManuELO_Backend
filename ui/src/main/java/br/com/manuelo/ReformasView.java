@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Locale;
 
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -20,34 +21,75 @@ public class ReformasView extends Div {
     private static final DateTimeFormatter DATA_ANO = DateTimeFormatter.ofPattern("dd MMM yyyy", UiKit.PT_BR);
 
     private final ReformaRepositorio repositorio;
-    private final ReformaRepositorio.ImovelInfo imovel;
+    private final ComboBox<ReformaRepositorio.ImovelInfo> seletor = new ComboBox<>("Imóvel");
+    private final Span subtitulo = new Span();
+    private ReformaRepositorio.ImovelInfo imovel;
     private List<DemoData.Reforma> reformas;
     private final Div tabela = new Div();
     private final ReformaDialog dialog;
 
     public ReformasView(ReformaRepositorio repositorio) {
         this.repositorio = repositorio;
-        this.imovel = repositorio.imovelPadrao();
-        this.reformas = imovel == null ? List.of() : repositorio.listar(imovel.id());
         this.dialog = new ReformaDialog(this::adicionar);
         addClassName("page");
 
-        Button exportar = UiKit.secondary("Exportar", e -> UiKit.aviso("Exportação gerada com sucesso."));
-        Button novo = UiKit.primaryIcon("Novo Registro", VaadinIcon.PLUS,
-                e -> dialog.abrir(imovel == null ? "" : imovel.proprietario()));
-        add(UiKit.header("Imóveis", null, exportar, novo));
+        List<ReformaRepositorio.ImovelInfo> imoveis = repositorio.listarImoveis();
+        this.imovel = imoveis.isEmpty() ? null : imoveis.get(0);
+        this.reformas = imovel == null ? List.of() : repositorio.listar(imovel.id());
 
-        String subtitulo = imovel == null ? null
-                : "Proprietário atual: " + (imovel.proprietario() == null ? "sem contrato vigente"
-                        : imovel.proprietario()) + "; " + imovel.endereco();
+        seletor.setItems(imoveis);
+        seletor.setItemLabelGenerator(ReformaRepositorio.ImovelInfo::endereco);
+        seletor.setPlaceholder("Selecione o imóvel");
+        seletor.setWidth("320px");
+        seletor.addValueChangeListener(event -> {
+            if (event.getValue() != null) {
+                selecionar(event.getValue());
+            }
+        });
+
+        Button exportar = UiKit.secondary("Exportar", e -> UiKit.aviso("Exportação gerada com sucesso."));
+        Button novo = UiKit.primaryIcon("Novo Registro", VaadinIcon.PLUS, e -> abrirNovo());
+        add(UiKit.header("Imóveis", null, exportar, novo));
 
         tabela.addClassName("table");
         Div card = UiKit.card(
-                UiKit.cardHeader("Histórico de reformas", subtitulo,
-                        UiKit.secondary("Ver tudo", e -> UiKit.aviso("Histórico completo em preparação."))),
+                UiKit.cardHeaderComSubtitulo("Histórico de reformas", subtitulo, seletor),
                 tabela);
         add(card);
+
+        if (imovel != null) {
+            seletor.setValue(imovel);
+        }
+        atualizarSubtitulo();
         renderizar();
+    }
+
+    private void selecionar(ReformaRepositorio.ImovelInfo selecionado) {
+        this.imovel = selecionado;
+        this.reformas = repositorio.listar(selecionado.id());
+        atualizarSubtitulo();
+        renderizar();
+    }
+
+    private void atualizarSubtitulo() {
+        subtitulo.setText(textoSubtitulo());
+    }
+
+    private String textoSubtitulo() {
+        if (imovel == null) {
+            return "Selecione um imóvel para ver o histórico.";
+        }
+        return "Proprietário atual: "
+                + (imovel.proprietario() == null ? "sem contrato vigente" : imovel.proprietario())
+                + "; " + imovel.endereco();
+    }
+
+    private void abrirNovo() {
+        if (imovel == null) {
+            UiKit.erro("Selecione um imóvel antes de registrar reformas.");
+            return;
+        }
+        dialog.abrir(imovel.proprietario() == null ? "" : imovel.proprietario());
     }
 
     private void renderizar() {
@@ -76,7 +118,7 @@ public class ReformasView extends Div {
 
     private void adicionar(DemoData.Reforma reforma) {
         if (imovel == null) {
-            UiKit.erro("Cadastre um imóvel antes de registrar reformas.");
+            UiKit.erro("Selecione um imóvel antes de registrar reformas.");
             return;
         }
         try {
