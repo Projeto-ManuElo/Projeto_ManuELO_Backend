@@ -267,3 +267,27 @@ Modelo de bloco (copie para cada problema):
 - Status: ABERTO
 - Tentativas: 0/3
 - Commit:
+
+## P-023 Envio de token antes do commit e concorrência (A-13)
+- Severidade: BAIXA/MEDIA
+- Camada: back
+- Evidência: `RecuperacaoSenhaService.solicitar` entrega o token dentro da transação; duas solicitações simultâneas podem deixar mais de um token pendente (a invalidação anterior não usa lock).
+- Causa raiz: ausência de outbox/pós-commit e de lock pessimista no usuário.
+- Reprodução: revisão de `RecuperacaoSenhaService.java:60-115`.
+- Dono: back
+- Critério de aceite: envio após commit (ou outbox) e lock/constraint que garanta um único token pendente por usuário.
+- Status: ABERTO
+- Tentativas: 0/3
+- Commit:
+
+## P-024 MANUELO_APP_URL não documentado para o link de senha
+- Severidade: BAIXA
+- Camada: back + docs
+- Evidência: `manuelo.app.url` tem default `http://localhost:8080`; `.env.example`/README não documentam; em deploy o link de recuperação pode apontar para host errado.
+- Causa raiz: propriedade criada em A-13 sem documentação (A-81 cobre perfis/README).
+- Reprodução: `grep -n "manuelo.app.url" src/main/resources/application.properties .env.example`.
+- Dono: back
+- Critério de aceite: MANUELO_APP_URL documentada e validada no boot; link correto em dev/prod.
+- Status: ABERTO
+- Tentativas: 0/3
+- Commit:

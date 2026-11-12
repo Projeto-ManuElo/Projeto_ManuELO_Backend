@@ -6,13 +6,13 @@ import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
-import br.com.manuelo.dados.AutenticacaoService;
+import com.Projeto.manuelo.seguranca.RecuperacaoSenhaService;
 
 @Route("recuperar-senha")
 @PageTitle("Recuperar Senha")
 public class RecuperarSenhaView extends AuthLayout {
 
-    public RecuperarSenhaView(AutenticacaoService autenticacao) {
+    public RecuperarSenhaView(RecuperacaoSenhaService recuperacao) {
         titulo("Recuperação de Senha", null);
 
         Div espaco = new Div();
@@ -27,7 +27,7 @@ public class RecuperarSenhaView extends AuthLayout {
                 return;
             }
             email.setInvalid(false);
-            autenticacao.solicitarRecuperacao(email.getValue());
+            recuperacao.solicitar(email.getValue());
             UiKit.ir("email-enviado");
         });
         recuperar.addClassName("auth-submit");

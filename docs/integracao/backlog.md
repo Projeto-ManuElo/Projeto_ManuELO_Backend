@@ -24,6 +24,7 @@ Status: PENDENTE | EM_ANDAMENTO | CONCLUIDO | BLOQUEADO. Dono: ordem banco -> ba
   **CONCLUIDO** (UsuarioAdminService + UsuariosView; 403 para COLABORADOR; auditoria; juiz 8/8).
 - A-13 Recuperar e redefinir senha: token aleatório, só o hash no banco, uso único, expiração, entrega via interface
   (DEC-I05). Aceite: token expirado ou reutilizado falha; senha nova funciona no login.
+  **CONCLUIDO** (RecuperacaoSenhaService + EnvioTokenSenha; RecuperacaoSenhaTest 10/10; juiz 8/8; ressalvas P-023).
 - A-14 Bootstrap do primeiro administrador por variáveis de ambiente (DEC-I04). Aceite: banco vazio + variáveis = admin ATIVO.
 - A-15 Auditoria: criado_por/atualizado_por vêm do usuário logado em toda gravação.
 
