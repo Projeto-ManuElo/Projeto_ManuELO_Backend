@@ -1,7 +1,7 @@
 # Progresso (memória do loop; a conversa não é memória)
 
-Iteração: 3 | Orçamento: 120 | Runtime: postgres local embutido (porta 55433; sem Docker/psql na máquina)
-Última atualização: F2 concluída; A-02 (JPA base) em andamento
+Iteração: 5 | Orçamento: 120 | Runtime: postgres local embutido (porta 55433; sem Docker/psql na máquina)
+Última atualização: S0 concluída (A-01/A-02/A-03); próxima: A-10 Spring Security
 
 ## Entendimento inicial (8 linhas)
 1. O pacote ManuElo_Equipe_Completa foi copiado para a raiz: AGENTS.md, opencode.jsonc, .opencode/agents e docs/integracao.
@@ -17,13 +17,16 @@ Iteração: 3 | Orçamento: 120 | Runtime: postgres local embutido (porta 55433;
 - [x] F0 Base: juiz criado/endurecido (A-01) e estado real auditado
 - [x] F1 Mapa: mapa.md completo (auditoria com evidências)
 - [x] F2 Plano: backlog conferido e ordenado (S0 -> S8, ordem por dependência mantida)
-- [ ] F3 Construção: itens concluídos 1 / 25 (A-01)
+- [x] S0 Fundação: A-01/A-02/A-03 concluídos; juiz EXIT 0
+- [ ] F3 Construção: itens concluídos 3 / 25
 - [ ] F4 Fecho: A-90, juiz verde, RELATORIO-FINAL.md
 
 ## Item em andamento
-A-02 Persistência base (JPA/entidades/AuditorAware/validate) — dono: back; tentativa 1.
+A-10 Spring Security real (UserDetailsService, BCrypt, rotas, papéis, status gate) — dono: back; tentativa 1.
 
 ## Log (uma linha por iteração: fase, item, agente, resultado do juiz)
 - Iteração 1: pacote da equipe instalado; baseline T25 commitada (b33ff36); F0 despachada (QA + mapeador).
 - Iteração 2: F0/F1 — juiz endurecido por P-017; auditoria do mapeador (18 problemas, 7 bloqueantes); juiz EXIT=1 na etapa 4 por P-001/P-002/P-008.
 - Iteração 3: F2 — backlog reordenado e A-01 CONCLUIDO; A-02 despachada ao back.
+- Iteração 4: A-02 — 14 entidades JPA + AuditorAware + validate; juiz verde com aviso P-002 (DEC-I15); revisor APROVADO.
+- Iteração 5: A-03 — 14 repositórios + round-trip por entidade + UPDATE bloqueado; juiz EXIT 0; revisor APROVADO com ressalvas P-019/P-020.

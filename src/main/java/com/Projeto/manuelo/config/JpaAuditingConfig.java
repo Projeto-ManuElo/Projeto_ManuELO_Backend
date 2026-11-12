@@ -1,10 +1,13 @@
 package com.Projeto.manuelo.config;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.auditing.DateTimeProvider;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -19,13 +22,18 @@ import org.springframework.security.core.userdetails.UserDetails;
  * Sem autenticação o auditor é vazio; nenhum usuário é inventado.
  */
 @Configuration
-@EnableJpaAuditing(auditorAwareRef = "auditorAware")
+@EnableJpaAuditing(auditorAwareRef = "auditorAware", dateTimeProviderRef = "dateTimeProvider")
 public class JpaAuditingConfig {
 
     private final JdbcClient jdbc;
 
     public JpaAuditingConfig(JdbcTemplate jdbcTemplate) {
         this.jdbc = JdbcClient.create(jdbcTemplate);
+    }
+
+    @Bean
+    DateTimeProvider dateTimeProvider() {
+        return () -> Optional.of(OffsetDateTime.now(ZoneOffset.UTC));
     }
 
     @Bean

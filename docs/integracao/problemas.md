@@ -219,3 +219,27 @@ Modelo de bloco (copie para cada problema):
 - Status: ABERTO
 - Tentativas: 0/3
 - Commit:
+
+## P-019 Repositórios de agregados imutáveis expõem save/delete (A-03)
+- Severidade: MEDIA
+- Camada: back
+- Evidência: `MovimentacaoJpaRepository`, `CaucaoMovimentacaoJpaRepository`, `RelatorioJpaRepository`, `RelatorioMovimentacaoJpaRepository`, `RelatorioContratoJpaRepository` estendem `JpaRepository`, expondo `save` (UPDATE) e `delete*`, embora as tabelas sejam imutáveis (R01/R11) e tenham trigger.
+- Causa raiz: implementação mínima de A-03; a trigger barra em runtime, mas a API permite a tentativa.
+- Reprodução: `grep -n "extends JpaRepository" src/main/java/com/Projeto/manuelo/dominio/repositorio/*.java`.
+- Dono: back
+- Critério de aceite: interface mínima de escrita (insert/find) para os agregados imutáveis; teste garante que não há update/delete exposto.
+- Status: ABERTO
+- Tentativas: 0/3
+- Commit:
+
+## P-020 Auditoria JPA sem prova de identidade (A-15)
+- Severidade: MEDIA
+- Camada: qa + back
+- Evidência: `RoundTripEntidadesTest` verifica timestamps não nulos, mas nunca `criado_por/atualizado_por/gerado_por == usuario logado`; `JpaAuditingConfig` retorna vazio sem SecurityContext e na prática P-008 seguirá aberto até A-10/A-15.
+- Causa raiz: autenticação ainda não integrada ao SecurityContext (A-10) e teste mínimo de A-03.
+- Reprodução: ler `RoundTripEntidadesTest.java` (asserts de auditoria) e `JpaAuditingConfig.auditorAware`.
+- Dono: qa + back
+- Critério de aceite: teste com usuário autenticado prova os 4 campos de auditoria em cada gravação.
+- Status: ABERTO
+- Tentativas: 0/3
+- Commit:

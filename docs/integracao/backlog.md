@@ -6,9 +6,10 @@ Status: PENDENTE | EM_ANDAMENTO | CONCLUIDO | BLOQUEADO. Dono: ordem banco -> ba
   **CONCLUIDO** (juiz endurecido em 12/11: reprova P-001/P-002/P-008, código 1; etapas 1-3 verdes).
 - A-02 Persistência base: DataSource por variáveis de ambiente (Session pooler 5432), JPA com ddl-auto=validate, Flyway
   existente, mapeamento de UUID, BigDecimal, timestamptz e enums nativos, BaseEntity com auditoria e AuditorAware.
-  Aceite: app sobe contra o banco migrado com validate.
+  Aceite: app sobe contra o banco migrado com validate. **CONCLUIDO** (commit 371eda3; 14 entidades, validate OK, juiz verde).
 - A-03 Entidades e repositórios de todo o modelo v3 (usuarios ... configuracoes, views como projeções de leitura).
   Aceite: round-trip (insert + select) por entidade; movimentacoes com @Immutable e sem UPDATE.
+  **CONCLUIDO** (14 repositórios; RoundTripEntidadesTest 2/2; juiz EXIT 0; ressalvas P-019/P-020).
 
 ## S1 Autenticação e usuários (telas /login, /cadastro, /aguardando-aprovacao, /recuperar-senha, /redefinir-senha, /usuarios)
 - A-10 Spring Security real: UserDetailsService, BCrypt, login/logout, rotas protegidas (públicas: login, cadastro,
