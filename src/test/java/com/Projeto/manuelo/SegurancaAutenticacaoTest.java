@@ -38,6 +38,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -187,6 +188,51 @@ class SegurancaAutenticacaoTest {
 		assertThat(statusHttp("/VAADIN/config/stats.json") / 100)
 				.as("/VAADIN/... é recurso público e não pode ser redirecionado")
 				.isNotEqualTo(3);
+	}
+
+	@Test
+	void usuariosAnonimoRedirecionaAoLogin() throws Exception {
+		MvcResult resultado;
+		try {
+			resultado = mockMvc.perform(get("/usuarios")).andReturn();
+		} catch (jakarta.servlet.ServletException ex) {
+			throw new AssertionError("GET /usuarios anônimo deveria ser barrado pelo SecurityConfig "
+					+ "com redirect ao login, mas chegou ao servlet Vaadin.", ex);
+		}
+		assertThat(resultado.getResponse().getStatus())
+				.as("GET /usuarios anônimo deve redirecionar ao login")
+				.isBetween(300, 399);
+	}
+
+	@Test
+	@WithMockUser(username = "colab", roles = "COLABORADOR")
+	void usuariosComPerfilColaboradorRecebe403() throws Exception {
+		MvcResult resultado;
+		try {
+			resultado = mockMvc.perform(get("/usuarios")).andReturn();
+		} catch (jakarta.servlet.ServletException ex) {
+			throw new AssertionError("COLABORADOR não pode atravessar o filtro de /usuarios "
+					+ "e chegar ao servlet Vaadin.", ex);
+		}
+		assertThat(resultado.getResponse().getStatus())
+				.as("GET /usuarios com COLABORADOR deve responder 403")
+				.isEqualTo(403);
+	}
+
+	@Test
+	@WithMockUser(username = "admin", roles = "ADMINISTRADOR")
+	void usuariosComPerfilAdministradorAtravessaOFiltro() throws Exception {
+		MvcResult resultado;
+		try {
+			resultado = mockMvc.perform(get("/usuarios")).andReturn();
+		} catch (jakarta.servlet.ServletException ex) {
+			// O servlet Vaadin não renderiza a view sob MockMvc; chegar ao servlet já
+			// prova que o filtro deixou o ADMINISTRADOR passar.
+			return;
+		}
+		assertThat(resultado.getResponse().getStatus())
+				.as("GET /usuarios com ADMINISTRADOR deve atravessar o filtro (200/302)")
+				.isIn(200, 302, 303);
 	}
 
 	@Test

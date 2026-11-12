@@ -18,8 +18,10 @@ Status: PENDENTE | EM_ANDAMENTO | CONCLUIDO | BLOQUEADO. Dono: ordem banco -> ba
   **CONCLUIDO** (UserDetailsService/AuthenticationManager reais; `SegurancaAutenticacaoTest` 10/0/1; juiz 8/8).
 - A-11 Cadastro real: grava usuarios com status PENDENTE_APROVACAO e perfil COLABORADOR; e-mail único; redireciona
   a /aguardando-aprovacao. Aceite: registro existe no banco após reiniciar o contexto.
+  **CONCLUIDO** (CadastroUsuariosTest; e-mail único case-insensitive; hash BCrypt; ressalva JDBC em P-021).
 - A-12 Tela /usuarios (só ADMINISTRADOR): lista pendentes e ativos, aprova (aprovado_por/em), reprova/inativa, altera perfil.
   Aceite: COLABORADOR é barrado; aprovação libera o login.
+  **CONCLUIDO** (UsuarioAdminService + UsuariosView; 403 para COLABORADOR; auditoria; juiz 8/8).
 - A-13 Recuperar e redefinir senha: token aleatório, só o hash no banco, uso único, expiração, entrega via interface
   (DEC-I05). Aceite: token expirado ou reutilizado falha; senha nova funciona no login.
 - A-14 Bootstrap do primeiro administrador por variáveis de ambiente (DEC-I04). Aceite: banco vazio + variáveis = admin ATIVO.

@@ -243,3 +243,27 @@ Modelo de bloco (copie para cada problema):
 - Status: ABERTO
 - Tentativas: 0/3
 - Commit:
+
+## P-021 Cadastro A-11 ainda em JDBC (DEC-I01)
+- Severidade: MEDIA
+- Camada: back + front
+- Evidência: `ui/src/main/java/br/com/manuelo/dados/AutenticacaoService.cadastrar` usa `JdbcClient` direto; o teste A-11 lê na mesma JVM, sem provar persistência após reinício.
+- Causa raiz: herança do T25; A-11 fechou com o comportamento funcional.
+- Reprodução: `grep -n "INSERT INTO usuarios" ui/.../AutenticacaoService.java`.
+- Dono: back + front
+- Critério de aceite: cadastro via serviço JPA transacional e teste com novo contexto Spring lendo o registro.
+- Status: ABERTO
+- Tentativas: 0/3
+- Commit:
+
+## P-022 Perfil/inativação não invalida sessão já aberta (A-80)
+- Severidade: MEDIA
+- Camada: back + front
+- Evidência: `SessaoUsuario` cacheia perfil/id; `UsuarioDetalhes` é carregado no login. Após rebaixar/inativar o próprio usuário, a sessão mantém ROLE antiga até novo login.
+- Causa raiz: ausência de revalidação por requisição e de revogação de sessões.
+- Reprodução: logar como admin, alterar o próprio perfil para COLABORADOR e acessar `/usuarios` sem novo login.
+- Dono: back + front
+- Critério de aceite: autorização revalidada contra o banco a cada navegação ou sessão revogada na alteração.
+- Status: ABERTO
+- Tentativas: 0/3
+- Commit:

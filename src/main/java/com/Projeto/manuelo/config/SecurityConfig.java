@@ -50,7 +50,7 @@ public class SecurityConfig {
 	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 				http.authorizeHttpRequests(auth -> auth
 						.requestMatchers(ROTAS_PUBLICAS).permitAll()
-						.requestMatchers("/usuarios").hasRole("ADMINISTRADOR")
+						.requestMatchers("/usuarios", "/usuarios/**").hasRole("ADMINISTRADOR")
 						.anyRequest().authenticated())
 				.exceptionHandling(ex -> ex
 						.authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/")))

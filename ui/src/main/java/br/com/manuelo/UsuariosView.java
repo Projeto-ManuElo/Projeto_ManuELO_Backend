@@ -1,6 +1,7 @@
 package br.com.manuelo;
 
 import java.util.List;
+import java.util.UUID;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Div;
@@ -12,19 +13,21 @@ import com.vaadin.flow.router.Route;
 
 import br.com.manuelo.dados.Dominio;
 import br.com.manuelo.dados.SessaoUsuario;
-import br.com.manuelo.dados.UsuarioRepositorio;
+
+import com.Projeto.manuelo.dominio.enums.PerfilUsuario;
+import com.Projeto.manuelo.seguranca.UsuarioAdminService;
 
 @Route(value = "usuarios", layout = MainLayout.class)
 @PageTitle("Usuários")
 public class UsuariosView extends Div implements BeforeEnterObserver {
 
-    private final UsuarioRepositorio repositorio;
+    private final UsuarioAdminService servico;
     private final SessaoUsuario sessao;
     private final Div tabela = new Div();
-    private List<UsuarioRepositorio.UsuarioLista> usuarios;
+    private List<UsuarioAdminService.UsuarioLista> usuarios;
 
-    public UsuariosView(UsuarioRepositorio repositorio, SessaoUsuario sessao) {
-        this.repositorio = repositorio;
+    public UsuariosView(UsuarioAdminService servico, SessaoUsuario sessao) {
+        this.servico = servico;
         this.sessao = sessao;
         addClassName("page");
         add(UiKit.header("Usuários", "Aprove cadastros pendentes e gerencie o acesso ao sistema"));
@@ -38,18 +41,20 @@ public class UsuariosView extends Div implements BeforeEnterObserver {
             event.rerouteTo("home");
             return;
         }
-        usuarios = repositorio.listar();
+        usuarios = servico.listar();
         renderizar();
     }
 
     private void renderizar() {
         tabela.removeAll();
         tabela.add(UiKit.tableHead("cols-usuarios", "Nome", "Email", "Perfil", "Status", "Ações"));
-        for (UsuarioRepositorio.UsuarioLista usuario : usuarios) {
+        for (UsuarioAdminService.UsuarioLista usuario : usuarios) {
             Div acoes = new Div();
-            if (usuario.pendente()) {
+            if ("PENDENTE_APROVACAO".equals(usuario.status())) {
                 acoes.add(UiKit.secondary("Aprovar", e -> aprovar(usuario.id())));
             } else if ("ATIVO".equals(usuario.status()) && !usuario.id().equals(sessao.id())) {
+                acoes.add(UiKit.secondary("Alterar perfil",
+                        e -> alterarPerfil(usuario.id(), usuario.nome(), usuario.perfil())));
                 acoes.add(UiKit.secondary("Inativar", e -> inativar(usuario.id())));
             }
             tabela.add(UiKit.tableRow("cols-usuarios",
@@ -63,8 +68,8 @@ public class UsuariosView extends Div implements BeforeEnterObserver {
 
     private void aprovar(String id) {
         try {
-            repositorio.aprovar(id);
-            usuarios = repositorio.listar();
+            servico.aprovar(UUID.fromString(id));
+            usuarios = servico.listar();
             renderizar();
             UiKit.aviso("Usuário aprovado.");
         } catch (RuntimeException ex) {
@@ -75,10 +80,29 @@ public class UsuariosView extends Div implements BeforeEnterObserver {
     private void inativar(String id) {
         UiKit.confirmar("Inativar usuário?", "O usuário perderá o acesso ao sistema.", "Inativar", true, () -> {
             try {
-                repositorio.inativar(id);
-                usuarios = repositorio.listar();
+                servico.inativar(UUID.fromString(id));
+                usuarios = servico.listar();
                 renderizar();
                 UiKit.aviso("Usuário inativado.");
+            } catch (RuntimeException ex) {
+                UiKit.erro(ex.getMessage());
+            }
+        });
+    }
+
+    private void alterarPerfil(String id, String nome, String perfilAtual) {
+        PerfilUsuario novoPerfil = "ADMINISTRADOR".equals(perfilAtual)
+                ? PerfilUsuario.COLABORADOR
+                : PerfilUsuario.ADMINISTRADOR;
+        String pergunta = novoPerfil == PerfilUsuario.ADMINISTRADOR
+                ? "Tornar ADMINISTRADOR?"
+                : "Tornar COLABORADOR?";
+        UiKit.confirmar(pergunta, "O perfil de " + nome + " será alterado.", "Alterar perfil", false, () -> {
+            try {
+                servico.alterarPerfil(UUID.fromString(id), novoPerfil);
+                usuarios = servico.listar();
+                renderizar();
+                UiKit.aviso("Perfil alterado.");
             } catch (RuntimeException ex) {
                 UiKit.erro(ex.getMessage());
             }

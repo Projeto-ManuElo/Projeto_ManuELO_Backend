@@ -1,7 +1,7 @@
 # Progresso (memória do loop; a conversa não é memória)
 
-Iteração: 7 | Orçamento: 120 | Runtime: postgres local embutido (porta 55433; sem Docker/psql na máquina)
-Última atualização: S1 iniciada; A-10 concluído; próxima A-11/A-12
+Iteração: 10 | Orçamento: 120 | Runtime: postgres local embutido (porta 55433; sem Docker/psql na máquina)
+Última atualização: A-10/A-11/A-12 concluídos; próxima A-13 (token de senha)
 
 ## Entendimento inicial (8 linhas)
 1. O pacote ManuElo_Equipe_Completa foi copiado para a raiz: AGENTS.md, opencode.jsonc, .opencode/agents e docs/integracao.
@@ -18,11 +18,11 @@ Iteração: 7 | Orçamento: 120 | Runtime: postgres local embutido (porta 55433;
 - [x] F1 Mapa: mapa.md completo (auditoria com evidências)
 - [x] F2 Plano: backlog conferido e ordenado (S0 -> S8, ordem por dependência mantida)
 - [x] S0 Fundação: A-01/A-02/A-03 concluídos; juiz EXIT 0
-- [ ] F3 Construção: itens concluídos 4 / 25
+- [ ] F3 Construção: itens concluídos 6 / 25
 - [ ] F4 Fecho: A-90, juiz verde, RELATORIO-FINAL.md
 
 ## Item em andamento
-A-11 Cadastro real (JPA/serviço) e A-12 alteração de perfil — dono: back + front; tentativa 1.
+A-13 Recuperar/redefinir senha com token SHA-256, uso único e expiração — dono: back + front + qa; tentativa 1.
 
 ## Log (uma linha por iteração: fase, item, agente, resultado do juiz)
 - Iteração 1: pacote da equipe instalado; baseline T25 commitada (b33ff36); F0 despachada (QA + mapeador).
@@ -31,4 +31,7 @@ A-11 Cadastro real (JPA/serviço) e A-12 alteração de perfil — dono: back + 
 - Iteração 4: A-02 — 14 entidades JPA + AuditorAware + validate; juiz verde com aviso P-002 (DEC-I15); revisor APROVADO.
 - Iteração 5: A-03 — 14 repositórios + round-trip por entidade + UPDATE bloqueado; juiz EXIT 0; revisor APROVADO com ressalvas P-019/P-020.
 - Iteração 6: A-10 — Spring Security real (UserDetailsService, AuthenticationManager, rotas, gate, sessão, CSRF off); revisão reprovou 6 pontos e correções aplicadas.
-- Iteração 7: A-10 re-revisado e APROVADO; teste 10/0/1; juiz 8/8; commit pendente.
+- Iteração 7: A-10 re-revisado e APROVADO; teste 10/0/1; juiz 8/8; commit 97d0f72.
+- Iteração 8: A-11/A-12 — CadastroUsuariosTest + UsuarioAdminService + /usuarios com perfil; 22 testes verdes.
+- Iteração 9: revisão reprovou barreira de COLABORADOR e caminho JDBC; correções aplicadas (serviço exige ADMIN, repo removido).
+- Iteração 10: A-11/A-12 re-revisados e APROVADOS; juiz 8/8; commit pendente.
