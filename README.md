@@ -70,6 +70,18 @@ java -jar target/manuelo-0.0.1-SNAPSHOT.jar
 
 Acesse `http://localhost:8080`. O primeiro acesso usa o administrador configurado.
 
+## SMTP local (desenvolvimento)
+
+Para ver os e-mails de redefinição de senha sem enviar para fora:
+
+```sh
+npx maildev --smtp 1025 --web 1080
+```
+
+No `.env`, use `SPRING_MAIL_HOST=127.0.0.1`, `SPRING_MAIL_PORT=1025` e desative
+`SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH`/`STARTTLS`. A caixa fica em
+`http://127.0.0.1:1080`. Em produção, troque pelos dados do SMTP real.
+
 ## Testes e juiz de integração
 
 Os testes usam PostgreSQL real (não Testcontainers) e o perfil `test`. Com um banco acessível:
