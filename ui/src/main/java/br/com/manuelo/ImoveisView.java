@@ -98,7 +98,7 @@ public class ImoveisView extends Div implements BeforeEnterObserver {
         tabela.removeAll();
         tabela.add(UiKit.tableHead("cols-imoveis", "Endereço", "Tipo", "Inquilino", "Status"));
 
-        List<DemoData.Imovel> filtrados = repositorio.listar(
+        List<Modelos.Imovel> filtrados = repositorio.listar(
                 endereco.getValue(), tipo.getValue(), status.getValue(), inquilino.getValue());
 
         if (filtrados.isEmpty()) {
@@ -106,7 +106,7 @@ public class ImoveisView extends Div implements BeforeEnterObserver {
             return;
         }
 
-        for (DemoData.Imovel imovel : filtrados) {
+        for (Modelos.Imovel imovel : filtrados) {
             Div linha = UiKit.tableRow("cols-imoveis",
                     new Span(imovel.endereco()),
                     UiKit.muted(imovel.tipo()),
@@ -120,7 +120,7 @@ public class ImoveisView extends Div implements BeforeEnterObserver {
         }
     }
 
-    private void editarImovel(DemoData.Imovel imovel) {
+    private void editarImovel(Modelos.Imovel imovel) {
         dialog.abrirEdicao(imovel);
     }
 

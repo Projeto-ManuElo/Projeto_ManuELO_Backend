@@ -24,7 +24,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import br.com.manuelo.DemoData;
+import br.com.manuelo.Modelos;
 import br.com.manuelo.dados.ContratoRepositorio;
 
 /**
@@ -149,9 +149,9 @@ class ContratosFiltrosTest {
 
 	@Test
 	void filtraCpfComMascaraESemMascaraComOMesmoResultado() {
-		List<DemoData.Contrato> semMascara =
+		List<Modelos.Contrato> semMascara =
 				contratoRepositorio.listar(null, documentoAtivo, null, null, null);
-		List<DemoData.Contrato> comMascara =
+		List<Modelos.Contrato> comMascara =
 				contratoRepositorio.listar(null, mascararCpf(documentoAtivo), null, null, null);
 
 		assertThat(ids(semMascara)).as("CPF só com dígitos isola o contrato")
@@ -181,11 +181,11 @@ class ContratosFiltrosTest {
 
 	@Test
 	void filtraSituacaoCoerenteComAView() {
-		List<DemoData.Contrato> ativos =
+		List<Modelos.Contrato> ativos =
 				contratoRepositorio.listar(MARCADOR, null, null, null, "Ativo");
-		List<DemoData.Contrato> aVencer =
+		List<Modelos.Contrato> aVencer =
 				contratoRepositorio.listar(MARCADOR, null, null, null, "A vencer");
-		List<DemoData.Contrato> atrasados =
+		List<Modelos.Contrato> atrasados =
 				contratoRepositorio.listar(MARCADOR, null, null, null, "Atrasado");
 
 		assertThat(ids(ativos)).as("'Ativo' deve trazer só o contrato vigente sem atraso")
@@ -195,9 +195,9 @@ class ContratosFiltrosTest {
 		assertThat(ids(atrasados)).as("'Atrasado' deve trazer só o contrato com competência aberta")
 				.containsExactly(contratoAtrasado.toString());
 
-		assertThat(ativos).extracting(DemoData.Contrato::situacao).containsOnly("Ativo");
-		assertThat(aVencer).extracting(DemoData.Contrato::situacao).containsOnly("A vencer");
-		assertThat(atrasados).extracting(DemoData.Contrato::situacao).containsOnly("Atrasado");
+		assertThat(ativos).extracting(Modelos.Contrato::situacao).containsOnly("Ativo");
+		assertThat(aVencer).extracting(Modelos.Contrato::situacao).containsOnly("A vencer");
+		assertThat(atrasados).extracting(Modelos.Contrato::situacao).containsOnly("Atrasado");
 	}
 
 	@Test
@@ -210,8 +210,8 @@ class ContratosFiltrosTest {
 				.isEmpty();
 	}
 
-	private List<String> ids(List<DemoData.Contrato> contratos) {
-		return contratos.stream().map(DemoData.Contrato::id).toList();
+	private List<String> ids(List<Modelos.Contrato> contratos) {
+		return contratos.stream().map(Modelos.Contrato::id).toList();
 	}
 
 	private void inserirImovel(UUID id, String logradouro, String numero, String bairro,

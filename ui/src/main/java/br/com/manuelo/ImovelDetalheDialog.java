@@ -21,12 +21,12 @@ public class ImovelDetalheDialog extends Dialog {
     private static final DateTimeFormatter DATA = DateTimeFormatter.ofPattern("dd/MM/yyyy",
             Locale.forLanguageTag("pt-BR"));
 
-    private final DemoData.Imovel imovel;
+    private final Modelos.Imovel imovel;
     private final ContratoRepositorio contratos;
-    private final Consumer<DemoData.Imovel> aoEditar;
+    private final Consumer<Modelos.Imovel> aoEditar;
 
-    public ImovelDetalheDialog(DemoData.Imovel imovel, ContratoRepositorio contratos,
-            Consumer<DemoData.Imovel> aoEditar) {
+    public ImovelDetalheDialog(Modelos.Imovel imovel, ContratoRepositorio contratos,
+            Consumer<Modelos.Imovel> aoEditar) {
         this.imovel = imovel;
         this.contratos = contratos;
         this.aoEditar = aoEditar;

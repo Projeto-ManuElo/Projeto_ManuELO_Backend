@@ -102,7 +102,7 @@ public class InquilinoDialog extends Dialog {
         open();
     }
 
-    public void abrirEdicao(DemoData.Inquilino inquilino) {
+    public void abrirEdicao(Modelos.Inquilino inquilino) {
         idAtual = inquilino.id();
         titulo.setText("Editar Inquilino");
         nome.setValue(inquilino.nome());

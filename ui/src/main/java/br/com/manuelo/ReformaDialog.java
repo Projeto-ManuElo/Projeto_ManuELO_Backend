@@ -14,13 +14,13 @@ import com.vaadin.flow.component.textfield.TextField;
 
 public class ReformaDialog extends Dialog {
 
-    private final Consumer<DemoData.Reforma> aoSalvar;
+    private final Consumer<Modelos.Reforma> aoSalvar;
     private final DatePicker data = UiKit.date("Data");
     private final TextField descricao = UiKit.text("Descrição", "Ex: reparo hidráulico");
     private final TextField proprietario = UiKit.text("Proprietário do período", "Nome do proprietário");
     private final TextField valor = UiKit.text("Valor", "R$ 0,00");
 
-    public ReformaDialog(Consumer<DemoData.Reforma> aoSalvar) {
+    public ReformaDialog(Consumer<Modelos.Reforma> aoSalvar) {
         this.aoSalvar = aoSalvar;
         addClassName("modal");
         setWidth("560px");
@@ -66,7 +66,7 @@ public class ReformaDialog extends Dialog {
         } catch (NumberFormatException ignored) {
             valorNumerico = BigDecimal.ZERO;
         }
-        aoSalvar.accept(new DemoData.Reforma(data.getValue() == null ? LocalDate.now() : data.getValue(),
+        aoSalvar.accept(new Modelos.Reforma(data.getValue() == null ? LocalDate.now() : data.getValue(),
                 descricao.getValue(), proprietario.getValue() == null ? "" : proprietario.getValue(),
                 valorNumerico));
         close();

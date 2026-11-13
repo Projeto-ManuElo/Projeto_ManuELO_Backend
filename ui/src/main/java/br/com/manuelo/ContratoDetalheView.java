@@ -50,7 +50,7 @@ public class ContratoDetalheView extends Div implements BeforeEnterObserver {
                 .getOrDefault("id", List.of()).stream().findFirst().orElse("");
         contrato = id.isBlank() ? null : repositorio.buscar(id);
         if (contrato == null) {
-            List<DemoData.Contrato> todos = repositorio.listar();
+            List<Modelos.Contrato> todos = repositorio.listar();
             if (!todos.isEmpty()) {
                 contrato = repositorio.buscar(todos.get(0).id());
             }

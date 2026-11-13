@@ -10,7 +10,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
-import br.com.manuelo.DemoData;
+import br.com.manuelo.Modelos;
 
 @Repository
 public class ImovelRepositorio {
@@ -30,11 +30,11 @@ public class ImovelRepositorio {
         this.sessao = sessao;
     }
 
-    public List<DemoData.Imovel> listar() {
+    public List<Modelos.Imovel> listar() {
         return listar(null, null, null, null);
     }
 
-    public List<DemoData.Imovel> listar(String endereco, String tipo, String status, String inquilino) {
+    public List<Modelos.Imovel> listar(String endereco, String tipo, String status, String inquilino) {
         StringBuilder sql = new StringBuilder("""
                 SELECT v.id::text AS id, v.logradouro, v.numero, v.complemento, v.bairro,
                        v.cidade, v.uf, v.cep, v.tipo::text AS tipo,
@@ -94,7 +94,7 @@ public class ImovelRepositorio {
             if (cep != null && !cep.isBlank()) {
                 observacoes += " • CEP " + cep;
             }
-            return new DemoData.Imovel(
+            return new Modelos.Imovel(
                     rs.getString("id"),
                     rs.getString("logradouro"),
                     rs.getString("numero"),

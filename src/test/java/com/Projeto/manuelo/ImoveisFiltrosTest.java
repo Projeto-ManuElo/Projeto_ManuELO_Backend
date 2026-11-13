@@ -16,7 +16,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import br.com.manuelo.DemoData;
+import br.com.manuelo.Modelos;
 import br.com.manuelo.dados.ContratoRepositorio;
 import br.com.manuelo.dados.ImovelRepositorio;
 
@@ -90,11 +90,11 @@ class ImoveisFiltrosTest {
 
 	@Test
 	void semFiltrosTrazOsTresImoveisInseridos() {
-		List<DemoData.Imovel> imoveis = imovelRepositorio.listar(null, null, null, null);
+		List<Modelos.Imovel> imoveis = imovelRepositorio.listar(null, null, null, null);
 
 		assertThat(imoveis)
 				.as("listar(null, null, null, null) não pode esconder imóveis")
-				.extracting(DemoData.Imovel::id)
+				.extracting(Modelos.Imovel::id)
 				.contains(imovelCasa.toString(), imovelApartamento.toString(), imovelComercial.toString());
 	}
 
@@ -102,12 +102,12 @@ class ImoveisFiltrosTest {
 	void filtraPorEnderecoUsandoBairroELogradouro() {
 		assertThat(imovelRepositorio.listar(bairroCasa.toLowerCase(Locale.ROOT), null, null, null))
 				.as("endereço deve casar o bairro, sem diferenciar maiúsculas/minúsculas")
-				.extracting(DemoData.Imovel::id)
+				.extracting(Modelos.Imovel::id)
 				.containsExactly(imovelCasa.toString());
 
 		assertThat(imovelRepositorio.listar(logradouroApartamento, null, null, null))
 				.as("endereço deve casar o logradouro")
-				.extracting(DemoData.Imovel::id)
+				.extracting(Modelos.Imovel::id)
 				.containsExactly(imovelApartamento.toString());
 	}
 
@@ -115,17 +115,17 @@ class ImoveisFiltrosTest {
 	void filtraPorTipoStatusEInquilino() {
 		assertThat(imovelRepositorio.listar(MARCADOR, "Casa", null, null))
 				.as("tipo recebe o rótulo exibido na tela")
-				.extracting(DemoData.Imovel::id)
+				.extracting(Modelos.Imovel::id)
 				.containsExactly(imovelCasa.toString());
 
 		assertThat(imovelRepositorio.listar(MARCADOR, null, "Alugado", null))
 				.as("status recebe o rótulo exibido na tela")
-				.extracting(DemoData.Imovel::id)
+				.extracting(Modelos.Imovel::id)
 				.containsExactly(imovelApartamento.toString());
 
 		assertThat(imovelRepositorio.listar(MARCADOR, null, null, nomeInquilino.toLowerCase(Locale.ROOT)))
 				.as("inquilino casa pelo nome do contrato vigente, sem diferenciar maiúsculas/minúsculas")
-				.extracting(DemoData.Imovel::id)
+				.extracting(Modelos.Imovel::id)
 				.containsExactly(imovelApartamento.toString());
 	}
 

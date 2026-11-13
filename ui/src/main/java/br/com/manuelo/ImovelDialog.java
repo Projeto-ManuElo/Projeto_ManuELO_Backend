@@ -102,7 +102,7 @@ public class ImovelDialog extends Dialog {
         open();
     }
 
-    public void abrirEdicao(DemoData.Imovel imovel) {
+    public void abrirEdicao(Modelos.Imovel imovel) {
         idAtual = imovel.id();
         titulo.setText("Editar Imóvel");
         aluguelAtual = imovel.aluguel();

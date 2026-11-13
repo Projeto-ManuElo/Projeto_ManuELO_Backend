@@ -9,7 +9,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
-import br.com.manuelo.DemoData;
+import br.com.manuelo.Modelos;
 
 @Repository
 public class ReformaRepositorio {
@@ -50,7 +50,7 @@ public class ReformaRepositorio {
         return encontrados.isEmpty() ? null : encontrados.get(0);
     }
 
-    public List<DemoData.Reforma> listar(String imovelId) {
+    public List<Modelos.Reforma> listar(String imovelId) {
         return jdbc.sql("""
                 SELECT data_reforma, descricao, valor,
                        COALESCE(responsavel_periodo, 'Sem contrato vigente') AS proprietario
@@ -59,7 +59,7 @@ public class ReformaRepositorio {
                  ORDER BY data_reforma DESC
                 """)
                 .param("imovel", UUID.fromString(imovelId))
-                .query((rs, row) -> new DemoData.Reforma(
+                .query((rs, row) -> new Modelos.Reforma(
                         rs.getObject("data_reforma", LocalDate.class),
                         rs.getString("descricao"),
                         rs.getString("proprietario"),

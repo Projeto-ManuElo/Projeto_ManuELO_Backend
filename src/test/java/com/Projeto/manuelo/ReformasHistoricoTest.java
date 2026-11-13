@@ -21,7 +21,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
-import br.com.manuelo.DemoData;
+import br.com.manuelo.Modelos;
 import br.com.manuelo.dados.ReformaRepositorio;
 import br.com.manuelo.dados.SessaoUsuario;
 
@@ -100,12 +100,12 @@ class ReformasHistoricoTest {
 
 	@Test
 	void listarTrazSomenteAsReformasDoImovelSelecionado() {
-		List<DemoData.Reforma> reformas1 = repositorio.listar(imovel1.toString());
+		List<Modelos.Reforma> reformas1 = repositorio.listar(imovel1.toString());
 		assertThat(reformas1)
 				.as("o imóvel 1 não pode ver a reforma do imóvel 2")
 				.hasSize(1);
 
-		DemoData.Reforma reforma1 = reformas1.get(0);
+		Modelos.Reforma reforma1 = reformas1.get(0);
 		assertThat(reforma1.data()).isEqualTo(data1);
 		assertThat(reforma1.descricao()).isEqualTo(descricao1);
 		assertThat(reforma1.valor()).isEqualByComparingTo("1200.50");
@@ -113,12 +113,12 @@ class ReformasHistoricoTest {
 				.as("responsável do período deve ser o inquilino do contrato vigente na data")
 				.isEqualTo(inquilino1);
 
-		List<DemoData.Reforma> reformas2 = repositorio.listar(imovel2.toString());
+		List<Modelos.Reforma> reformas2 = repositorio.listar(imovel2.toString());
 		assertThat(reformas2)
 				.as("o imóvel 2 não pode ver a reforma do imóvel 1")
 				.hasSize(1);
 
-		DemoData.Reforma reforma2 = reformas2.get(0);
+		Modelos.Reforma reforma2 = reformas2.get(0);
 		assertThat(reforma2.data()).isEqualTo(data2);
 		assertThat(reforma2.descricao()).isEqualTo(descricao2);
 		assertThat(reforma2.valor()).isEqualByComparingTo("850.00");

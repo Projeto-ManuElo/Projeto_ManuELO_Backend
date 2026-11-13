@@ -98,7 +98,7 @@ public class ContratosView extends Div implements BeforeEnterObserver {
         tabela.removeAll();
         tabela.add(UiKit.tableHead("cols-contratos", "Nome", "Validade", "Endereço", "CPF", "Email"));
 
-        List<DemoData.Contrato> contratos = repositorio.listar(valor(nome), valor(cpf),
+        List<Modelos.Contrato> contratos = repositorio.listar(valor(nome), valor(cpf),
                 valor(imovel), valor(validade), situacao.getValue());
 
         if (contratos.isEmpty()) {
@@ -106,7 +106,7 @@ public class ContratosView extends Div implements BeforeEnterObserver {
             return;
         }
 
-        for (DemoData.Contrato contrato : contratos) {
+        for (Modelos.Contrato contrato : contratos) {
             Span validadeSpan = new Span(UiKit.data(contrato.vencimento()) + "  " + textoDias(contrato.dias()));
             Div linha = UiKit.tableRow("cols-contratos",
                     new Span(contrato.inquilino()),

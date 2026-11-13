@@ -24,7 +24,7 @@ public class ReformasView extends Div {
     private final ComboBox<ReformaRepositorio.ImovelInfo> seletor = new ComboBox<>("Imóvel");
     private final Span subtitulo = new Span();
     private ReformaRepositorio.ImovelInfo imovel;
-    private List<DemoData.Reforma> reformas;
+    private List<Modelos.Reforma> reformas;
     private final Div tabela = new Div();
     private final ReformaDialog dialog;
 
@@ -99,7 +99,7 @@ public class ReformasView extends Div {
                     "Use o botão Novo Registro para adicionar."));
             return;
         }
-        for (DemoData.Reforma reforma : reformas) {
+        for (Modelos.Reforma reforma : reformas) {
             String data = reforma.data().getYear() >= 2025
                     ? UiKit.diaMes(reforma.data())
                     : DATA_ANO.format(reforma.data()).replace(".", "");
@@ -115,7 +115,7 @@ public class ReformasView extends Div {
         }
     }
 
-    private void adicionar(DemoData.Reforma reforma) {
+    private void adicionar(Modelos.Reforma reforma) {
         if (imovel == null) {
             UiKit.erro("Selecione um imóvel antes de registrar reformas.");
             return;

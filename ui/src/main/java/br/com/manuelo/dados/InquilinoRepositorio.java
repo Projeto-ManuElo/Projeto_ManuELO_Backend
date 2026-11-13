@@ -9,7 +9,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
-import br.com.manuelo.DemoData;
+import br.com.manuelo.Modelos;
 
 @Repository
 public class InquilinoRepositorio {
@@ -28,7 +28,7 @@ public class InquilinoRepositorio {
         this.sessao = sessao;
     }
 
-    public List<DemoData.Inquilino> listar() {
+    public List<Modelos.Inquilino> listar() {
         return jdbc.sql("""
                 SELECT i.id::text AS id, i.nome, i.documento, i.email, i.telefone,
                        cv.id AS contrato_id, cv.imovel_id,
@@ -57,7 +57,7 @@ public class InquilinoRepositorio {
                     String status = rs.getString("contrato_id") == null ? "Sem contrato" : "Alugado";
                     BigDecimal caucao = rs.getBigDecimal("saldo") == null ? BigDecimal.ZERO
                             : rs.getBigDecimal("saldo");
-                    return new DemoData.Inquilino(rs.getString("id"), rs.getString("nome"),
+                    return new Modelos.Inquilino(rs.getString("id"), rs.getString("nome"),
                             Dominio.formatarDocumento(rs.getString("documento")),
                             rs.getString("email") == null ? "" : rs.getString("email"),
                             rs.getString("telefone") == null ? ""

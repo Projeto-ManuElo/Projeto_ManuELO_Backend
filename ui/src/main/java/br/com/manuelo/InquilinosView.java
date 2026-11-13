@@ -22,7 +22,7 @@ public class InquilinosView extends Div {
 
     private final InquilinoRepositorio repositorio;
     private final InquilinoCadastroService cadastro;
-    private List<DemoData.Inquilino> inquilinos;
+    private List<Modelos.Inquilino> inquilinos;
     private final TextField nome = UiKit.text("Nome", "Ex: João Miguel");
     private final TextField cpf = UiKit.text("CPF", "Ex: xxx.yyy.zzz.xz");
     private final TextField email = UiKit.text("Email", "Ex: joao@wmail.com");
@@ -74,7 +74,7 @@ public class InquilinosView extends Div {
         tabela.removeAll();
         tabela.add(UiKit.tableHead("cols-inquilinos", "Nome", "CPF", "Email"));
 
-        List<DemoData.Inquilino> filtrados = inquilinos.stream()
+        List<Modelos.Inquilino> filtrados = inquilinos.stream()
                 .filter(this::corresponde)
                 .toList();
 
@@ -83,7 +83,7 @@ public class InquilinosView extends Div {
             return;
         }
 
-        for (DemoData.Inquilino inquilino : filtrados) {
+        for (Modelos.Inquilino inquilino : filtrados) {
             Div linha = UiKit.tableRow("cols-inquilinos",
                     new Span(inquilino.nome()),
                     new Span(inquilino.cpf()),
@@ -94,7 +94,7 @@ public class InquilinosView extends Div {
         }
     }
 
-    private boolean corresponde(DemoData.Inquilino inquilino) {
+    private boolean corresponde(Modelos.Inquilino inquilino) {
         String n = nome.getValue() == null ? "" : nome.getValue().trim().toLowerCase(Locale.ROOT);
         String c = cpf.getValue() == null ? "" : cpf.getValue().trim().toLowerCase(Locale.ROOT);
         String e = email.getValue() == null ? "" : email.getValue().trim().toLowerCase(Locale.ROOT);
