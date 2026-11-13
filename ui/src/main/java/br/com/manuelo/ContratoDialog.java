@@ -214,7 +214,8 @@ public class ContratoDialog extends Dialog {
             return null;
         }
         try {
-            return new BigDecimal(texto.replace(".", "").replace(",", "."));
+            return new BigDecimal(texto.replace("R$", "").replace(" ", "")
+                    .replace(".", "").replace(",", "."));
         } catch (NumberFormatException ex) {
             return null;
         }

@@ -84,7 +84,8 @@ public class ReformaDialog extends Dialog {
         BigDecimal valorNumerico = BigDecimal.ZERO;
         try {
             if (valor.getValue() != null && !valor.getValue().isBlank()) {
-                valorNumerico = new BigDecimal(valor.getValue().replace(".", "").replace(",", "."));
+                valorNumerico = new BigDecimal(valor.getValue().replace("R$", "")
+                        .replace(" ", "").replace(".", "").replace(",", "."));
             }
         } catch (NumberFormatException ignored) {
             valorNumerico = BigDecimal.ZERO;

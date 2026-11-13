@@ -75,7 +75,8 @@ public class PagarAluguelDialog extends Dialog {
     private void pagar(boolean usarCaucao) {
         BigDecimal valorNumerico;
         try {
-            String texto = valor.getValue() == null ? "" : valor.getValue().trim();
+            String texto = valor.getValue() == null ? "" : valor.getValue().trim()
+                    .replace("R$", "").replace(" ", "");
             valorNumerico = new BigDecimal(texto.replace(".", "").replace(",", "."));
             if (valorNumerico.signum() <= 0) {
                 throw new NumberFormatException();
