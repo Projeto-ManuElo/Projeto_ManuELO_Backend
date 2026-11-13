@@ -1,7 +1,7 @@
 # Progresso (memória do loop; a conversa não é memória)
 
-Iteração: 16 | Orçamento: 120 | Runtime: postgres local embutido (porta 55433; sem Docker/psql na máquina)
-Última atualização: A-21 concluído; próxima A-22
+Iteração: 22 | Orçamento: 120 | Runtime: postgres embutido do juiz (cluster temporário; sem Docker/psql na máquina)
+Última atualização: A-80/A-81/A-90 concluídos; juiz 8/8 verde; fechando RELATORIO-FINAL
 
 ## Entendimento inicial (8 linhas)
 1. O pacote ManuElo_Equipe_Completa foi copiado para a raiz: AGENTS.md, opencode.jsonc, .opencode/agents e docs/integracao.
@@ -18,11 +18,11 @@ Iteração: 16 | Orçamento: 120 | Runtime: postgres local embutido (porta 55433
 - [x] F1 Mapa: mapa.md completo (auditoria com evidências)
 - [x] F2 Plano: backlog conferido e ordenado (S0 -> S8, ordem por dependência mantida)
 - [x] S0 Fundação: A-01/A-02/A-03 concluídos; juiz EXIT 0
-- [ ] F3 Construção: itens concluídos 10 / 25
-- [ ] F4 Fecho: A-90, juiz verde, RELATORIO-FINAL.md
+- [x] F3 Construção: todos os itens do backlog concluídos (ressalvas P-002/P-019/P-021/P-022/P-023/P-026/P-027)
+- [x] F4 Fecho: A-90, juiz 8/8 e RELATORIO-FINAL.md
 
 ## Item em andamento
-A-15 auditoria (fechar com S2/S3) e A-22 reformas — dono: back + front + qa; tentativa 1.
+Nenhum. Entrega concluída; lacunas de interface aguardam revisão do usuário.
 
 ## Log (uma linha por iteração: fase, item, agente, resultado do juiz)
 - Iteração 1: pacote da equipe instalado; baseline T25 commitada (b33ff36); F0 despachada (QA + mapeador).
@@ -41,3 +41,9 @@ A-15 auditoria (fechar com S2/S3) e A-22 reformas — dono: back + front + qa; t
 - Iteração 14: A-20 — filtros SQL + detalhe com contrato vigente; ImoveisFiltrosTest 6/6; revisão APROVADA; juiz 8/8; commit cb9ff61.
 - Iteração 15: A-21 — InquilinoCadastroService transacional + front; teste 4/4; config JDBC hack removido; revisão APROVADA com ressalvas.
 - Iteração 16: A-21 commit; suíte 50+ testes verdes; juiz 8/8.
+- Iteração 17: A-22 — ReformasView com imóvel selecionável + ReformasHistoricoTest 2/2; juiz 8/8.
+- Iteração 18: A-30/A-31/A-32 — filtros SQL, cadastro transacional com overlap e pagamento/caução; testes 7/7, 5/5, 4/4.
+- Iteração 19: A-40/A-41/A-42/A-43 — serviço financeiro com R03/R04/R07/R09, estorno ADMIN, extrato e exportação; 10/10 + 7/7.
+- Iteração 20: A-50/A-51/A-60 — upload/armazenamento, documentos com filtros/download e Home real; UploadDocumentoTest 7/7.
+- Iteração 21: A-70/A-71/A-72 — 4 PDFs OpenPDF, persistência/composição, download ADMIN, RelatoriosView e exportar extrato; 7/7.
+- Iteração 22: A-15/A-80/A-81/A-90 — AuditoriaTest 4/4, erro global/fuso pt-BR, perfis dev/prod + README, remoção do DemoData legado e botões mortos; juiz 8/8.

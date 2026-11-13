@@ -1,6 +1,6 @@
 # Registro de problemas (o mapeador cria; o líder mantém o status)
 
-Resumo: total 18 | abertos 18 | em correção 0 | em revisão 0 | resolvidos 0 | bloqueados 0
+Resumo: total 27 | abertos 7 | em correção 0 | em revisão 0 | resolvidos 20 | bloqueados 0
 
 Modelo de bloco (copie para cada problema):
 
@@ -12,7 +12,8 @@ Modelo de bloco (copie para cada problema):
 - Reprodução: rodar o grep acima; subir o app e observar "Initialized JPA EntityManagerFactory" sem nenhum mapeamento; o juiz etapa 4 passa vazio.
 - Dono: back
 - Critério de aceite: uma entidade JPA por tabela do modelo v3 (UUID/BigDecimal/timestamptz/enums) + `BaseEntity`/`AuditorAware` + `movimentacoes` `@Immutable`; teste de round-trip por entidade e `validate` não vazio.
-- Status: ABERTO
+- Status: RESOLVIDO
+- Resolução: A-02/A-03 (14 entidades JPA, BaseEntity, AuditorAware, validate)
 - Tentativas: 0/3
 - Commit:
 
@@ -36,7 +37,8 @@ Modelo de bloco (copie para cada problema):
 - Reprodução: enviar um arquivo em `/documentos` e consultar `select caminho_armazenamento, tipo_mime, tamanho_bytes from documentos`; nenhum arquivo existe no disco.
 - Dono: back (armazenamento) + front (handler)
 - Critério de aceite: arquivo gravado em `MANUELO_STORAGE_DIR`, metadados reais (nome, mime, tamanho), limite 10 MB e PDF/JPG/PNG validados; teste de upload/leitura.
-- Status: ABERTO
+- Status: RESOLVIDO
+- Resolução: A-50 (ArmazenamentoLocal + DocumentoService + upload real)
 - Tentativas: 0/3
 - Commit:
 
@@ -48,7 +50,8 @@ Modelo de bloco (copie para cada problema):
 - Reprodução: abrir `/movimentacao-financeira`; não existe ação de estorno/edição para ADMINISTRADOR.
 - Dono: back + front
 - Critério de aceite: original intacto; um estorno por original, mesmo valor, só ADMINISTRADOR, com justificativa; "editar" = estorno + nova movimentação com `corrige_movimentacao_id`; testes de recusa para COLABORADOR e de imutabilidade.
-- Status: ABERTO
+- Status: RESOLVIDO
+- Resolução: A-42 (estorno/correção ADMIN no serviço; original imutável)
 - Tentativas: 0/3
 - Commit:
 
@@ -60,7 +63,8 @@ Modelo de bloco (copie para cada problema):
 - Reprodução: em `/relatorios`, ver o combo de tipos; gerar PDF e inspecionar cabeçalho/rodapé; não há download.
 - Dono: back + front
 - Critério de aceite: os 4 relatórios com cabeçalho/rodapé exigidos, composição persistida (`relatorio_movimentacoes`/`relatorio_contratos`), download e acesso só ADMINISTRADOR; testes de conteúdo.
-- Status: ABERTO
+- Status: RESOLVIDO
+- Resolução: A-70/A-71/A-72 (4 PDFs OpenPDF + persistência/composição/download)
 - Tentativas: 0/3
 - Commit:
 
@@ -72,7 +76,8 @@ Modelo de bloco (copie para cada problema):
 - Reprodução: solicitar recuperação; não há e-mail nem link no log; abrir `/redefinir-senha` em outra sessão e tentar redefinir (falha); o token gravado nunca é validado.
 - Dono: back + front
 - Critério de aceite: token aleatório de 32 bytes, só SHA-256 no banco, validade de 1 h, uso único, entrega por `EnvioTokenSenha` (SMTP ou log no perfil dev), resposta neutra; testes de token expirado/reutilizado.
-- Status: ABERTO
+- Status: RESOLVIDO
+- Resolução: A-13 (token SHA-256, uso único, expiração)
 - Tentativas: 0/3
 - Commit:
 
@@ -84,7 +89,8 @@ Modelo de bloco (copie para cada problema):
 - Reprodução: acessar `/usuarios` deslogado (HTTP 200; reroute só no cliente Vaadin); executar um repositório de escrita como COLABORADOR.
 - Dono: back + front
 - Critério de aceite: `UserDetailsService`, BCrypt, `ROLE_ADMINISTRADOR`/`ROLE_COLABORADOR`, rotas públicas definidas, gate de status, autorização nos serviços; testes de acesso negado.
-- Status: ABERTO
+- Status: RESOLVIDO
+- Resolução: A-10/A-80 (SecurityConfig, papéis, serviços e rotas)
 - Tentativas: 0/3
 - Commit:
 
@@ -96,7 +102,8 @@ Modelo de bloco (copie para cada problema):
 - Reprodução: cadastrar usuário e consultar `select criado_por from usuarios where email=...` → nulo; comparar com imóveis.
 - Dono: back
 - Critério de aceite: `AuditorAware` lendo o `SecurityContext` preenche `criado_por`/`atualizado_por` em toda gravação; teste para cada entidade.
-- Status: ABERTO
+- Status: RESOLVIDO
+- Resolução: A-15 (AuditoriaTest 4/4)
 - Tentativas: 0/3
 - Commit:
 
@@ -108,7 +115,8 @@ Modelo de bloco (copie para cada problema):
 - Reprodução: subir o app sem `MANUELO_ADMIN_EMAIL`/`MANUELO_ADMIN_SENHA` e consultar `usuarios`; o admin é criado com `admin123`.
 - Dono: back
 - Critério de aceite: sem variáveis não cria admin; nenhuma senha padrão no repositório; teste do bootstrap.
-- Status: ABERTO
+- Status: RESOLVIDO
+- Resolução: A-14/A-81 (bootstrap só com MANUELO_ADMIN_*; sem default)
 - Tentativas: 0/3
 - Commit:
 
@@ -120,7 +128,8 @@ Modelo de bloco (copie para cada problema):
 - Reprodução: informar fiador e caução no diálogo e salvar; `select count(*) from fiadores` e `select count(*) from caucao_movimentacoes` não aumentam.
 - Dono: back + front
 - Critério de aceite: um envio cria inquilino + fiador + contrato + depósito de caução na mesma transação (A-21); teste de transação.
-- Status: ABERTO
+- Status: RESOLVIDO
+- Resolução: A-21 (InquilinoCadastroService transacional)
 - Tentativas: 0/3
 - Commit:
 
@@ -132,7 +141,8 @@ Modelo de bloco (copie para cada problema):
 - Reprodução: selecionar "Tipo financeiro" e filtrar (sem efeito); clicar em um documento (aviso).
 - Dono: front + back
 - Critério de aceite: filtros por inquilino/tipo/tipo financeiro no banco, classificação de pendente (tipo e data obrigatórios) e download do arquivo real.
-- Status: ABERTO
+- Status: RESOLVIDO
+- Resolução: A-51 (filtros SQL, classificação, download real)
 - Tentativas: 0/3
 - Commit:
 
@@ -144,7 +154,8 @@ Modelo de bloco (copie para cada problema):
 - Reprodução: registrar SAIDA sem anexo (é aceita); clicar em Pesquisar/Exportar (avisos).
 - Dono: back + front
 - Critério de aceite: R03/R04 no serviço (incluindo comprovante obrigatório em SAIDA via documento), pesquisa por período e exportação em PDF persistida como relatório MOVIMENTACAO; testes.
-- Status: ABERTO
+- Status: RESOLVIDO
+- Resolução: A-40/A-41/A-43 (R03/R04, extrato, exportação PDF)
 - Tentativas: 0/3
 - Commit:
 
@@ -156,7 +167,8 @@ Modelo de bloco (copie para cada problema):
 - Reprodução: abrir as telas e conferir que o SQL não tem `WHERE` de filtro (ex.: `ImovelRepositorio.listar`).
 - Dono: back + front
 - Critério de aceite: filtros como parâmetros de consulta/`DataProvider`/`Specification`, sem carregar tudo.
-- Status: ABERTO
+- Status: RESOLVIDO
+- Resolução: A-20/A-30/A-51 (filtros SQL; inquilinos seguem em P-027)
 - Tentativas: 0/3
 - Commit:
 
@@ -168,7 +180,8 @@ Modelo de bloco (copie para cada problema):
 - Reprodução: clicar em cada botão e verificar que nada é persistido/gerado.
 - Dono: front (com back para as ações)
 - Critério de aceite: nenhum botão só-notificação; cada ação executa o fluxo real ou é removida (A-90).
-- Status: ABERTO
+- Status: RESOLVIDO
+- Resolução: A-90 (botões mortos removidos; guarda anti-protótipo)
 - Tentativas: 0/3
 - Commit:
 
@@ -180,7 +193,8 @@ Modelo de bloco (copie para cada problema):
 - Reprodução: abrir `/imoveis/reformas` com vários imóveis; só o primeiro é usado.
 - Dono: front + back
 - Critério de aceite: selecionar o imóvel e ver/gravar o histórico correto; teste com dois imóveis.
-- Status: ABERTO
+- Status: RESOLVIDO
+- Resolução: A-22 (ReformaRepositorio.listarImoveis + ComboBox)
 - Tentativas: 0/3
 - Commit:
 
@@ -192,7 +206,8 @@ Modelo de bloco (copie para cada problema):
 - Reprodução: `ls src/main/resources`; `cat README.md`; subir com `--spring.profiles.active=prod` e conferir que nenhum perfil é carregado.
 - Dono: back + qa
 - Critério de aceite: perfis dev/prod, README de execução/deploy (Railway/Render) e variáveis documentadas; teste de boot por perfil.
-- Status: ABERTO
+- Status: RESOLVIDO
+- Resolução: A-81 (perfis dev/prod, .env.example, README)
 - Tentativas: 0/3
 - Commit:
 
@@ -204,7 +219,8 @@ Modelo de bloco (copie para cada problema):
 - Reprodução: rodar o juiz e, em paralelo, os greps de P-001/P-002/P-004/P-005.
 - Dono: qa
 - Critério de aceite: juiz passa a reprovar ausência de entidades/serviços e a executar um teste vermelho por item do backlog antes da implementação.
-- Status: ABERTO
+- Status: RESOLVIDO
+- Resolução: A-01 (juiz 8/8 com suíte, smoke, log, round-trip e guarda)
 - Tentativas: 0/3
 - Commit:
 
@@ -216,7 +232,8 @@ Modelo de bloco (copie para cada problema):
 - Reprodução: abrir `/usuarios` como ADMINISTRADOR e procurar ação de mudar perfil (não existe).
 - Dono: front + back
 - Critério de aceite: lista/atualiza perfil (ADMINISTRADOR↔COLABORADOR) com auditoria e teste.
-- Status: ABERTO
+- Status: RESOLVIDO
+- Resolução: A-12 (alterar perfil ADMIN no serviço/view)
 - Tentativas: 0/3
 - Commit:
 
@@ -240,7 +257,8 @@ Modelo de bloco (copie para cada problema):
 - Reprodução: ler `RoundTripEntidadesTest.java` (asserts de auditoria) e `JpaAuditingConfig.auditorAware`.
 - Dono: qa + back
 - Critério de aceite: teste com usuário autenticado prova os 4 campos de auditoria em cada gravação.
-- Status: ABERTO
+- Status: RESOLVIDO
+- Resolução: A-15 (prova de criado_por/atualizado_por por ator)
 - Tentativas: 0/3
 - Commit:
 
@@ -288,7 +306,8 @@ Modelo de bloco (copie para cada problema):
 - Reprodução: `grep -n "manuelo.app.url" src/main/resources/application.properties .env.example`.
 - Dono: back
 - Critério de aceite: MANUELO_APP_URL documentada e validada no boot; link correto em dev/prod.
-- Status: ABERTO
+- Status: RESOLVIDO
+- Resolução: A-81 (MANUELO_APP_URL documentada em .env.example/README/prod)
 - Tentativas: 0/3
 - Commit:
 
@@ -300,7 +319,8 @@ Modelo de bloco (copie para cada problema):
 - Reprodução: subir sem MANUELO_ADMIN_* e conferir admin@manuelo.local criado.
 - Dono: back
 - Critério de aceite: sem variáveis, nenhum admin é criado (apenas warn); dev documentado no README/.env.example.
-- Status: ABERTO
+- Status: RESOLVIDO
+- Resolução: A-14/A-81 (sem default de senha; sem variáveis nenhum admin é criado)
 - Tentativas: 0/3
 - Commit:
 
