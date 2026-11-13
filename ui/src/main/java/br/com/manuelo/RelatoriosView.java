@@ -1,62 +1,81 @@
 package br.com.manuelo;
 
+import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
+import java.text.NumberFormat;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.StreamRegistration;
+import com.vaadin.flow.server.StreamResource;
 
-import br.com.manuelo.dados.GeradorRelatorio;
-import br.com.manuelo.dados.MovimentacaoRepositorio;
-import br.com.manuelo.dados.RelatorioRepositorio;
+import com.Projeto.manuelo.servico.MovimentacaoFinanceiraService;
+import com.Projeto.manuelo.servico.MovimentacaoFinanceiraService.ExtratoItem;
+import com.Projeto.manuelo.servico.MovimentacaoFinanceiraService.Resumo;
+import com.Projeto.manuelo.servico.RelatorioService;
+
+import br.com.manuelo.dados.Dominio;
 
 @Route(value = "relatorios", layout = MainLayout.class)
 @PageTitle("Relatórios")
 public class RelatoriosView extends Div {
 
+    private static final NumberFormat MOEDA = NumberFormat.getCurrencyInstance(UiKit.PT_BR);
     private static final Pattern TRIMESTRE = Pattern.compile("(\\d)º trimestre (\\d{4})");
+    private static final List<String> TIPOS = List.of("Contratos existentes", "Contratos atrasados",
+            "Contratos a vencer", "Movimentação financeira");
+    private static final List<String> FILTROS = List.of("Todos", "Entrada", "Saída");
+    private static final String GRID_EXTRATO =
+            "110px 90px 150px minmax(0, 1fr) 120px 130px";
 
-    private final MovimentacaoRepositorio movimentacoes;
-    private final RelatorioRepositorio relatorios;
-    private final GeradorRelatorio gerador;
-    private final Div tabela = new Div();
+    private final RelatorioService relatorios;
+    private final MovimentacaoFinanceiraService movimentacoes;
+
+    private final DatePicker inicio = UiKit.date("Data inicial");
+    private final DatePicker fim = UiKit.date("Data final");
+    private final ComboBox<String> trimestre = UiKit.select("Trimestre", "Atalho de período",
+            opcoesTrimestre());
+    private final ComboBox<String> tipo = UiKit.select("Tipo de relatório", "Selecione", TIPOS);
+    private final ComboBox<String> filtro = UiKit.select("Filtro", "Todos", FILTROS);
     private final Div kpis = new Div();
-    private final ComboBox<String> trimestre;
-    private final ComboBox<String> formato;
-    private final ComboBox<String> tipo;
+    private final Div tabela = new Div();
 
-    public RelatoriosView(MovimentacaoRepositorio movimentacoes, RelatorioRepositorio relatorios,
-            GeradorRelatorio gerador) {
-        this.movimentacoes = movimentacoes;
+    public RelatoriosView(RelatorioService relatorios, MovimentacaoFinanceiraService movimentacoes) {
         this.relatorios = relatorios;
-        this.gerador = gerador;
+        this.movimentacoes = movimentacoes;
         addClassName("page");
 
-        Button gerar = UiKit.primary("Gerar PDF", e -> gerar());
-        add(UiKit.header("Relatórios", null, gerar));
+        LocalDate hoje = LocalDate.now();
+        inicio.setValue(hoje.withDayOfMonth(1));
+        fim.setValue(hoje);
+        tipo.setValue(TIPOS.get(0));
+        filtro.setValue("Todos");
+        filtro.setVisible(false);
 
-        trimestre = UiKit.select("Trimestre", "Selecione",
-                List.of("1º trimestre 2026 (jan-mar)", "2º trimestre 2026 (abr-jun)",
-                        "3º trimestre 2026 (jul-set)", "4º trimestre 2026 (out-dez)"));
-        trimestre.setValue("3º trimestre 2026 (jul-set)");
-        formato = UiKit.select("Formato", "Selecione", List.of("PDF", "XLSX"));
-        formato.setValue("PDF");
-        tipo = UiKit.select("Tipo de relatório", "Selecione",
-                List.of("Contratos existentes", "Movimentação financeira", "Inadimplência"));
-        tipo.setValue("Contratos existentes");
-        tipo.addClassName("full");
+        add(UiKit.header("Relatórios", "Gere e baixe os relatórios da fundação",
+                UiKit.primary("Gerar PDF", e -> gerar())));
 
-        Div formulario = UiKit.card(UiKit.cardHeader("Gerar relatório trimestral", null),
-                UiKit.formGrid(trimestre, formato, tipo));
-        add(formulario);
+        Div acoes = new Div(
+                UiKit.secondary("PDF personalizado", e -> gerar()),
+                UiKit.secondary("Baixar último PDF", e -> baixarUltimo()));
+        acoes.addClassName("form-actions");
+        acoes.addClassName("start");
+
+        add(UiKit.card(
+                UiKit.cardHeader("Período e tipo",
+                        "O trimestre é apenas um atalho; ajuste as datas livremente."),
+                UiKit.formGrid(inicio, fim, trimestre, tipo, filtro),
+                acoes));
 
         kpis.addClassName("report-kpis");
         add(kpis);
@@ -65,89 +84,180 @@ public class RelatoriosView extends Div {
         tabela.addClassName("extrato");
         add(UiKit.card(UiKit.cardHeader("Extrato do período", null), tabela));
 
-        trimestre.addValueChangeListener(e -> atualizar());
-        tipo.addValueChangeListener(e -> atualizar());
+        inicio.addValueChangeListener(e -> atualizar());
+        fim.addValueChangeListener(e -> atualizar());
+        tipo.addValueChangeListener(e -> {
+            filtro.setVisible(movimentacaoSelecionada());
+            atualizar();
+        });
+        filtro.addValueChangeListener(e -> atualizar());
+        trimestre.addValueChangeListener(e -> aplicarTrimestre(e.getValue()));
         atualizar();
     }
 
-    private void atualizar() {
-        LocalDate[] periodo = periodoSelecionado();
-        MovimentacaoRepositorio.Resumo resumo = movimentacoes.resumo(periodo[0], periodo[1]);
-        renderizarKpis(resumo);
-        renderizarExtrato(periodo);
-    }
-
-    private void renderizarKpis(MovimentacaoRepositorio.Resumo resumo) {
-        kpis.removeAll();
-        kpis.add(kpi("Entradas", dinheiro(resumo.entradas()), "green"));
-        kpis.add(kpi("Saídas", dinheiro(resumo.saidas()), "red"));
-        kpis.add(kpi("Saldo", dinheiro(resumo.saldo()), null));
-    }
-
-    private void renderizarExtrato(LocalDate[] periodo) {
-        tabela.removeAll();
-        tabela.add(UiKit.tableHead("cols-extrato", "Data", "Tipo", "Categoria", "Valor"));
-        for (DemoData.Movimentacao movimentacao : movimentacoes.extrato(periodo[0], periodo[1], 200)) {
-            String tipoMov = movimentacao.valor().signum() >= 0 ? "Entrada" : "Saída";
-            Span valor = UiKit.money(movimentacao.valor().abs(), false, true);
-            valor.addClassName("amount");
-            tabela.add(UiKit.tableRow("cols-extrato",
-                    new Span(UiKit.diaMes(movimentacao.data())),
-                    UiKit.badge(tipoMov),
-                    UiKit.muted(movimentacao.categoria()),
-                    valor));
-        }
-    }
-
-    private void gerar() {
-        UiKit.confirmar("Gerar relatório?",
-                "O relatório será gerado com os dados do trimestre selecionado.",
-                "Gerar", true, () -> {
-                    try {
-                        LocalDate[] periodo = periodoSelecionado();
-                        boolean movimentacao = "Movimentação financeira".equals(tipo.getValue());
-                        MovimentacaoRepositorio.Resumo resumo = movimentacao
-                                ? movimentacoes.resumo(periodo[0], periodo[1])
-                                : null;
-                        List<List<String>> linhas = movimentacao
-                                ? linhasMovimentacao(periodo)
-                                : relatorios.linhasContratos(tipo.getValue());
-                        String caminho = gerador.gerar(formato.getValue(),
-                                "Relatório de " + tipo.getValue(), periodo[0], periodo[1], resumo, linhas);
-                        relatorios.registrar(tipo.getValue(), periodo[0], periodo[1], resumo,
-                                linhas.size(), caminho);
-                        UiKit.aviso("Relatório gerado em " + caminho);
-                    } catch (RuntimeException ex) {
-                        UiKit.erro(ex.getMessage());
-                    }
-                });
-    }
-
-    private List<List<String>> linhasMovimentacao(LocalDate[] periodo) {
-        List<List<String>> linhas = new ArrayList<>();
-        for (DemoData.Movimentacao movimentacao : movimentacoes.extrato(periodo[0], periodo[1], 5000)) {
-            linhas.add(List.of(UiKit.data(movimentacao.data()), movimentacao.descricao(),
-                    movimentacao.categoria(), dinheiro(movimentacao.valor())));
-        }
-        return linhas;
-    }
-
-    private LocalDate[] periodoSelecionado() {
-        Matcher matcher = TRIMESTRE.matcher(trimestre.getValue() == null ? "" : trimestre.getValue());
+    private void aplicarTrimestre(String valor) {
+        Matcher matcher = TRIMESTRE.matcher(valor == null ? "" : valor);
         if (!matcher.find()) {
-            LocalDate hoje = LocalDate.now();
-            return new LocalDate[] { hoje.withDayOfMonth(1), hoje };
+            return;
         }
         int quarter = Integer.parseInt(matcher.group(1));
         int ano = Integer.parseInt(matcher.group(2));
-        LocalDate inicio = LocalDate.of(ano, (quarter - 1) * 3 + 1, 1);
-        return new LocalDate[] { inicio, inicio.plusMonths(3).minusDays(1) };
+        LocalDate primeiroDia = LocalDate.of(ano, (quarter - 1) * 3 + 1, 1);
+        inicio.setValue(primeiroDia);
+        fim.setValue(primeiroDia.plusMonths(3).minusDays(1));
     }
 
-    private Div kpi(String rotulo, String valor, String cor) {
+    private void atualizar() {
+        LocalDate dataInicio = inicio.getValue();
+        LocalDate dataFim = fim.getValue();
+        if (dataInicio == null || dataFim == null || dataInicio.isAfter(dataFim)) {
+            kpis.removeAll();
+            tabela.removeAll();
+            return;
+        }
+        String filtroAtual = movimentacaoSelecionada() ? filtro.getValue() : "Todos";
+        try {
+            Resumo resumo = movimentacoes.resumo(dataInicio, dataFim, filtroAtual, null);
+            List<ExtratoItem> itens = movimentacoes.extrato(dataInicio, dataFim, filtroAtual, null);
+            renderizarKpis(resumo);
+            renderizarExtrato(itens);
+        } catch (RuntimeException ex) {
+            UiKit.erro(ex.getMessage());
+        }
+    }
+
+    private void renderizarKpis(Resumo resumo) {
+        kpis.removeAll();
+        kpis.add(kpi("Entradas", resumo.entradas(), "green"));
+        kpis.add(kpi("Saídas", resumo.saidas(), "red"));
+        kpis.add(kpi("Saldo", resumo.saldo(), null));
+    }
+
+    private void renderizarExtrato(List<ExtratoItem> itens) {
+        tabela.removeAll();
+        tabela.add(cabecalhoExtrato());
+        if (itens.isEmpty()) {
+            tabela.add(UiKit.emptyState("Nenhum lançamento encontrado",
+                    "Ajuste o período ou os filtros e tente novamente."));
+            return;
+        }
+        for (ExtratoItem item : itens) {
+            tabela.add(linhaExtrato(item));
+        }
+    }
+
+    private Div cabecalhoExtrato() {
+        Div head = new Div();
+        head.addClassName("table-head");
+        head.getStyle().set("grid-template-columns", GRID_EXTRATO);
+        for (String coluna : List.of("Data", "Tipo", "Categoria", "Descrição", "Forma", "Valor")) {
+            head.add(new Span(coluna));
+        }
+        return head;
+    }
+
+    private Div linhaExtrato(ExtratoItem item) {
+        String tipoLabel = switch (item.tipo() == null ? "" : item.tipo()) {
+            case "ENTRADA" -> "Entrada";
+            case "SAIDA" -> "Saída";
+            case "ESTORNO" -> "Estorno";
+            default -> item.tipo();
+        };
+        String categoria = item.categoria() == null || item.categoria().isBlank()
+                ? "—" : Dominio.categoria(item.categoria());
+        String forma = item.forma() == null || item.forma().isBlank()
+                ? "—" : Dominio.formaPagamento(item.forma());
+        Span valor = UiKit.money(item.valorAssinado(), true);
+        valor.addClassName("amount");
+
+        Div linha = new Div(
+                new Span(UiKit.data(item.data())),
+                UiKit.badge(tipoLabel),
+                UiKit.muted(categoria),
+                new Span(item.descricao() == null ? "" : item.descricao()),
+                UiKit.muted(forma),
+                valor);
+        linha.addClassName("table-row");
+        linha.getStyle().set("grid-template-columns", GRID_EXTRATO);
+        return linha;
+    }
+
+    private void gerar() {
+        LocalDate dataInicio = inicio.getValue();
+        LocalDate dataFim = fim.getValue();
+        if (!validarPeriodo(dataInicio, dataFim)) {
+            return;
+        }
+        String tipoSelecionado = tipo.getValue();
+        if (tipoSelecionado == null || tipoSelecionado.isBlank()) {
+            UiKit.erro("Selecione o tipo de relatório.");
+            return;
+        }
+        try {
+            String id = relatorios.gerar(tipoSelecionado, dataInicio, dataFim,
+                    movimentacaoSelecionada() ? filtro.getValue() : "Todos");
+            baixar(relatorios.baixar(id));
+            atualizar();
+            UiKit.aviso("Relatório gerado e baixado.");
+        } catch (RuntimeException ex) {
+            UiKit.erro(ex.getMessage());
+        }
+    }
+
+    private void baixarUltimo() {
+        try {
+            List<RelatorioService.ResumoRelatorio> recentes = relatorios.listarRecentes(1);
+            if (recentes.isEmpty()) {
+                UiKit.erro("Nenhum relatório foi gerado ainda.");
+                return;
+            }
+            baixar(relatorios.baixar(recentes.get(0).id()));
+        } catch (RuntimeException ex) {
+            UiKit.erro(ex.getMessage());
+        }
+    }
+
+    private void baixar(RelatorioService.Arquivo arquivo) {
+        StreamResource resource = new StreamResource(arquivo.nome(),
+                () -> new ByteArrayInputStream(arquivo.conteudo()));
+        resource.setContentType(arquivo.mime());
+        resource.setHeader("Content-Disposition",
+                "attachment; filename=\"" + arquivo.nome().replace("\"", "") + "\"");
+        StreamRegistration registro = UI.getCurrent().getSession().getResourceRegistry()
+                .registerResource(resource);
+        UI.getCurrent().getPage().open(registro.getResourceUri().toString(), "_blank");
+    }
+
+    private boolean validarPeriodo(LocalDate dataInicio, LocalDate dataFim) {
+        if (dataInicio == null) {
+            inicio.setInvalid(true);
+            UiKit.erro("Informe a data inicial do período.");
+            return false;
+        }
+        if (dataFim == null) {
+            fim.setInvalid(true);
+            UiKit.erro("Informe a data final do período.");
+            return false;
+        }
+        if (dataInicio.isAfter(dataFim)) {
+            inicio.setInvalid(true);
+            fim.setInvalid(true);
+            UiKit.erro("A data inicial não pode ser posterior à data final.");
+            return false;
+        }
+        inicio.setInvalid(false);
+        fim.setInvalid(false);
+        return true;
+    }
+
+    private boolean movimentacaoSelecionada() {
+        return "Movimentação financeira".equals(tipo.getValue());
+    }
+
+    private Div kpi(String rotulo, BigDecimal valor, String cor) {
         Div label = new Div(rotulo);
         label.addClassName("report-kpi-label");
-        Div value = new Div(valor);
+        Div value = new Div(MOEDA.format(valor == null ? BigDecimal.ZERO : valor));
         value.addClassName("report-kpi-value");
         if (cor != null) {
             value.addClassName(cor);
@@ -157,10 +267,9 @@ public class RelatoriosView extends Div {
         return card;
     }
 
-    private String dinheiro(BigDecimal valor) {
-        if (valor == null) {
-            return "R$ 0,00";
-        }
-        return "R$ " + valor.toPlainString().replace(".", ",");
+    private static List<String> opcoesTrimestre() {
+        int ano = LocalDate.now().getYear();
+        return List.of("1º trimestre " + ano, "2º trimestre " + ano,
+                "3º trimestre " + ano, "4º trimestre " + ano);
     }
 }

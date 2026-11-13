@@ -20,6 +20,7 @@ import com.vaadin.flow.router.Route;
 import com.Projeto.manuelo.servico.MovimentacaoFinanceiraService;
 import com.Projeto.manuelo.servico.MovimentacaoFinanceiraService.ExtratoItem;
 import com.Projeto.manuelo.servico.MovimentacaoFinanceiraService.Resumo;
+import com.Projeto.manuelo.servico.RelatorioService;
 
 import br.com.manuelo.dados.ContratoRepositorio;
 import br.com.manuelo.dados.Dominio;
@@ -36,6 +37,7 @@ public class MovimentacaoFinanceiraView extends Div {
     private static final List<String> TIPOS_EXTRATO = List.of("Todos", "Entrada", "Saída");
 
     private final MovimentacaoFinanceiraService servico;
+    private final RelatorioService relatorios;
     private final Map<String, String> contratosPorRotulo = new LinkedHashMap<>();
 
     private final ComboBox<String> categoria = UiKit.select("Categoria", "Selecione uma categoria",
@@ -63,8 +65,10 @@ public class MovimentacaoFinanceiraView extends Div {
     private UiKit.ArquivoSelecionado comprovante;
 
     public MovimentacaoFinanceiraView(MovimentacaoFinanceiraService servico,
-            ContratoRepositorio contratoRepositorio, SessaoUsuario sessao) {
+            RelatorioService relatorios, ContratoRepositorio contratoRepositorio,
+            SessaoUsuario sessao) {
         this.servico = servico;
+        this.relatorios = relatorios;
         this.administrador = sessao.administrador();
         addClassName("page");
 
@@ -75,8 +79,8 @@ public class MovimentacaoFinanceiraView extends Div {
         contrato.setVisible(false);
         categoria.addValueChangeListener(e -> contrato.setVisible(exigeContrato(e.getValue())));
 
-        Button exportar = UiKit.secondary("Exportar extrato",
-                e -> UiKit.aviso("Exportação disponível após a próxima atualização."));
+        Button exportar = UiKit.secondary("Exportar extrato", e -> abrirExportacao());
+        exportar.setVisible(administrador);
         add(UiKit.header("Movimentação Financeira", null, exportar));
 
         add(criarFormulario());
@@ -141,6 +145,11 @@ public class MovimentacaoFinanceiraView extends Div {
 
         Div grid = UiKit.formGrid(inicio, fim, tipoExtrato, busca);
         return UiKit.card(UiKit.cardHeader("Filtros", null), grid, acoes);
+    }
+
+    private void abrirExportacao() {
+        new ExportarExtratoDialog(relatorios, inicio.getValue(), fim.getValue(),
+                tipoExtrato.getValue()).open();
     }
 
     private void alternarTipo(boolean entradaSelecionada) {

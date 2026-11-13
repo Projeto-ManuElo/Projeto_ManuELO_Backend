@@ -72,9 +72,9 @@ public class MainLayout extends Div implements RouterLayout, AfterNavigationObse
                 "movimentacao-financeira"));
         nav.add(secao("Gestão documental"));
         nav.add(item(VaadinIcon.FOLDER, "Documentos", DocumentosView.class, "documentos"));
-        nav.add(item(VaadinIcon.BAR_CHART, "Relatórios", RelatoriosView.class, "relatorios"));
 
         if (sessao.administrador()) {
+            nav.add(item(VaadinIcon.BAR_CHART, "Relatórios", RelatoriosView.class, "relatorios"));
             nav.add(secao("Administração"));
             nav.add(item(VaadinIcon.USER_CHECK, "Usuários", UsuariosView.class, "usuarios"));
         }

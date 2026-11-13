@@ -51,6 +51,7 @@ public class SecurityConfig {
 				http.authorizeHttpRequests(auth -> auth
 						.requestMatchers(ROTAS_PUBLICAS).permitAll()
 						.requestMatchers("/usuarios", "/usuarios/**").hasRole("ADMINISTRADOR")
+						.requestMatchers("/relatorios", "/relatorios/**").hasRole("ADMINISTRADOR")
 						.anyRequest().authenticated())
 				.exceptionHandling(ex -> ex
 						.authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/")))
