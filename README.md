@@ -110,6 +110,8 @@ Em produção são obrigatórios `DB_URL`, `DB_USER`, `DB_PASSWORD`, `MANUELO_AD
 - Regras de negócio (estorno, imutabilidade, caução, competência, relatórios) ficam nos serviços,
   nunca nas views.
 - Redefinição de senha usa token de uso único com hash SHA-256 e validade de 1 hora.
+- Sem SMTP configurado, o perfil `dev` registra o link no log; em produção defina `SPRING_MAIL_HOST`,
+  `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME` e `SPRING_MAIL_PASSWORD` para enviar por e-mail.
 
 ## Relatórios
 
