@@ -35,6 +35,11 @@ public class ImovelRepositorio {
     }
 
     public List<Modelos.Imovel> listar(String endereco, String tipo, String status, String inquilino) {
+        return listar(endereco, tipo, status, inquilino, 0);
+    }
+
+    public List<Modelos.Imovel> listar(String endereco, String tipo, String status, String inquilino,
+            int limite) {
         StringBuilder sql = new StringBuilder("""
                 SELECT v.id::text AS id, v.logradouro, v.numero, v.complemento, v.bairro,
                        v.cidade, v.uf, v.cep, v.tipo::text AS tipo,
@@ -58,25 +63,29 @@ public class ImovelRepositorio {
         String inquilinoFiltro = normalizar(inquilino);
 
         if (enderecoFiltro != null) {
-            sql.append(" AND (v.logradouro ILIKE :endereco OR v.numero ILIKE :endereco")
-                    .append(" OR v.bairro ILIKE :endereco)");
+            sql.append(" AND (v.logradouro ILIKE :endereco ESCAPE '\\'")
+                    .append(" OR v.numero ILIKE :endereco ESCAPE '\\'")
+                    .append(" OR v.bairro ILIKE :endereco ESCAPE '\\')");
         }
         if (tipoFiltro != null) {
             sql.append(" AND v.tipo::text = :tipo");
             tipoFiltro = Dominio.tipoImovelEnum(tipoFiltro);
         }
         if (statusFiltro != null) {
-            sql.append(" AND v.status_exibicao ILIKE :status");
+            sql.append(" AND v.status_exibicao ILIKE :status ESCAPE '\\'");
             statusFiltro = Dominio.statusImovelEnum(statusFiltro);
         }
         if (inquilinoFiltro != null) {
-            sql.append(" AND v.inquilino_atual_nome ILIKE :inquilino");
+            sql.append(" AND v.inquilino_atual_nome ILIKE :inquilino ESCAPE '\\'");
         }
         sql.append(" ORDER BY v.logradouro, v.numero");
+        if (limite > 0 && limite < Integer.MAX_VALUE) {
+            sql.append(" LIMIT :limite");
+        }
 
         JdbcClient.StatementSpec spec = jdbc.sql(sql.toString());
         if (enderecoFiltro != null) {
-            spec = spec.param("endereco", "%" + enderecoFiltro + "%");
+            spec = spec.param("endereco", "%" + like(enderecoFiltro) + "%");
         }
         if (tipoFiltro != null) {
             spec = spec.param("tipo", tipoFiltro);
@@ -85,7 +94,10 @@ public class ImovelRepositorio {
             spec = spec.param("status", statusFiltro);
         }
         if (inquilinoFiltro != null) {
-            spec = spec.param("inquilino", "%" + inquilinoFiltro + "%");
+            spec = spec.param("inquilino", "%" + like(inquilinoFiltro) + "%");
+        }
+        if (limite > 0 && limite < Integer.MAX_VALUE) {
+            spec = spec.param("limite", limite);
         }
 
         return spec.query((rs, row) -> {
@@ -115,6 +127,10 @@ public class ImovelRepositorio {
         return valor == null || valor.isBlank() ? null : valor.trim();
     }
 
+    private static String like(String texto) {
+        return texto.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+    }
+
     public List<Opcao> opcoes() {
         return jdbc.sql("""
                 SELECT id::text AS id,
@@ -126,7 +142,7 @@ public class ImovelRepositorio {
                 .list();
     }
 
-    public void salvar(Dados dados) {
+    public String salvar(Dados dados) {
         String cidade = vazioPara(dados.cidade(), "Aracaju");
         String uf = vazioPara(dados.uf(), "SE").toUpperCase(Locale.ROOT);
         String cep = dados.cep() != null && dados.cep().matches("^[0-9]{5}-?[0-9]{3}$")
@@ -139,11 +155,12 @@ public class ImovelRepositorio {
 
         try {
             if (dados.id() == null || dados.id().isBlank()) {
-                jdbc.sql("""
+                return jdbc.sql("""
                         INSERT INTO imoveis (logradouro, numero, complemento, bairro, cidade, uf, cep,
                                              tipo, status, criado_por)
                         VALUES (:logradouro, :numero, :complemento, :bairro, :cidade, :uf, :cep,
                                 CAST(:tipo AS tipo_imovel), CAST(:status AS status_imovel), :usuario)
+                        RETURNING id::text
                         """)
                         .param("logradouro", dados.logradouro().trim())
                         .param("numero", vazioPara(dados.numero(), "S/N"))
@@ -155,29 +172,28 @@ public class ImovelRepositorio {
                         .param("tipo", tipo)
                         .param("status", status)
                         .param("usuario", usuario)
-                        .update();
-            } else {
-                jdbc.sql("""
-                        UPDATE imoveis
-                           SET logradouro = :logradouro, numero = :numero, complemento = :complemento,
-                               bairro = :bairro, cidade = :cidade, uf = :uf, cep = :cep,
-                               tipo = CAST(:tipo AS tipo_imovel),
-                               status = CAST(:status AS status_imovel), atualizado_por = :usuario
-                         WHERE id = :id
-                        """)
-                        .param("logradouro", dados.logradouro().trim())
-                        .param("numero", vazioPara(dados.numero(), "S/N"))
-                        .param("complemento", complemento)
-                        .param("bairro", vazioPara(dados.bairro(), "Centro"))
-                        .param("cidade", cidade)
-                        .param("uf", uf)
-                        .param("cep", cep)
-                        .param("tipo", tipo)
-                        .param("status", status)
-                        .param("usuario", usuario)
-                        .param("id", UUID.fromString(dados.id()))
-                        .update();
+                        .query(String.class)
+                        .single();
             }
+            jdbc.sql("""
+                    UPDATE imoveis
+                       SET logradouro = :logradouro, numero = :numero, complemento = :complemento,
+                           bairro = :bairro, cidade = :cidade, uf = :uf, cep = :cep,
+                           tipo = CAST(:tipo AS tipo_imovel), atualizado_por = :usuario
+                     WHERE id = :id
+                    """)
+                    .param("logradouro", dados.logradouro().trim())
+                    .param("numero", vazioPara(dados.numero(), "S/N"))
+                    .param("complemento", complemento)
+                    .param("bairro", vazioPara(dados.bairro(), "Centro"))
+                    .param("cidade", cidade)
+                    .param("uf", uf)
+                    .param("cep", cep)
+                    .param("tipo", tipo)
+                    .param("usuario", usuario)
+                    .param("id", UUID.fromString(dados.id()))
+                    .update();
+            return dados.id();
         } catch (DataIntegrityViolationException ex) {
             throw new IllegalStateException("Não foi possível salvar o imóvel: " + ex.getMostSpecificCause().getMessage());
         }

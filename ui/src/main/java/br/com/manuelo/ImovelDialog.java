@@ -11,21 +11,23 @@ import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.upload.Upload;
 
 public class ImovelDialog extends Dialog {
 
     public record DadosImovel(String id, String logradouro, String numero, String complemento,
             String bairro, String cidade, String uf, String cep, String tipo, String status,
-            BigDecimal aluguel, String observacoes) {
+            BigDecimal aluguel, String observacoes, UiKit.ArquivoSelecionado contrato) {
     }
 
     private final Consumer<DadosImovel> aoSalvar;
     private final TextField endereco = UiKit.text("Endereço", "Ex: Rua das Flores, 88");
     private final ComboBox<String> tipo = UiKit.select("Tipo", "Escolha um tipo",
             List.of("Apartamento", "Casa", "Comercial", "Terreno"));
-    private final ComboBox<String> status = UiKit.select("Status", "Selecione",
-            List.of("Alugado", "Vago", "Em manutenção"));
+    private final TextField status = UiKit.text("Status", "");
+    private final TextField aluguel = UiKit.text("Aluguel atual", "");
     private final TextField inquilino = UiKit.text("Inquilino vinculado", "Buscar por nome ou documento");
+    private final Upload contratoUpload;
     private final Button reformas = UiKit.secondary("Reformas", e -> {
         close();
         UiKit.ir("imoveis/reformas");
@@ -43,9 +45,12 @@ public class ImovelDialog extends Dialog {
     private String cidadeAtual = "Aracaju";
     private String ufAtual = "SE";
     private String cepAtual = "";
+    private UiKit.ArquivoSelecionado contrato;
 
     public ImovelDialog(Consumer<DadosImovel> aoSalvar) {
         this.aoSalvar = aoSalvar;
+        contratoUpload = UiKit.upload("Arraste o contrato aqui ou clique para selecionar",
+                "PDF, JPG ou PNG, até 10 MB", this::selecionarContrato);
         addClassName("modal");
         setWidth("620px");
         setMaxWidth("94vw");
@@ -61,16 +66,18 @@ public class ImovelDialog extends Dialog {
 
         inquilino.setReadOnly(true);
         inquilino.setPlaceholder("Definido pelo contrato vigente");
+        status.setReadOnly(true);
+        aluguel.setReadOnly(true);
 
         Span rotuloContrato = new Span("Contrato");
         rotuloContrato.addClassName("form-label");
 
         Div body = new Div(
                 endereco,
-                UiKit.formGrid(tipo, status),
+                UiKit.formGrid(tipo, status, aluguel),
                 inquilino,
                 rotuloContrato,
-                UiKit.upload("Arraste o contrato aqui ou clique para selecionar", "PDF, JPG ou PNG, até 10 MB"));
+                contratoUpload);
         body.addClassName("modal-body");
         body.addClassName("stack");
 
@@ -97,7 +104,10 @@ public class ImovelDialog extends Dialog {
         endereco.clear();
         tipo.clear();
         status.setValue("Vago");
+        aluguel.setValue("R$ 0,00");
         inquilino.clear();
+        contrato = null;
+        contratoUpload.clearFileList();
         reformas.setVisible(false);
         open();
     }
@@ -118,9 +128,16 @@ public class ImovelDialog extends Dialog {
         endereco.setValue(enderecoOriginal == null ? "" : enderecoOriginal);
         tipo.setValue(imovel.tipo());
         status.setValue(imovel.status());
+        aluguel.setValue(dinheiro(imovel.aluguel()));
         inquilino.setValue(imovel.inquilino() == null ? "" : imovel.inquilino());
+        contrato = null;
+        contratoUpload.clearFileList();
         reformas.setVisible(true);
         open();
+    }
+
+    private void selecionarContrato(UiKit.ArquivoSelecionado selecionado) {
+        this.contrato = selecionado;
     }
 
     private void salvar() {
@@ -146,7 +163,14 @@ public class ImovelDialog extends Dialog {
         aoSalvar.accept(new DadosImovel(idAtual, logradouro, numero, complemento, bairro,
                 cidadeAtual, ufAtual, cepAtual, tipo.getValue(),
                 status.getValue() == null || status.getValue().isBlank() ? "Vago" : status.getValue(),
-                aluguelAtual, observacoesAtuais));
+                aluguelAtual, observacoesAtuais, contrato));
         close();
+    }
+
+    private String dinheiro(BigDecimal valor) {
+        if (valor == null) {
+            return "R$ 0,00";
+        }
+        return String.format(UiKit.PT_BR, "R$ %.2f", valor);
     }
 }
