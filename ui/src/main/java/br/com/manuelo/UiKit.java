@@ -23,7 +23,9 @@ import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.upload.Upload;
+import com.vaadin.flow.server.Command;
 import com.vaadin.flow.server.streams.UploadHandler;
+import com.vaadin.flow.server.streams.UploadMetadata;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
@@ -32,10 +34,18 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Consumer;
 
 public final class UiKit {
 
     public static final Locale PT_BR = Locale.forLanguageTag("pt-BR");
+
+    public record ArquivoSelecionado(String nome, String mime, byte[] conteudo) {
+
+        public int tamanho() {
+            return conteudo == null ? 0 : conteudo.length;
+        }
+    }
     private static final DateTimeFormatter DIA_MES = DateTimeFormatter.ofPattern("dd MMM", PT_BR);
     private static final DateTimeFormatter DATA = DateTimeFormatter.ofPattern("dd/MM/yyyy", PT_BR);
     private static final NumberFormat MOEDA = NumberFormat.getCurrencyInstance(PT_BR);
@@ -335,13 +345,11 @@ public final class UiKit {
     }
 
     public static Upload upload(String titulo, String dica) {
-        Upload upload = new Upload(UploadHandler.inMemory((metadata, bytes) -> {
-        }));
-        upload.setAcceptedMimeTypes("application/pdf", "image/png", "image/jpeg");
-        upload.setMaxFiles(1);
-        upload.setMaxFileSize(10 * 1024 * 1024);
-        upload.addClassName("upload-box");
+        return upload(titulo, dica, arquivo -> {
+        });
+    }
 
+    public static Upload upload(String titulo, String dica, Consumer<ArquivoSelecionado> aoSelecionar) {
         Span tituloSpan = new Span(titulo);
         tituloSpan.addClassName("upload-title");
         Span dicaSpan = new Span(dica);
@@ -350,8 +358,59 @@ public final class UiKit {
         texto.addClassName("upload-copy");
         Div label = new Div(texto);
         label.addClassName("upload-label");
+
+        Upload upload = new Upload(UploadHandler.inMemory((metadata, bytes) -> {
+            ArquivoSelecionado arquivo = new ArquivoSelecionado(metadata.fileName(),
+                    mimeDe(metadata), bytes);
+            aoSelecionar.accept(arquivo);
+            atualizarRotuloUpload(tituloSpan, dicaSpan, arquivo);
+        }));
+        upload.setAcceptedMimeTypes("application/pdf", "image/png", "image/jpeg");
+        upload.setMaxFiles(1);
+        upload.setMaxFileSize(10 * 1024 * 1024);
+        upload.addClassName("upload-box");
         upload.setDropLabel(label);
         return upload;
+    }
+
+    private static void atualizarRotuloUpload(Span tituloSpan, Span dicaSpan,
+            ArquivoSelecionado arquivo) {
+        Command atualizar = () -> {
+            String nome = arquivo.nome();
+            tituloSpan.setText(nome == null || nome.isBlank() ? "Arquivo selecionado" : nome);
+            dicaSpan.setText(tamanho(arquivo.tamanho()) + " • arquivo selecionado");
+        };
+        var ui = tituloSpan.getUI();
+        if (ui.isPresent()) {
+            ui.get().access(atualizar);
+        } else {
+            atualizar.execute();
+        }
+    }
+
+    private static String mimeDe(UploadMetadata metadata) {
+        String mime = metadata.contentType();
+        if (mime != null && !mime.isBlank() && !"application/octet-stream".equalsIgnoreCase(mime)) {
+            return "image/jpg".equalsIgnoreCase(mime) ? "image/jpeg" : mime;
+        }
+        String nome = metadata.fileName() == null ? "" : metadata.fileName().toLowerCase(Locale.ROOT);
+        if (nome.endsWith(".pdf")) {
+            return "application/pdf";
+        }
+        if (nome.endsWith(".png")) {
+            return "image/png";
+        }
+        if (nome.endsWith(".jpg") || nome.endsWith(".jpeg")) {
+            return "image/jpeg";
+        }
+        return mime;
+    }
+
+    private static String tamanho(long bytes) {
+        if (bytes >= 1024 * 1024) {
+            return String.format(PT_BR, "%.1f MB", bytes / (1024.0 * 1024.0));
+        }
+        return Math.max(1, bytes / 1024) + " KB";
     }
 
     public static Image logo(String width) {

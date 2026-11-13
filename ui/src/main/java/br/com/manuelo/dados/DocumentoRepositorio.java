@@ -58,6 +58,17 @@ public class DocumentoRepositorio {
                 UNION ALL
                 SELECT 'INQUILINO', id::text, 'Inquilino: ' || nome
                   FROM inquilinos
+                UNION ALL
+                SELECT 'CONTRATO', c.id::text,
+                       'Contrato: ' || i.nome || ' — ' || im.logradouro || ', ' || im.numero
+                  FROM contratos c
+                  JOIN inquilinos i ON i.id = c.inquilino_id
+                  JOIN imoveis im ON im.id = c.imovel_id
+                UNION ALL
+                SELECT 'MOVIMENTACAO', m.id::text,
+                       'Movimentação: ' || m.descricao || ' — '
+                       || to_char(m.data_movimentacao, 'DD/MM/YYYY')
+                  FROM movimentacoes m
                  ORDER BY rotulo
                 """)
                 .query((rs, row) -> new Opcao(rs.getString("tipo"), rs.getString("id"),

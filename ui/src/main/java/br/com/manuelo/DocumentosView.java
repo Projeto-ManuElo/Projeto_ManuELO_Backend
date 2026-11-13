@@ -12,6 +12,8 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
+import com.Projeto.manuelo.servico.DocumentoService;
+
 import br.com.manuelo.dados.DocumentoRepositorio;
 
 @Route(value = "documentos", layout = MainLayout.class)
@@ -19,6 +21,7 @@ import br.com.manuelo.dados.DocumentoRepositorio;
 public class DocumentosView extends Div {
 
     private final DocumentoRepositorio repositorio;
+    private final DocumentoService documentoService;
     private List<DemoData.Documento> documentos;
     private final TextField nome = UiKit.text("Nome", "nome do inquilino, sobrenome");
     private final ComboBox<String> tipoDocumento = UiKit.select("Tipo de documento", "Todos",
@@ -29,8 +32,9 @@ public class DocumentosView extends Div {
     private final Div lista = new Div();
     private final DocumentoDialog dialog;
 
-    public DocumentosView(DocumentoRepositorio repositorio) {
+    public DocumentosView(DocumentoRepositorio repositorio, DocumentoService documentoService) {
         this.repositorio = repositorio;
+        this.documentoService = documentoService;
         this.documentos = repositorio.listar(60);
         this.dialog = new DocumentoDialog(repositorio.opcoes(), this::adicionar);
         addClassName("page");
@@ -110,7 +114,9 @@ public class DocumentosView extends Div {
 
     private void adicionar(DocumentoDialog.DadosDocumento dados) {
         try {
-            repositorio.salvar(dados.nome(), dados.tipo(), dados.data(), dados.vinculo());
+            documentoService.salvar(dados.nome(), dados.tipo(), dados.data(),
+                    dados.vinculo().tipo(), dados.vinculo().id(), dados.nomeArquivo(),
+                    dados.mime(), dados.conteudo());
             documentos = repositorio.listar(60);
             renderizar();
             UiKit.aviso("Documento adicionado com sucesso.");
