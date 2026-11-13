@@ -22,10 +22,9 @@ public class HomeView extends Div {
         this.movimentacoes = movimentacoes;
         addClassName("page");
 
-        Button exportar = UiKit.secondary("Exportar", e -> UiKit.aviso("Exportação gerada com sucesso."));
-        Button novo = UiKit.primaryIcon("Novo Movimentação", VaadinIcon.PLUS,
+        Button novo = UiKit.primaryIcon("Nova movimentação", VaadinIcon.PLUS,
                 e -> UiKit.ir("movimentacao-financeira"));
-        add(UiKit.header("Visão geral", null, exportar, novo));
+        add(UiKit.header("Visão geral", null, novo));
 
         HomeRepositorio.Indicadores i = indicadores.indicadores();
         Div kpis = new Div(
@@ -33,11 +32,12 @@ public class HomeView extends Div {
                         "imoveis?filtro=alugado", i.manutencao() + " em manutenção", "#0E9F6E"),
                 UiKit.kpi("Imóveis cadastrados", String.valueOf(i.cadastrados()), "#F5A623", VaadinIcon.BUILDING,
                         "imoveis", i.vagos() + " vagos", "#F5A623"),
-                UiKit.kpi("Contratos próximos do vencimentos", String.valueOf(i.aVencer()), "#7A5AF8",
-                        VaadinIcon.FILE_TEXT, "contratos?filtro=vencendo", "Aguardando resolução", "#3538CD"),
+                UiKit.kpi("Contratos próximos do vencimento", String.valueOf(i.aVencer()), "#7A5AF8",
+                        VaadinIcon.FILE_TEXT, "contratos?filtro=vencendo",
+                        i.aVencer() + " na janela de alerta", "#3538CD"),
                 UiKit.kpi("Contratos atrasados", String.valueOf(i.atrasados()), "#F04438", VaadinIcon.MONEY,
                         "contratos?filtro=atrasados",
-                        i.atrasadosCriticos() + " mais de uma semana sem pagar", "#F04438"));
+                        i.atrasadosCriticos() + " em atraso crítico", "#F04438"));
         kpis.addClassName("kpi-grid");
         add(kpis);
 
@@ -62,7 +62,7 @@ public class HomeView extends Div {
 
         Button verTudo = UiKit.secondary("Ver tudo", e -> UiKit.ir("movimentacao-financeira"));
         return UiKit.card(
-                UiKit.cardHeader("Movimentação recentes", "Últimas movimentações registradas no sistema", verTudo),
+                UiKit.cardHeader("Movimentações recentes", "Últimas movimentações registradas no sistema", verTudo),
                 tabela);
     }
 }
