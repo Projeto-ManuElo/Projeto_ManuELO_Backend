@@ -37,9 +37,8 @@ public class ImoveisView extends Div implements BeforeEnterObserver {
         addClassName("page");
         dialog = new ImovelDialog(this::salvarImovel);
 
-        Button exportar = UiKit.secondary("Exportar", e -> UiKit.aviso("Exportação gerada com sucesso."));
         Button novo = UiKit.primaryIcon("Novo Imóvel", VaadinIcon.PLUS, e -> dialog.abrirNovo());
-        add(UiKit.header("Imóveis", null, exportar, novo));
+        add(UiKit.header("Imóveis", null, novo));
 
         add(criarFiltros());
         add(criarTabelaCard());

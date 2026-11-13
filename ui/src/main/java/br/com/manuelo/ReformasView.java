@@ -47,9 +47,8 @@ public class ReformasView extends Div {
             }
         });
 
-        Button exportar = UiKit.secondary("Exportar", e -> UiKit.aviso("Exportação gerada com sucesso."));
         Button novo = UiKit.primaryIcon("Novo Registro", VaadinIcon.PLUS, e -> abrirNovo());
-        add(UiKit.header("Imóveis", null, exportar, novo));
+        add(UiKit.header("Reformas", null, novo));
 
         tabela.addClassName("table");
         Div card = UiKit.card(
