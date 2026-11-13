@@ -66,10 +66,10 @@ Produção: `--spring.profiles.active=prod`, com `DB_URL`, `DB_USER`, `DB_PASSWO
 
 ## Pendências conscientes (fora do backlog executado)
 
-O arquivo `docs/integracao/lacunas-interface.md` mapeia **67 lacunas de interface** (25 ALTO, 26 MÉDIO, 16 BAIXO) que foram deliberadamente adiadas para revisão do usuário antes de implementar; não são itens A-01..A-90.
+O arquivo `docs/integracao/lacunas-interface.md` mapeava **67 lacunas de interface** (25 ALTO, 26 MÉDIO, 16 BAIXO); todas foram tratadas na rodada A-90 (commits 2302e95, 5f1af2f e be15137), com as ressalvas registradas no próprio documento.
 
-Problemas residuais registrados em `docs/integracao/problemas.md` (7 abertos):
-P-002 (views de leitura de imóveis/reformas ainda usam repositório direto), P-019 (repositórios imutáveis expõem `save/delete`), P-021 (cadastro A-11 ainda em JDBC), P-022 (perfil/inativação não revoga sessão viva), P-023 (envio de token antes do commit), P-026 (detalhe de imóvel incompleto/filtro case-sensitive) e P-027 (edição/filtros de inquilinos).
+Problemas residuais registrados em `docs/integracao/problemas.md` (5 abertos):
+P-002 (views de leitura de imóveis/reformas ainda usam repositório direto), P-019 (repositórios imutáveis expõem `save/delete`), P-021 (cadastro A-11 ainda em JDBC), P-023 (envio de token antes do commit) e P-027 (falta teste de rollback pós-INSERT em inquilinos; edição/filtros já corrigidos).
 
 Nenhum desses impede o juiz ou o fluxo principal; ficam documentados para a próxima rodada.
 
@@ -77,6 +77,6 @@ Nenhum desses impede o juiz ou o fluxo principal; ficam documentados para a pró
 
 - `docs/integracao/backlog.md` — itens e evidências
 - `docs/integracao/progresso.md` — iterações e runtime
-- `docs/integracao/problemas.md` — 20 resolvidos / 7 abertos
+- `docs/integracao/problemas.md` — 22 resolvidos / 5 abertos
 - `docs/integracao/decisoes.md` — DEC-I01..DEC-I14
-- `docs/integracao/lacunas-interface.md` — 67 lacunas adiadas
+- `docs/integracao/lacunas-interface.md` — 67 lacunas tratadas (com ressalvas)

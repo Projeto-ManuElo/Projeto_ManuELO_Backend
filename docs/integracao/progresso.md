@@ -22,7 +22,7 @@ Iteração: 22 | Orçamento: 120 | Runtime: postgres embutido do juiz (cluster t
 - [x] F4 Fecho: A-90, juiz 8/8 e RELATORIO-FINAL.md
 
 ## Item em andamento
-Nenhum. Entrega concluída; lacunas de interface aguardam revisão do usuário.
+Nenhum. Entrega concluída; as 67 lacunas de interface foram tratadas na rodada A-90 (commits 2302e95, 5f1af2f e be15137). Restam 5 problemas abertos documentados.
 
 ## Log (uma linha por iteração: fase, item, agente, resultado do juiz)
 - Iteração 1: pacote da equipe instalado; baseline T25 commitada (b33ff36); F0 despachada (QA + mapeador).
@@ -47,3 +47,4 @@ Nenhum. Entrega concluída; lacunas de interface aguardam revisão do usuário.
 - Iteração 20: A-50/A-51/A-60 — upload/armazenamento, documentos com filtros/download e Home real; UploadDocumentoTest 7/7.
 - Iteração 21: A-70/A-71/A-72 — 4 PDFs OpenPDF, persistência/composição, download ADMIN, RelatoriosView e exportar extrato; 7/7.
 - Iteração 22: A-15/A-80/A-81/A-90 — AuditoriaTest 4/4, erro global/fuso pt-BR, perfis dev/prod + README, remoção do DemoData legado e botões mortos; juiz 8/8.
+- Iteração 23: A-90 — 67 lacunas de interface tratadas (auth/usuários, imóveis/reformas, inquilinos/contratos/caução, movimentação/documentos/relatórios); P-022/P-026 resolvidos; juiz 8/8; commits 2302e95, 5f1af2f, be15137.

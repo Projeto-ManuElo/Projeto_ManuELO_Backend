@@ -156,6 +156,40 @@ o código atual, não o texto histórico do backlog.
 | L-66 | Imóveis/Inquilinos/Documentos | Listas sem paginação/limite (exceto documentos, que limita a 60) e sem busca no banco em Inquilinos/Documentos | `ImoveisView.java:102-103`; `InquilinosView.java:36,77-104`; `DocumentosView.java:34` | BAIXO | A-20/A-51 |
 | L-67 | Recuperação de senha | A tela "Email enviado" promete e-mail, mas fora do perfil `dev` e sem `spring.mail.host` nenhum e-mail/link é entregue | `EmailEnviadoView.java:21`; `EnvioTokenSenhaImpl.java:48-53` | MEDIO | A-13/A-81 |
 
+## Fechamento em 13/11/2026
+
+As 67 lacunas foram tratadas na rodada A-90. Evidências por grupo:
+
+- **Autenticação/usuários (L-01..L-05, L-56..L-59):** `LoginView` tem link de cadastro e alias
+  `/login`; recuperação/redefinição têm links de volta e campo de token manual; aprovação permite
+  nova consulta; usuários têm aprovar/reprovar/inativar, confirmação e escolha explícita de perfil;
+  `SessaoUsuario` revalida perfil/inativação a cada acesso.
+- **Home (L-06..L-08):** exportação real, subtexto derivado e textos corrigidos.
+- **Imóveis/reformas (L-09..L-18):** upload de contrato persistido, detalhe completo com reformas,
+  aluguel/status derivados e somente leitura, filtros escapados, reforma gera saída financeira com
+  comprovante (categoria `OUTRAS_SAIDAS` + origem "Reforma", pois não há enum REFORMA no schema),
+  título e validação corrigidos.
+- **Inquilinos (L-19..L-23):** uploads reais de contrato/recibo, edição carrega e salva fiador,
+  imóvel, aluguel, dia e caução (com ajuste DEPOSITO/DEVOLUCAO), filtros SQL e grafia corrigida.
+- **Contratos/pagamento (L-24..L-29):** upload e download do contrato, edição de ação judicial,
+  depósito/devolução de caução via `CaucaoService`, competência e forma de pagamento no diálogo e
+  bloqueio de competência já paga.
+- **Movimentação (L-30..L-38):** pesquisa/exportação reais, período, comprovante obrigatório em
+  saída, imóvel/competência, caução em `caucao_movimentacoes`, estorno/edição admin, categoria
+  Administrativo e colunas de forma/origem/comprovante no extrato.
+- **Documentos (L-39..L-46):** upload real com metadados, download, classificação de pendente,
+  filtros financeiro/nome, vínculos contrato/movimentação e limite com "Carregar mais".
+- **Relatórios (L-47..L-55):** 4º PDF, período livre, cabeçalho/rodapé, download, restrição a
+  ADMINISTRADOR, somente PDF, nomenclatura e colunas por tipo; "PDF personalizado" abre diálogo
+  de confirmação/observação.
+- **Transversal (L-60..L-67):** armazenamento real com validação de mime/tamanho, autorização por
+  papel, tratamento global de erros, `DemoData` renomeado para `Modelos`, feedback de upload e
+  SMTP documentado/testado com MailDev (`README.md`, `.env.example`).
+
+Ressalvas: L-12/L-13 são somente leitura por serem derivados (DEC-09); L-46/L-66 usam limite com
+"Carregar mais", não paginação numerada; L-67 em produção exige um provedor SMTP real configurado
+por variáveis de ambiente (em dev, MailDev).
+
 ## Notas de auditoria
 
 - Rotas cobertas nesta tabela: `/` (login), `/cadastro`, `/aguardando-aprovacao` (`aprovacao`),

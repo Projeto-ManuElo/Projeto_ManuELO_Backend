@@ -1,6 +1,6 @@
 # Registro de problemas (o mapeador cria; o líder mantém o status)
 
-Resumo: total 27 | abertos 7 | em correção 0 | em revisão 0 | resolvidos 20 | bloqueados 0
+Resumo: total 27 | abertos 5 | em correção 0 | em revisão 0 | resolvidos 22 | bloqueados 0
 
 Modelo de bloco (copie para cada problema):
 
@@ -282,9 +282,10 @@ Modelo de bloco (copie para cada problema):
 - Reprodução: logar como admin, alterar o próprio perfil para COLABORADOR e acessar `/usuarios` sem novo login.
 - Dono: back + front
 - Critério de aceite: autorização revalidada contra o banco a cada navegação ou sessão revogada na alteração.
-- Status: ABERTO
+- Status: RESOLVIDO
+- Resolução: A-90 (`SessaoUsuario.usuario()` revalida perfil/status no `UsuarioJpaRepository` a cada acesso)
 - Tentativas: 0/3
-- Commit:
+- Commit: 2302e95
 
 ## P-023 Envio de token antes do commit e concorrência (A-13)
 - Severidade: BAIXA/MEDIA
@@ -332,9 +333,10 @@ Modelo de bloco (copie para cada problema):
 - Reprodução: filtrar tipo "casa" (minúsculo) e abrir um imóvel com contrato.
 - Dono: front
 - Critério de aceite: detalhe completo conforme CONTEXTO; filtro case-insensitive e com escape de curingas.
-- Status: ABERTO
+- Status: RESOLVIDO
+- Resolução: A-90 (detalhe com cidade/UF/CEP, vencimento, caução e reformas; filtros com `lower`/escape)
 - Tentativas: 0/3
-- Commit:
+- Commit: 5f1af2f
 
 ## P-027 Edição/filtros de inquilinos e rollback não cobertos (A-21)
 - Severidade: MEDIA
@@ -345,5 +347,6 @@ Modelo de bloco (copie para cada problema):
 - Dono: front + qa
 - Critério de aceite: filtros via SQL; edição do vínculo/fiador suportada ou campos ocultos; teste de rollback pós-INSERT.
 - Status: ABERTO
+- Resolução parcial: A-90 entregou filtros SQL e edição de fiador/imóvel/aluguel/dia/caução; falta teste de rollback pós-INSERT.
 - Tentativas: 0/3
-- Commit:
+- Commit: be15137
