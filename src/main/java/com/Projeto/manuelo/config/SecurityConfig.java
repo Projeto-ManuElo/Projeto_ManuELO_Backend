@@ -26,6 +26,7 @@ public class SecurityConfig {
 
 	private static final String[] ROTAS_PUBLICAS = {
 			"/",
+			"/login",
 			"/cadastro",
 			"/aguardando-aprovacao",
 			"/aprovacao",

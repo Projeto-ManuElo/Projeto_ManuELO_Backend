@@ -33,6 +33,8 @@ public class RecuperarSenhaView extends AuthLayout {
         recuperar.addClassName("auth-submit");
         recuperar.addClassName("auth-submit-rec");
 
-        form.add(email, recuperar);
+        form.add(email, recuperar,
+                link("Voltar ao login", LoginView.class),
+                link("Cadastre-se", CadastroView.class));
     }
 }
