@@ -93,6 +93,29 @@ public class PagamentoAluguelService {
             }
         }
 
+        boolean jaPaga = jdbc.sql("""
+                SELECT 1
+                  FROM movimentacoes m
+                 WHERE m.contrato_id = :contrato
+                   AND m.tipo = 'ENTRADA'
+                   AND m.categoria = 'ALUGUEL'
+                   AND m.competencia = :competencia
+                   AND NOT EXISTS (
+                     SELECT 1
+                       FROM movimentacoes e
+                      WHERE e.movimentacao_original_id = m.id
+                        AND e.tipo = 'ESTORNO'
+                   )
+                """)
+                .param("contrato", contrato)
+                .param("competencia", competenciaMes)
+                .query(Integer.class)
+                .optional()
+                .isPresent();
+        if (jaPaga) {
+            throw new IllegalStateException("Esta competência já foi paga para o contrato.");
+        }
+
         LocalDate hoje = LocalDate.now();
         String formaEnum = caucao ? "CAUCAO" : formaEnum(forma);
         String descricao = "Aluguel " + MES_ANO.format(competenciaMes)

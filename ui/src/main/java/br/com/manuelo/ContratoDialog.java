@@ -16,6 +16,7 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.upload.Upload;
 
 import com.Projeto.manuelo.servico.ContratoCadastroService;
 
@@ -28,7 +29,8 @@ public class ContratoDialog extends Dialog {
             String email, String telefone, String nomeFiador, String documentoFiador,
             String emailFiador, String telefoneFiador, boolean acaoJudicial,
             String acaoJudicialDescricao, BigDecimal aluguel, int diaVencimento,
-            LocalDate vencimento, BigDecimal caucao, String contratoCaminho) {
+            LocalDate vencimento, BigDecimal caucao, String contratoCaminho,
+            UiKit.ArquivoSelecionado arquivo) {
 
         public ContratoCadastroService.Dados paraServico() {
             return new ContratoCadastroService.Dados(imovelId, endereco, nome, cpf, email,
@@ -57,6 +59,8 @@ public class ContratoDialog extends Dialog {
     private final IntegerField diaVencimento = new IntegerField("Dia de vencimento");
     private final DatePicker vencimento = UiKit.date("Vencimento do contrato");
     private final TextField caucao = UiKit.text("Caução inicial", "R$ 0,00");
+    private final Upload contratoUpload;
+    private UiKit.ArquivoSelecionado arquivo;
 
     public ContratoDialog(List<ImovelRepositorio.Opcao> imoveis, Consumer<DadosContrato> aoSalvar) {
         this.aoSalvar = aoSalvar;
@@ -102,6 +106,9 @@ public class ContratoDialog extends Dialog {
         Span secaoContrato = new Span("Contrato");
         secaoContrato.addClassName("form-label");
 
+        contratoUpload = UiKit.upload("Arraste o contrato aqui ou clique para selecionar",
+                "PDF, JPG ou PNG, até 10 MB", selecionado -> arquivo = selecionado);
+
         Div body = new Div(
                 imovel,
                 endereco,
@@ -119,7 +126,7 @@ public class ContratoDialog extends Dialog {
                 UiKit.formGrid(valor, diaVencimento),
                 vencimento,
                 caucao,
-                UiKit.upload("Arraste o contrato aqui ou clique para selecionar", "PDF, JPG ou PNG, até 10 MB"));
+                contratoUpload);
         body.addClassName("modal-body");
         body.addClassName("stack");
 
@@ -147,6 +154,8 @@ public class ContratoDialog extends Dialog {
         diaVencimento.setValue(5);
         vencimento.clear();
         caucao.clear();
+        arquivo = null;
+        contratoUpload.clearFileList();
         open();
     }
 
@@ -196,7 +205,7 @@ public class ContratoDialog extends Dialog {
                 cpf.getValue(), email.getValue(), telefone.getValue(), nomeDoFiador,
                 documentoFiador.getValue(), emailFiador.getValue(), telefoneFiador.getValue(),
                 temAcao, temAcao ? acaoJudicialDescricao.getValue() : null, aluguel, dia,
-                vencimento.getValue(), valorCaucao, null));
+                vencimento.getValue(), valorCaucao, null, arquivo));
         close();
     }
 

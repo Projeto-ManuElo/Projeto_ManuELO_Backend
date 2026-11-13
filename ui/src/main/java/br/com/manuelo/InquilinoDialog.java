@@ -12,17 +12,21 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.upload.Upload;
 
 import br.com.manuelo.dados.ImovelRepositorio;
+import br.com.manuelo.dados.InquilinoRepositorio;
 
 public class InquilinoDialog extends Dialog {
 
     public record DadosInquilino(String id, String nome, String cpf, String email, String telefone,
             String imovelId, BigDecimal aluguel, int diaVencimento, String nomeFiador,
-            String documentoFiador, String emailFiador, BigDecimal caucao) {
+            String documentoFiador, String emailFiador, BigDecimal caucao,
+            UiKit.ArquivoSelecionado contratoArquivo, UiKit.ArquivoSelecionado reciboArquivo) {
     }
 
     private final Consumer<DadosInquilino> aoSalvar;
+    private final List<ImovelRepositorio.Opcao> imoveis;
     private final Span titulo = new Span("Adicionar Inquilino");
     private final TextField nome = UiKit.text("Nome", "Ex: João Miguel Oliveira de Souza");
     private final TextField cpf = UiKit.text("CPF", "ex: 123.xxx.xxx.123");
@@ -34,14 +38,19 @@ public class InquilinoDialog extends Dialog {
     private final TextField telefone = UiKit.text("Telefone", "Ex: (11) 99999-9999");
     private final TextField valorAluguel = UiKit.text("Valor do aluguel", "R$ 0,00");
     private final TextField diaVencimento = UiKit.text("Dia de vencimento", "Ex: 5");
-    private final TextField valorCaucao = UiKit.text("Valor do cação", "R$ 0,00");
+    private final TextField valorCaucao = UiKit.text("Valor da caução", "R$ 0,00");
+    private final Upload contratoUpload;
+    private final Upload reciboUpload;
+    private UiKit.ArquivoSelecionado contratoArquivo;
+    private UiKit.ArquivoSelecionado reciboArquivo;
 
     private String idAtual;
 
     public InquilinoDialog(List<ImovelRepositorio.Opcao> imoveis, Consumer<DadosInquilino> aoSalvar) {
         this.aoSalvar = aoSalvar;
+        this.imoveis = imoveis == null ? List.of() : List.copyOf(imoveis);
         imovel = new ComboBox<>("Imóvel vinculado");
-        imovel.setItems(imoveis);
+        imovel.setItems(this.imoveis);
         imovel.setItemLabelGenerator(ImovelRepositorio.Opcao::rotulo);
         imovel.setPlaceholder("Selecione o imóvel");
         imovel.setWidthFull();
@@ -60,8 +69,13 @@ public class InquilinoDialog extends Dialog {
 
         Span contrato = new Span("Contrato");
         contrato.addClassName("form-label");
-        Span recibo = new Span("Recibo do cação");
+        Span recibo = new Span("Recibo da caução");
         recibo.addClassName("form-label");
+
+        contratoUpload = UiKit.upload("Arraste o contrato aqui ou clique para selecionar",
+                "PDF, JPG ou PNG, até 10 MB", arquivo -> contratoArquivo = arquivo);
+        reciboUpload = UiKit.upload("Arraste o recibo aqui ou clique para selecionar",
+                "PDF, JPG ou PNG, até 10 MB", arquivo -> reciboArquivo = arquivo);
 
         Div body = new Div(
                 nome,
@@ -72,10 +86,10 @@ public class InquilinoDialog extends Dialog {
                 telefone,
                 contrato,
                 UiKit.formGrid(valorAluguel, diaVencimento),
-                UiKit.upload("Arraste o contrato aqui ou clique para selecionar", "PDF, JPG ou PNG, até 10 MB"),
+                contratoUpload,
                 valorCaucao,
                 recibo,
-                UiKit.upload("Arraste o recibo aqui ou clique para selecionar", "PDF, JPG ou PNG, até 10 MB"));
+                reciboUpload);
         body.addClassName("modal-body");
         body.addClassName("stack");
 
@@ -99,23 +113,51 @@ public class InquilinoDialog extends Dialog {
         valorAluguel.clear();
         diaVencimento.setValue("5");
         valorCaucao.clear();
+        contratoArquivo = null;
+        reciboArquivo = null;
+        contratoUpload.clearFileList();
+        reciboUpload.clearFileList();
         open();
     }
 
-    public void abrirEdicao(Modelos.Inquilino inquilino) {
+    public void abrirEdicao(Modelos.Inquilino inquilino, InquilinoRepositorio.DadosEdicao detalhe) {
         idAtual = inquilino.id();
         titulo.setText("Editar Inquilino");
         nome.setValue(inquilino.nome());
         cpf.setValue(inquilino.cpf());
         email.setValue(inquilino.email());
+        telefone.setValue(inquilino.telefone());
         nomeFiador.clear();
         cpfFiador.clear();
         emailFiador.clear();
         imovel.clear();
-        telefone.setValue(inquilino.telefone());
         valorAluguel.clear();
-        diaVencimento.setValue("5");
-        valorCaucao.setValue(inquilino.caucao() == null ? "" : inquilino.caucao().toPlainString());
+        diaVencimento.clear();
+        valorCaucao.clear();
+        if (detalhe != null) {
+            nomeFiador.setValue(detalhe.nomeFiador() == null ? "" : detalhe.nomeFiador());
+            cpfFiador.setValue(detalhe.documentoFiador() == null ? "" : detalhe.documentoFiador());
+            emailFiador.setValue(detalhe.emailFiador() == null ? "" : detalhe.emailFiador());
+            if (detalhe.imovelId() != null) {
+                imoveis.stream()
+                        .filter(opcao -> detalhe.imovelId().equals(opcao.id()))
+                        .findFirst()
+                        .ifPresent(imovel::setValue);
+            }
+            if (detalhe.aluguel() != null) {
+                valorAluguel.setValue(detalhe.aluguel().toPlainString().replace(".", ","));
+            }
+            if (detalhe.diaVencimento() > 0) {
+                diaVencimento.setValue(String.valueOf(detalhe.diaVencimento()));
+            }
+            if (detalhe.caucao() != null) {
+                valorCaucao.setValue(detalhe.caucao().toPlainString().replace(".", ","));
+            }
+        }
+        contratoArquivo = null;
+        reciboArquivo = null;
+        contratoUpload.clearFileList();
+        reciboUpload.clearFileList();
         open();
     }
 
@@ -123,13 +165,15 @@ public class InquilinoDialog extends Dialog {
         boolean novo = idAtual == null || idAtual.isBlank();
         BigDecimal aluguel = moeda(valorAluguel.getValue());
         Integer dia = dia(diaVencimento.getValue());
+        boolean temContrato = imovel.getValue() != null || aluguel != null;
 
         nome.setInvalid(nome.isEmpty());
         cpf.setInvalid(cpf.isEmpty());
         email.setInvalid(email.isEmpty());
-        boolean imovelInvalido = novo && imovel.getValue() == null;
-        boolean aluguelInvalido = novo && (aluguel == null || aluguel.signum() <= 0);
-        boolean diaInvalido = novo && (dia == null || dia < 1 || dia > 31);
+        boolean imovelInvalido = (novo || temContrato) && imovel.getValue() == null;
+        boolean aluguelInvalido = (novo || temContrato)
+                && (aluguel == null || aluguel.signum() <= 0);
+        boolean diaInvalido = (novo || temContrato) && (dia == null || dia < 1 || dia > 31);
         imovel.setInvalid(imovelInvalido);
         valorAluguel.setInvalid(aluguelInvalido);
         diaVencimento.setInvalid(diaInvalido);
@@ -146,7 +190,8 @@ public class InquilinoDialog extends Dialog {
         String imovelId = imovel.getValue() == null ? null : imovel.getValue().id();
         aoSalvar.accept(new DadosInquilino(idAtual, nome.getValue(), cpf.getValue(), email.getValue(),
                 telefone.getValue(), imovelId, aluguel, dia == null ? 5 : dia,
-                nomeFiador.getValue(), cpfFiador.getValue(), emailFiador.getValue(), caucao));
+                nomeFiador.getValue(), cpfFiador.getValue(), emailFiador.getValue(), caucao,
+                contratoArquivo, reciboArquivo));
         close();
     }
 

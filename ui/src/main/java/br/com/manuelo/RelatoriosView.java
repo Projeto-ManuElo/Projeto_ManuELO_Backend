@@ -12,8 +12,11 @@ import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.StreamRegistration;
@@ -66,7 +69,7 @@ public class RelatoriosView extends Div {
                 UiKit.primary("Gerar PDF", e -> gerar())));
 
         Div acoes = new Div(
-                UiKit.secondary("PDF personalizado", e -> gerar()),
+                UiKit.secondary("PDF personalizado", e -> abrirPdfPersonalizado()),
                 UiKit.secondary("Baixar último PDF", e -> baixarUltimo()));
         acoes.addClassName("form-actions");
         acoes.addClassName("start");
@@ -180,6 +183,31 @@ public class RelatoriosView extends Div {
         linha.addClassName("table-row");
         linha.getStyle().set("grid-template-columns", GRID_EXTRATO);
         return linha;
+    }
+
+    private void abrirPdfPersonalizado() {
+        Dialog modal = new Dialog();
+        modal.addClassName("modal");
+        modal.setWidth("560px");
+        modal.setMaxWidth("94vw");
+        modal.setCloseOnOutsideClick(false);
+
+        Div header = UiKit.dialogHeader("PDF personalizado",
+                "O período e o tipo selecionados serão usados. Informe uma observação para o arquivo.");
+        header.add(UiKit.iconButton(VaadinIcon.CLOSE, "Fechar", e -> modal.close()));
+
+        TextField observacao = UiKit.text("Observação", "Ex: relatório gerencial do trimestre");
+        Div body = new Div(observacao);
+        body.addClassName("modal-body");
+
+        Button cancelar = UiKit.secondary("Cancelar", e -> modal.close());
+        Button gerar = UiKit.primary("Gerar PDF", e -> {
+            modal.close();
+            gerar();
+        });
+
+        modal.add(header, body, UiKit.dialogFooter(cancelar, gerar));
+        modal.open();
     }
 
     private void gerar() {

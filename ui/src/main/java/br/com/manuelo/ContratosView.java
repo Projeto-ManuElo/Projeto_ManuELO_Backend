@@ -1,5 +1,6 @@
 package br.com.manuelo;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import com.vaadin.flow.component.UI;
@@ -19,6 +20,7 @@ import br.com.manuelo.dados.ContratoRepositorio;
 import br.com.manuelo.dados.ImovelRepositorio;
 
 import com.Projeto.manuelo.servico.ContratoCadastroService;
+import com.Projeto.manuelo.servico.DocumentoService;
 
 @Route(value = "contratos", layout = MainLayout.class)
 @PageTitle("Contratos")
@@ -26,6 +28,7 @@ public class ContratosView extends Div implements BeforeEnterObserver {
 
     private final ContratoRepositorio repositorio;
     private final ContratoCadastroService cadastro;
+    private final DocumentoService documentoService;
     private final TextField nome = UiKit.text("Nome", "Ex: João Miguel");
     private final TextField cpf = UiKit.text("CPF", "Ex: xxx.yyy.zzz.xz");
     private final TextField imovel = UiKit.text("Imóvel", "Ex: Aurora");
@@ -36,9 +39,10 @@ public class ContratosView extends Div implements BeforeEnterObserver {
     private final ContratoDialog dialog;
 
     public ContratosView(ContratoRepositorio repositorio, ContratoCadastroService cadastro,
-            ImovelRepositorio imoveis) {
+            ImovelRepositorio imoveis, DocumentoService documentoService) {
         this.repositorio = repositorio;
         this.cadastro = cadastro;
+        this.documentoService = documentoService;
         addClassName("page");
         dialog = new ContratoDialog(imoveis.opcoes(), this::adicionarContrato);
 
@@ -139,6 +143,12 @@ public class ContratosView extends Div implements BeforeEnterObserver {
     private void adicionarContrato(ContratoDialog.DadosContrato dados) {
         try {
             String id = cadastro.criar(dados.paraServico());
+            UiKit.ArquivoSelecionado arquivo = dados.arquivo();
+            if (arquivo != null && arquivo.conteudo() != null && arquivo.conteudo().length > 0) {
+                documentoService.salvar("Contrato - " + dados.nome(), "Contrato",
+                        LocalDate.now(), "CONTRATO", id, arquivo.nome(), arquivo.mime(),
+                        arquivo.conteudo());
+            }
             renderizar();
             UiKit.aviso("Contrato criado com sucesso.");
             UI.getCurrent().navigate(ContratoDetalheView.class, QueryParameters.of("id", id));

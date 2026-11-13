@@ -14,6 +14,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.Projeto.manuelo.dominio.enums.PerfilUsuario;
 import com.Projeto.manuelo.seguranca.UsuarioDetalhes;
 
 @Service
@@ -141,6 +142,34 @@ public class ContratoCadastroService {
         }
 
         return contratoId.toString();
+    }
+
+    @Transactional
+    public void atualizarAcaoJudicial(String contratoId, boolean possui, String descricao) {
+        UsuarioDetalhes ator = atorOperador();
+        UUID contrato = uuid(contratoId, "Identificador do contrato inválido.");
+        String descricaoFinal = textoOpcional(descricao);
+        if (possui && descricaoFinal == null) {
+            throw new IllegalArgumentException("Informe a descrição da ação judicial.");
+        }
+        if (!possui) {
+            descricaoFinal = null;
+        }
+
+        int atualizados = jdbc.sql("""
+                UPDATE contratos
+                   SET possui_acao_judicial = :possui, acao_judicial_descricao = :descricao,
+                       atualizado_por = :ator
+                 WHERE id = :id
+                """)
+                .param("possui", possui)
+                .param("descricao", descricaoFinal)
+                .param("ator", ator.getId())
+                .param("id", contrato)
+                .update();
+        if (atualizados == 0) {
+            throw new IllegalArgumentException("Contrato não encontrado: " + contratoId);
+        }
     }
 
     private UUID resolverImovel(String imovelIdInformado, String endereco, UUID ator) {
@@ -310,6 +339,21 @@ public class ContratoCadastroService {
                 .query(Integer.class)
                 .single();
         return total != null && total > 0;
+    }
+
+    private UsuarioDetalhes atorOperador() {
+        Authentication autenticacao = SecurityContextHolder.getContext().getAuthentication();
+        if (autenticacao == null
+                || !(autenticacao.getPrincipal() instanceof UsuarioDetalhes detalhes)
+                || detalhes.getId() == null) {
+            throw new IllegalStateException("Usuário autenticado obrigatório");
+        }
+        PerfilUsuario perfil = detalhes.getPerfil();
+        if (perfil != PerfilUsuario.ADMINISTRADOR && perfil != PerfilUsuario.COLABORADOR) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Apenas administradores e colaboradores podem editar contratos.");
+        }
+        return detalhes;
     }
 
     private UUID ator() {
