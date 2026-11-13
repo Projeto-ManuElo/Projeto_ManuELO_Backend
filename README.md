@@ -53,8 +53,8 @@ Hibernate roda com `ddl-auto=validate` e não altera o schema.
 
 ## Executar em desenvolvimento
 
-O perfil `dev` é o padrão e traz os valores locais (inclusive o admin de desenvolvimento
-`admin@manuelo.local` / `admin123` — troque em qualquer ambiente compartilhado).
+O perfil `dev` é o padrão. Defina `MANUELO_ADMIN_EMAIL` e `MANUELO_ADMIN_SENHA` no `.env`
+para criar o primeiro administrador; sem essas variáveis nenhum admin é criado (DEC-I04).
 
 ```sh
 set -a; . ./.env; set +a
