@@ -1,8 +1,12 @@
 package br.com.manuelo;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
 
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
@@ -11,18 +15,21 @@ import com.vaadin.flow.component.textfield.TextField;
 
 import br.com.manuelo.dados.ContratoRepositorio;
 
+import com.Projeto.manuelo.servico.PagamentoAluguelService;
+
 public class PagarAluguelDialog extends Dialog {
 
     private final ContratoRepositorio.Detalhe contrato;
-    private final ContratoRepositorio contratos;
+    private final PagamentoAluguelService pagamentos;
     private final Runnable atualizar;
     private final TextField valor;
-    private final TextField forma;
+    private final ComboBox<String> forma;
+    private final DatePicker competencia;
 
-    public PagarAluguelDialog(ContratoRepositorio.Detalhe contrato, ContratoRepositorio contratos,
+    public PagarAluguelDialog(ContratoRepositorio.Detalhe contrato, PagamentoAluguelService pagamentos,
             Runnable atualizar) {
         this.contrato = contrato;
-        this.contratos = contratos;
+        this.pagamentos = pagamentos;
         this.atualizar = atualizar;
 
         addClassName("modal");
@@ -40,8 +47,12 @@ public class PagarAluguelDialog extends Dialog {
 
         valor = UiKit.text("Valor do aluguel", "R$ 0,00");
         valor.setValue(dinheiro(contrato.aluguel()));
-        forma = UiKit.text("Forma de pagamento", "Ex: pix, boleto e etc...");
+        forma = UiKit.select("Forma de pagamento", "Selecione a forma de pagamento",
+                List.of("Pix", "Boleto", "Dinheiro", "Transferência"));
         forma.setValue("Pix");
+        competencia = UiKit.date("Competência");
+        competencia.setValue(LocalDate.now().withDayOfMonth(1));
+        competencia.setHelperText("Será normalizada para o primeiro dia do mês.");
         TextField caucaoInicial = UiKit.text("Caução Inicial", "R$ 0,00");
         caucaoInicial.setValue(dinheiro(contrato.caucaoDepositos()));
         caucaoInicial.setReadOnly(true);
@@ -49,7 +60,7 @@ public class PagarAluguelDialog extends Dialog {
         caucaoAtual.setValue(dinheiro(contrato.caucaoSaldo()));
         caucaoAtual.setReadOnly(true);
 
-        Div body = new Div(UiKit.formGrid(valor, forma, caucaoInicial, caucaoAtual));
+        Div body = new Div(UiKit.formGrid(valor, forma, competencia, caucaoInicial, caucaoAtual));
         body.addClassName("modal-body");
 
         Button pagar = UiKit.primary("Pagar", e -> pagar(false));
@@ -75,6 +86,14 @@ public class PagarAluguelDialog extends Dialog {
             return;
         }
 
+        LocalDate competenciaValor = competencia.getValue();
+        if (competenciaValor == null || competenciaValor.withDayOfMonth(1)
+                .isAfter(LocalDate.now().withDayOfMonth(1))) {
+            competencia.setInvalid(true);
+            UiKit.erro("Informe uma competência válida e não futura.");
+            return;
+        }
+
         String titulo = usarCaucao ? "Pagar com caução?" : "Confirmar pagamento?";
         String texto = usarCaucao
                 ? "O valor será descontado do saldo de caução do inquilino."
@@ -82,7 +101,8 @@ public class PagarAluguelDialog extends Dialog {
 
         UiKit.confirmar(titulo, texto, "Confirmar", true, () -> {
             try {
-                contratos.registrarPagamento(contrato.id(), valorNumerico, forma.getValue(), usarCaucao);
+                pagamentos.registrar(contrato.id(), competenciaValor, valorNumerico,
+                        forma.getValue(), usarCaucao);
                 close();
                 atualizar.run();
                 UiKit.aviso(usarCaucao ? "Pagamento com caução registrado."

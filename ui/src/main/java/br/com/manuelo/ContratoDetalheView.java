@@ -20,6 +20,7 @@ import br.com.manuelo.dados.ContratoRepositorio;
 import br.com.manuelo.dados.ImovelRepositorio;
 
 import com.Projeto.manuelo.servico.ContratoCadastroService;
+import com.Projeto.manuelo.servico.PagamentoAluguelService;
 
 @Route(value = "contratos/detalhe", layout = MainLayout.class)
 @PageTitle("Detalhes do contrato")
@@ -30,13 +31,15 @@ public class ContratoDetalheView extends Div implements BeforeEnterObserver {
 
     private final ContratoRepositorio repositorio;
     private final ContratoCadastroService cadastro;
+    private final PagamentoAluguelService pagamentos;
     private final ContratoDialog novoContrato;
     private ContratoRepositorio.Detalhe contrato;
 
     public ContratoDetalheView(ContratoRepositorio repositorio, ContratoCadastroService cadastro,
-            ImovelRepositorio imoveis) {
+            PagamentoAluguelService pagamentos, ImovelRepositorio imoveis) {
         this.repositorio = repositorio;
         this.cadastro = cadastro;
+        this.pagamentos = pagamentos;
         this.novoContrato = new ContratoDialog(imoveis.opcoes(), this::criarContrato);
         addClassName("page");
     }
@@ -77,7 +80,7 @@ public class ContratoDetalheView extends Div implements BeforeEnterObserver {
 
         Button novo = UiKit.secondary("Novo contrato", e -> novoContrato.abrir());
         Button pagar = UiKit.primary("Pagar o aluguel",
-                e -> new PagarAluguelDialog(contrato, repositorio, this::atualizar).open());
+                e -> new PagarAluguelDialog(contrato, pagamentos, this::atualizar).open());
         add(UiKit.header("Contratos", null, novo, pagar));
 
         add(cardInquilino());
