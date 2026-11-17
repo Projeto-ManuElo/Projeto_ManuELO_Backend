@@ -37,7 +37,9 @@ public class DocumentosView extends Div {
     private final ComboBox<String> tipoFinanceiro = UiKit.select("Tipo financeiro", "Todos",
             List.of("Entrada", "Saída"));
     private final Div lista = new Div();
+    private final Div paginacao = new Div();
     private final DocumentoDialog dialog;
+    private int limite = LIMITE;
 
     public DocumentosView(DocumentoRepositorio repositorio, DocumentoService documentoService) {
         this.repositorio = repositorio;
@@ -50,7 +52,8 @@ public class DocumentosView extends Div {
 
         add(criarFiltros());
         lista.addClassName("doc-list");
-        add(UiKit.card(UiKit.cardHeader("Documento recentes", null), lista));
+        paginacao.addClassName("form-actions");
+        add(UiKit.card(UiKit.cardHeader("Documento recentes", null), lista, paginacao));
         renderizar();
     }
 
@@ -58,9 +61,13 @@ public class DocumentosView extends Div {
         Div acoes = new Div(
                 UiKit.secondary("Cancelar", e -> {
                     limpar();
+                    limite = LIMITE;
                     renderizar();
                 }),
-                UiKit.primary("Filtrar", e -> renderizar()));
+                UiKit.primary("Filtrar", e -> {
+                    limite = LIMITE;
+                    renderizar();
+                }));
         acoes.addClassName("form-actions");
 
         nomeInquilino.addClassName("full");
@@ -76,13 +83,19 @@ public class DocumentosView extends Div {
 
     private void renderizar() {
         lista.removeAll();
+        paginacao.removeAll();
         List<DocumentoLista> documentos;
         try {
             documentos = repositorio.listar(valor(nomeInquilino.getValue()),
-                    valor(tipoDocumento.getValue()), valor(tipoFinanceiro.getValue()), LIMITE);
+                    valor(tipoDocumento.getValue()), valor(tipoFinanceiro.getValue()), limite + 1);
         } catch (RuntimeException ex) {
             UiKit.erro(ex.getMessage());
             return;
+        }
+
+        boolean temMais = documentos.size() > limite;
+        if (temMais) {
+            documentos = documentos.subList(0, limite);
         }
 
         if (documentos.isEmpty()) {
@@ -120,6 +133,14 @@ public class DocumentosView extends Div {
                 }
             });
             lista.add(item);
+        }
+        if (temMais) {
+            paginacao.add(UiKit.secondary("Carregar mais", e -> {
+                limite += LIMITE;
+                renderizar();
+            }));
+        } else {
+            paginacao.add(UiKit.muted("Exibindo todos os documentos encontrados."));
         }
     }
 

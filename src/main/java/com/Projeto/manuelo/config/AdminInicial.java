@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Cria o administrador inicial na primeira subida. A senha vem de
- * MANUELO_ADMIN_SENHA (padrão de desenvolvimento: admin123) e nunca é gravada no código.
+ * MANUELO_ADMIN_SENHA (sem default) e nunca é gravada no código.
  * O seed fictício mantém hashes inválidos de propósito; este usuário é o acesso real de dev.
  */
 @Component
@@ -26,8 +26,8 @@ public class AdminInicial implements ApplicationRunner {
     private final String senha;
 
     public AdminInicial(JdbcTemplate jdbcTemplate, PasswordEncoder encoder,
-            @Value("${manuelo.admin.email}") String email,
-            @Value("${manuelo.admin.senha}") String senha) {
+            @Value("${manuelo.admin.email:}") String email,
+            @Value("${manuelo.admin.senha:}") String senha) {
         this.jdbc = JdbcClient.create(jdbcTemplate);
         this.encoder = encoder;
         this.email = email;

@@ -9,7 +9,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
-import br.com.manuelo.DemoData;
+import br.com.manuelo.Modelos;
 
 @Repository
 public class MovimentacaoRepositorio {
@@ -40,10 +40,10 @@ public class MovimentacaoRepositorio {
         this.sessao = sessao;
     }
 
-    public List<DemoData.Movimentacao> listar(int limite) {
+    public List<Modelos.Movimentacao> listar(int limite) {
         return jdbc.sql(SELECT_EXTRATO + " ORDER BY mv.data_movimentacao DESC, mv.criado_em DESC LIMIT :limite")
                 .param("limite", limite)
-                .query((rs, row) -> new DemoData.Movimentacao(
+                .query((rs, row) -> new Modelos.Movimentacao(
                         rs.getObject("data_movimentacao", LocalDate.class),
                         rs.getString("descricao"),
                         Dominio.categoria(rs.getString("categoria")),
@@ -51,14 +51,14 @@ public class MovimentacaoRepositorio {
                 .list();
     }
 
-    public List<DemoData.Movimentacao> extrato(LocalDate inicio, LocalDate fim, int limite) {
+    public List<Modelos.Movimentacao> extrato(LocalDate inicio, LocalDate fim, int limite) {
         return jdbc.sql(SELECT_EXTRATO
                 + " WHERE mv.data_movimentacao BETWEEN :inicio AND :fim"
                 + " ORDER BY mv.data_movimentacao DESC, mv.criado_em DESC LIMIT :limite")
                 .param("inicio", inicio)
                 .param("fim", fim)
                 .param("limite", limite)
-                .query((rs, row) -> new DemoData.Movimentacao(
+                .query((rs, row) -> new Modelos.Movimentacao(
                         rs.getObject("data_movimentacao", LocalDate.class),
                         rs.getString("descricao"),
                         Dominio.categoria(rs.getString("categoria")),

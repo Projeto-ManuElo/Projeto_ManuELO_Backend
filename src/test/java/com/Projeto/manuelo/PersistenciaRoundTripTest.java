@@ -16,7 +16,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
-import br.com.manuelo.DemoData;
+import br.com.manuelo.Modelos;
 import br.com.manuelo.dados.ImovelRepositorio;
 import br.com.manuelo.dados.SessaoUsuario;
 
@@ -70,7 +70,7 @@ class PersistenciaRoundTripTest {
 				.isNotSameAs(contextoDaEscrita);
 
 		ImovelRepositorio repositorio = new ImovelRepositorio(jdbcTemplate, new SessaoUsuario());
-		List<DemoData.Imovel> imoveis = repositorio.listar();
+		List<Modelos.Imovel> imoveis = repositorio.listar();
 
 		assertThat(imoveis)
 				.as("o imóvel gravado antes do reinício deve continuar no Postgres")

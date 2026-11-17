@@ -1,13 +1,18 @@
 package br.com.manuelo.dados;
 
 import java.io.Serializable;
+import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+import com.Projeto.manuelo.dominio.Usuario;
+import com.Projeto.manuelo.dominio.enums.StatusUsuario;
+import com.Projeto.manuelo.dominio.repositorio.UsuarioJpaRepository;
 import com.Projeto.manuelo.seguranca.UsuarioDetalhes;
 import com.vaadin.flow.spring.scopes.VaadinSessionScope;
 
@@ -32,6 +37,16 @@ public class SessaoUsuario implements Serializable {
 
     private UsuarioSessao usuario;
     private String emailRecuperacao;
+    private final UsuarioJpaRepository usuarios;
+
+    public SessaoUsuario() {
+        this(null);
+    }
+
+    @Autowired
+    public SessaoUsuario(UsuarioJpaRepository usuarios) {
+        this.usuarios = usuarios;
+    }
 
     public boolean autenticado() {
         return usuario() != null;
@@ -40,6 +55,9 @@ public class SessaoUsuario implements Serializable {
     public UsuarioSessao usuario() {
         if (usuario == null) {
             usuario = usuarioDoSecurityContext();
+        }
+        if (usuario != null) {
+            usuario = revalidar(usuario);
         }
         return usuario;
     }
@@ -87,6 +105,43 @@ public class SessaoUsuario implements Serializable {
                     detalhes.getNome(),
                     detalhes.getEmail(),
                     detalhes.getPerfil() == null ? null : detalhes.getPerfil().name());
+        } catch (RuntimeException ex) {
+            return null;
+        }
+    }
+
+    private UsuarioSessao revalidar(UsuarioSessao atual) {
+        if (usuarios == null) {
+            return atual;
+        }
+        UUID id = idDoSecurityContext();
+        if (id == null) {
+            return atual;
+        }
+        try {
+            Usuario usuarioBanco = usuarios.findById(id).orElse(null);
+            if (usuarioBanco == null || usuarioBanco.getStatus() != StatusUsuario.ATIVO) {
+                sair();
+                return null;
+            }
+            return new UsuarioSessao(
+                    usuarioBanco.getId() == null ? null : usuarioBanco.getId().toString(),
+                    usuarioBanco.getNome(),
+                    usuarioBanco.getEmail(),
+                    usuarioBanco.getPerfil() == null ? null : usuarioBanco.getPerfil().name());
+        } catch (RuntimeException ex) {
+            return atual;
+        }
+    }
+
+    private UUID idDoSecurityContext() {
+        try {
+            Authentication autenticacao = SecurityContextHolder.getContext().getAuthentication();
+            if (autenticacao == null || !autenticacao.isAuthenticated()
+                    || !(autenticacao.getPrincipal() instanceof UsuarioDetalhes detalhes)) {
+                return null;
+            }
+            return detalhes.getId();
         } catch (RuntimeException ex) {
             return null;
         }

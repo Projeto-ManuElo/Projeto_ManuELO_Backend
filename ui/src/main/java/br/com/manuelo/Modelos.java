@@ -6,7 +6,7 @@ import java.time.LocalDate;
 /**
  * Modelos de exibição usados pelas telas. A persistência fica em {@code br.com.manuelo.dados}.
  */
-public final class DemoData {
+public final class Modelos {
 
     public record Imovel(String id, String logradouro, String numero, String complemento, String bairro,
             String cidade, String uf, String cep, String tipo, String status, String inquilino,
@@ -43,6 +43,6 @@ public final class DemoData {
     public record Reforma(LocalDate data, String descricao, String proprietario, BigDecimal valor) {
     }
 
-    private DemoData() {
+    private Modelos() {
     }
 }

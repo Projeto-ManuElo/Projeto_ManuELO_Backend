@@ -9,6 +9,7 @@ import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.router.RouteAlias;
 
 import com.Projeto.manuelo.seguranca.LoginService;
 import com.Projeto.manuelo.seguranca.UsuarioDetalhes;
@@ -16,6 +17,7 @@ import com.Projeto.manuelo.seguranca.UsuarioDetalhes;
 import br.com.manuelo.dados.SessaoUsuario;
 
 @Route("")
+@RouteAlias("login")
 @PageTitle("Login")
 public class LoginView extends AuthLayout {
 
@@ -50,7 +52,9 @@ public class LoginView extends AuthLayout {
         });
         entrar.addClassName("auth-submit");
 
-        form.add(espaco, email, senha, entrar, link("Esqueci a senha", RecuperarSenhaView.class));
+        form.add(espaco, email, senha, entrar,
+                link("Esqueci a senha", RecuperarSenhaView.class),
+                link("Cadastre-se", CadastroView.class));
     }
 
     private void sincronizarSessao(SessaoUsuario sessao) {

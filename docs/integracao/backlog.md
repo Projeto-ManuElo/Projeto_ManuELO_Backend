@@ -28,6 +28,7 @@ Status: PENDENTE | EM_ANDAMENTO | CONCLUIDO | BLOQUEADO. Dono: ordem banco -> ba
 - A-14 Bootstrap do primeiro administrador por variáveis de ambiente (DEC-I04). Aceite: banco vazio + variáveis = admin ATIVO.
   **CONCLUIDO** (BootstrapAdminTest 3/3; ressalva: default de dev em P-025).
 - A-15 Auditoria: criado_por/atualizado_por vêm do usuário logado em toda gravação.
+  **CONCLUIDO** (AuditoriaTest 4/4: contrato, inquilino, documento e movimentação; ator trocado em updates).
 
 ## S2 Imóveis, inquilinos, fiadores e reformas
 - A-20 /imoveis: lista, filtros opcionais (endereço, tipo, status, inquilino vinculado), cadastro, edição, detalhe com
@@ -37,39 +38,56 @@ Status: PENDENTE | EM_ANDAMENTO | CONCLUIDO | BLOQUEADO. Dono: ordem banco -> ba
   e upload do recibo da caução. Aceite: um envio cria inquilino, fiador, contrato e depósito de caução na mesma transação.
   **CONCLUIDO** (InquilinoCadastroService transacional; InquilinoCadastroTest 4/4; upload pendente A-50; ressalvas P-027).
 - A-22 Reformas do imóvel: histórico (data, descrição, valor, responsável do período derivado) e + Novo Registro.
+  **CONCLUIDO** (ReformasView com ComboBox de imóvel e ReformaRepositorio.listarImoveis; ReformasHistoricoTest 2/2).
 
 ## S3 Contratos e caução
 - A-30 /contratos: lista e filtros (nome, CPF, imóvel, validade, situação), "faltam N dias", dados pela view de situação.
+  **CONCLUIDO** (ContratoRepositorio SQL em vw_contratos_situacao + filtro imóvel; ContratosFiltrosTest 7/7).
 - A-31 Novo contrato e detalhe: inquilino, fiador, ação judicial (descrição obrigatória se sim), caução, dia de
   vencimento, upload do contrato (documento). Aceite: sobreposição de períodos no mesmo imóvel é recusada com mensagem clara.
+  **CONCLUIDO** (ContratoCadastroService transacional, overlap + EXCLUDE; ContratoCadastroTest 5/5; upload em A-50).
 - A-32 "Pagar o aluguel": gera movimentação ENTRADA/ALUGUEL com competência; "Pagar com caução" gera abatimento
   e entrada com forma CAUCAO (R07). Aceite: saldo de caução nunca fica negativo; contrato sai de atrasado ao quitar.
+  **CONCLUIDO** (PagamentoAluguelService com FOR UPDATE/ledger; PagamentoAluguelTest 4/4).
 
 ## S4 Movimentação financeira
 - A-40 Entrada e saída com as regras R03 e R04, comprovante, modal de confirmação, mensagens de erro do serviço.
+  **CONCLUIDO** (MovimentacaoFinanceiraService transacional; MovimentacaoFinanceiraTest 10/10).
 - A-41 Extrato do período, pesquisa e totais (entradas, saídas, saldo, estornos conforme R09).
+  **CONCLUIDO** (extrato/resumo com valores assinados no serviço; MovimentacaoFinanceiraTest 10/10).
 - A-42 Estorno e edição pelo administrador (R01 e R02); COLABORADOR não vê nem executa. Aceite: original intacto,
   um estorno por original, valor igual, nova movimentação ligada por corrige_movimentacao_id.
+  **CONCLUIDO** (ADMIN-only no serviço/view; MovimentacaoFinanceiraTest 10/10).
 - A-43 Exportar extrato: modal de período e PDF persistido como relatório do tipo MOVIMENTACAO.
+  **CONCLUIDO** (ExportarExtratoDialog -> RelatorioService; RelatorioServiceTest 7/7).
 
 ## S5 Documentos
 - A-50 Upload (PDF/JPG/PNG até 10 MB) com armazenamento por interface (DEC-I06), documento pendente_revisao, vínculo.
+  **CONCLUIDO** (ArmazenamentoLocal + DocumentoService; UploadDocumentoTest 7/7).
 - A-51 /documentos: filtros (nome do inquilino, tipo, tipo financeiro), "Documentos recentes", classificar pendente
   (tipo e data obrigatórios), baixar arquivo.
+  **CONCLUIDO** (DocumentoRepositorio com filtros SQL + download real; UploadDocumentoTest 7/7).
 
 ## S6 Home
 - A-60 Indicadores reais (alugados, cadastrados, vagos, em manutenção, próximos do vencimento, atrasados, atrasados
   há mais de uma semana), movimentações recentes e cliques que abrem /imoveis e /contratos já filtrados.
+  **CONCLUIDO** (vw_home_indicadores + textos derivados; Exportar morto removido).
 
 ## S7 Relatórios
 - A-70 Os 4 PDFs (contratos existentes, atrasados, a vencer, movimentação por período com filtro Entrada/Saída):
   cabeçalho, gerado por, data e hora, período ou data de referência, código, rodapé "Página X de Y".
+  **CONCLUIDO** (RelatorioService com OpenPDF; RelatorioServiceTest 7/7).
 - A-71 Persistir relatorios e a composição (relatorio_movimentacoes, relatorio_contratos); download; só ADMINISTRADOR.
+  **CONCLUIDO** (persistência/composição/download + SecurityConfig ADMIN; RelatorioServiceTest 7/7).
 - A-72 /relatorios funcional: tipo, período (trimestre é atalho), cards, extrato, Gerar PDF, PDF personalizado.
+  **CONCLUIDO** (RelatoriosView + ExportarExtratoDialog; menu oculto para não-admin).
 
 ## S8 Fecho
 - A-80 Autorização por papel também nos serviços (não só na tela), tratamento global de erros e notificações, pt-BR,
   moeda e datas, fuso America/Sao_Paulo.
+  **CONCLUIDO** (ErrosGlobalConfig + locale pt_BR + fuso; autorização nos serviços coberta por testes; ressalva P-022).
 - A-81 Perfis dev e prod, variáveis de ambiente documentadas, Dockerfile, README de execução e deploy (Railway/Render).
+  **CONCLUIDO** (application-dev/prod, .env.example e README completo; Dockerfile já usa prod).
 - A-90 Auditoria final: DemoData removido, nenhum botão morto, todas as rotas do Figma funcionais, juiz verde,
   RELATORIO-FINAL.md.
+  **CONCLUIDO** (DemoData -> Modelos; botões mortos removidos; juiz 8/8; RELATORIO-FINAL.md).

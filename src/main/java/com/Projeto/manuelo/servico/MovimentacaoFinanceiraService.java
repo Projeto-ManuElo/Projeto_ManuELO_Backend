@@ -106,9 +106,16 @@ public class MovimentacaoFinanceiraService {
 
     public String registrarEntrada(String categoriaUi, String contratoId, BigDecimal valor,
             LocalDate data, String descricao, String formaUi) {
+        return registrarEntrada(categoriaUi, contratoId, valor, data, descricao, formaUi, null,
+                null);
+    }
+
+    public String registrarEntrada(String categoriaUi, String contratoId, BigDecimal valor,
+            LocalDate data, String descricao, String formaUi, String imovelId,
+            LocalDate competencia) {
         UsuarioDetalhes ator = atorOperador();
         return registrarEntrada(ator, categoriaUi, contratoId, valor, data, descricao, formaUi,
-                null);
+                null, imovelId, competencia);
     }
 
     public String registrarSaida(String categoriaUi, BigDecimal valor, LocalDate data,
@@ -220,6 +227,13 @@ public class MovimentacaoFinanceiraService {
 
     private String registrarEntrada(UsuarioDetalhes ator, String categoriaUi, String contratoId,
             BigDecimal valor, LocalDate data, String descricao, String formaUi, UUID corrigeId) {
+        return registrarEntrada(ator, categoriaUi, contratoId, valor, data, descricao, formaUi,
+                corrigeId, null, null);
+    }
+
+    private String registrarEntrada(UsuarioDetalhes ator, String categoriaUi, String contratoId,
+            BigDecimal valor, LocalDate data, String descricao, String formaUi, UUID corrigeId,
+            String imovelUi, LocalDate competenciaUi) {
         validarValor(valor);
         LocalDate quando = dataNaoFutura(data);
         String categoria = categoriaEntrada(categoriaUi);
@@ -242,8 +256,20 @@ public class MovimentacaoFinanceiraService {
         if ("ALUGUEL".equals(categoria)) {
             UUID contrato = uuid(contratoId, "Selecione o contrato do aluguel.");
             UUID imovel = imovelDoContrato(contrato);
+            if (imovelUi != null && !imovelUi.isBlank()) {
+                UUID imovelInformado = uuid(imovelUi, "Identificador do imóvel inválido.");
+                if (!imovelInformado.equals(imovel)) {
+                    throw new IllegalArgumentException(
+                            "O imóvel deve ser o mesmo do contrato selecionado.");
+                }
+            }
+            LocalDate competencia = competenciaUi == null
+                    ? quando.withDayOfMonth(1) : competenciaUi.withDayOfMonth(1);
+            if (competencia.isAfter(LocalDate.now().withDayOfMonth(1))) {
+                throw new IllegalArgumentException("A competência não pode ser futura.");
+            }
             return inserirEntrada(ator, "ALUGUEL", valor, quando, descricaoFinal, forma, imovel,
-                    contrato, quando.withDayOfMonth(1), null, corrigeId);
+                    contrato, competencia, null, corrigeId);
         }
 
         return inserirEntrada(ator, "OUTRAS_ENTRADAS", valor, quando, descricaoFinal, forma, null,

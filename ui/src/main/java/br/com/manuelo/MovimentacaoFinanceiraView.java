@@ -1,5 +1,6 @@
 package br.com.manuelo;
 
+import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.LocalDate;
@@ -7,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
@@ -16,14 +18,20 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.StreamRegistration;
+import com.vaadin.flow.server.StreamResource;
 
+import com.Projeto.manuelo.servico.DocumentoService;
 import com.Projeto.manuelo.servico.MovimentacaoFinanceiraService;
 import com.Projeto.manuelo.servico.MovimentacaoFinanceiraService.ExtratoItem;
 import com.Projeto.manuelo.servico.MovimentacaoFinanceiraService.Resumo;
 import com.Projeto.manuelo.servico.RelatorioService;
 
 import br.com.manuelo.dados.ContratoRepositorio;
+import br.com.manuelo.dados.DocumentoRepositorio;
+import br.com.manuelo.dados.DocumentoRepositorio.DocumentoVinculo;
 import br.com.manuelo.dados.Dominio;
+import br.com.manuelo.dados.ImovelRepositorio;
 import br.com.manuelo.dados.SessaoUsuario;
 
 @Route(value = "movimentacao-financeira", layout = MainLayout.class)
@@ -32,17 +40,21 @@ public class MovimentacaoFinanceiraView extends Div {
 
     private static final NumberFormat MOEDA = NumberFormat.getCurrencyInstance(UiKit.PT_BR);
     private static final List<String> CATEGORIAS_ENTRADA = List.of("Aluguel", "Caução", "Multa", "Outros");
-    private static final List<String> CATEGORIAS_SAIDA = List.of("Manutenção", "Tributos", "Reforma", "Outros");
+    private static final List<String> CATEGORIAS_SAIDA = List.of("Manutenção", "Tributos", "Reforma", "Administrativo", "Outros");
     private static final List<String> FORMAS = List.of("Pix", "Boleto", "Dinheiro", "Transferência");
     private static final List<String> TIPOS_EXTRATO = List.of("Todos", "Entrada", "Saída");
 
     private final MovimentacaoFinanceiraService servico;
     private final RelatorioService relatorios;
+    private final DocumentoRepositorio documentos;
+    private final DocumentoService documentoService;
     private final Map<String, String> contratosPorRotulo = new LinkedHashMap<>();
 
     private final ComboBox<String> categoria = UiKit.select("Categoria", "Selecione uma categoria",
             CATEGORIAS_ENTRADA);
     private final ComboBox<String> contrato = UiKit.select("Contrato", "Selecione o contrato", List.of());
+    private final ComboBox<ImovelRepositorio.Opcao> imovel = new ComboBox<>("Imóvel");
+    private final DatePicker competencia = UiKit.date("Competência");
     private final ComboBox<String> forma = UiKit.select("Forma de pagamento", "Selecione a forma de pagamento",
             FORMAS);
     private final TextField valor = UiKit.text("Valor", "R$ 0,00");
@@ -66,18 +78,38 @@ public class MovimentacaoFinanceiraView extends Div {
 
     public MovimentacaoFinanceiraView(MovimentacaoFinanceiraService servico,
             RelatorioService relatorios, ContratoRepositorio contratoRepositorio,
-            SessaoUsuario sessao) {
+            ImovelRepositorio imovelRepositorio, DocumentoRepositorio documentos,
+            DocumentoService documentoService, SessaoUsuario sessao) {
         this.servico = servico;
         this.relatorios = relatorios;
+        this.documentos = documentos;
+        this.documentoService = documentoService;
         this.administrador = sessao.administrador();
         addClassName("page");
+
+        imovel.setItems(imovelRepositorio.opcoes());
+        imovel.setItemLabelGenerator(ImovelRepositorio.Opcao::rotulo);
+        imovel.setPlaceholder("Selecione o imóvel");
+        imovel.setWidthFull();
+        imovel.setClearButtonVisible(true);
+        imovel.setVisible(false);
+        competencia.setVisible(false);
 
         for (ContratoRepositorio.Opcao opcao : contratoRepositorio.opcoes()) {
             contratosPorRotulo.put(opcao.rotulo(), opcao.id());
         }
         contrato.setItems(contratosPorRotulo.keySet());
         contrato.setVisible(false);
-        categoria.addValueChangeListener(e -> contrato.setVisible(exigeContrato(e.getValue())));
+        categoria.addValueChangeListener(e -> {
+            boolean aluguel = "Aluguel".equals(e.getValue());
+            contrato.setVisible(exigeContrato(e.getValue()));
+            imovel.setVisible(aluguel && tipoEntrada);
+            competencia.setVisible(aluguel && tipoEntrada);
+            if (!aluguel) {
+                imovel.clear();
+                competencia.clear();
+            }
+        });
 
         Button exportar = UiKit.secondary("Exportar extrato", e -> abrirExportacao());
         exportar.setVisible(administrador);
@@ -115,8 +147,8 @@ public class MovimentacaoFinanceiraView extends Div {
         comprovanteBox.addClassName("full");
         comprovanteBox.addClassName("stack");
 
-        Div grid = UiKit.formGrid(categoria, contrato, forma, valor, data, descricao, favorecido,
-                comprovanteBox);
+        Div grid = UiKit.formGrid(categoria, contrato, imovel, competencia, forma, valor, data,
+                descricao, favorecido, comprovanteBox);
         Button cancelar = UiKit.secondary("Cancelar", e -> limpar());
         Div acoes = new Div(registrar, cancelar);
         acoes.addClassName("form-actions");
@@ -170,6 +202,10 @@ public class MovimentacaoFinanceiraView extends Div {
         categoria.clear();
         contrato.clear();
         contrato.setVisible(false);
+        imovel.clear();
+        imovel.setVisible(false);
+        competencia.clear();
+        competencia.setVisible(false);
         favorecido.setVisible(!tipoEntrada);
         registrar.setText(tipoEntrada ? "Registrar Entrada" : "Registrar saída");
     }
@@ -184,6 +220,10 @@ public class MovimentacaoFinanceiraView extends Div {
         contrato.clear();
         contrato.setInvalid(false);
         contrato.setVisible(false);
+        imovel.clear();
+        imovel.setVisible(false);
+        competencia.clear();
+        competencia.setVisible(false);
         forma.clear();
         forma.setInvalid(false);
         valor.clear();
@@ -238,8 +278,10 @@ public class MovimentacaoFinanceiraView extends Div {
                 "Confirmar", tipoEntrada, () -> {
                     try {
                         if (tipoEntrada) {
+                            String imovelId = imovel.getValue() == null ? null : imovel.getValue().id();
                             servico.registrarEntrada(categoriaTexto, contratoId, valorNumerico,
-                                    dataMovimento, descricao.getValue(), forma.getValue());
+                                    dataMovimento, descricao.getValue(), forma.getValue(),
+                                    imovelId, competencia.getValue());
                         } else {
                             servico.registrarSaida(categoriaTexto, valorNumerico, dataMovimento,
                                     descricao.getValue(), forma.getValue(), favorecido.getValue(),
@@ -323,8 +365,10 @@ public class MovimentacaoFinanceiraView extends Div {
 
     private Div cabecalhoExtrato() {
         String[] colunas = administrador
-                ? new String[] { "Data", "Tipo", "Categoria", "Descrição", "Forma", "Valor", "", "Ações" }
-                : new String[] { "Data", "Tipo", "Categoria", "Descrição", "Forma", "Valor", "" };
+                ? new String[] { "Data", "Tipo", "Categoria", "Descrição", "Forma", "Origem",
+                        "Valor", "Comprovante", "Ações" }
+                : new String[] { "Data", "Tipo", "Categoria", "Descrição", "Forma", "Origem",
+                        "Valor", "Comprovante" };
         Div head = new Div();
         head.addClassName("table-head");
         head.getStyle().set("grid-template-columns", gridExtrato());
@@ -345,6 +389,8 @@ public class MovimentacaoFinanceiraView extends Div {
                 ? "—" : Dominio.categoria(item.categoria());
         String formaTexto = item.forma() == null || item.forma().isBlank()
                 ? "—" : Dominio.formaPagamento(item.forma());
+        String origem = item.origem() == null || item.origem().isBlank()
+                ? "—" : item.origem();
 
         Span valorAssinado = UiKit.money(item.valorAssinado(), true);
         valorAssinado.addClassName("amount");
@@ -356,7 +402,9 @@ public class MovimentacaoFinanceiraView extends Div {
                 UiKit.muted(categoria),
                 new Span(item.descricao() == null ? "" : item.descricao()),
                 UiKit.muted(formaTexto),
+                UiKit.muted(origem),
                 valorAssinado,
+                comprovante(item),
                 estornado);
         linha.addClassName("table-row");
         linha.getStyle().set("grid-template-columns", gridExtrato());
@@ -365,6 +413,31 @@ public class MovimentacaoFinanceiraView extends Div {
             linha.add(criarAcoes(item));
         }
         return linha;
+    }
+
+    private Div comprovante(ExtratoItem item) {
+        List<DocumentoVinculo> anexos = documentos.listarPorVinculo("MOVIMENTACAO", item.id());
+        if (anexos.isEmpty()) {
+            return new Div();
+        }
+        DocumentoVinculo anexo = anexos.get(0);
+        return new Div(UiKit.tertiary("Comprovante", e -> baixar(anexo)));
+    }
+
+    private void baixar(DocumentoVinculo documento) {
+        try {
+            DocumentoService.Arquivo arquivo = documentoService.baixar(documento.id());
+            StreamResource resource = new StreamResource(arquivo.nome(),
+                    () -> new ByteArrayInputStream(arquivo.conteudo()));
+            resource.setContentType(arquivo.mime());
+            resource.setHeader("Content-Disposition",
+                    "attachment; filename=\"" + arquivo.nome().replace("\"", "") + "\"");
+            StreamRegistration registro = UI.getCurrent().getSession().getResourceRegistry()
+                    .registerResource(resource);
+            UI.getCurrent().getPage().open(registro.getResourceUri().toString(), "_blank");
+        } catch (RuntimeException ex) {
+            UiKit.erro(ex.getMessage());
+        }
     }
 
     private Div criarAcoes(ExtratoItem item) {
@@ -383,7 +456,7 @@ public class MovimentacaoFinanceiraView extends Div {
     }
 
     private String gridExtrato() {
-        String base = "120px 100px 150px minmax(0, 1fr) 120px 130px 100px";
+        String base = "110px 90px 140px minmax(0, 1fr) 110px 130px 120px 130px";
         return administrador ? base + " 180px" : base;
     }
 }

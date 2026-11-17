@@ -9,6 +9,8 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
@@ -16,15 +18,16 @@ import br.com.manuelo.dados.ReformaRepositorio;
 
 @Route(value = "imoveis/reformas", layout = MainLayout.class)
 @PageTitle("Histórico de reformas")
-public class ReformasView extends Div {
+public class ReformasView extends Div implements BeforeEnterObserver {
 
     private static final DateTimeFormatter DATA_ANO = DateTimeFormatter.ofPattern("dd MMM yyyy", UiKit.PT_BR);
 
     private final ReformaRepositorio repositorio;
+    private final List<ReformaRepositorio.ImovelInfo> imoveis;
     private final ComboBox<ReformaRepositorio.ImovelInfo> seletor = new ComboBox<>("Imóvel");
     private final Span subtitulo = new Span();
     private ReformaRepositorio.ImovelInfo imovel;
-    private List<DemoData.Reforma> reformas;
+    private List<Modelos.Reforma> reformas;
     private final Div tabela = new Div();
     private final ReformaDialog dialog;
 
@@ -33,7 +36,7 @@ public class ReformasView extends Div {
         this.dialog = new ReformaDialog(this::adicionar);
         addClassName("page");
 
-        List<ReformaRepositorio.ImovelInfo> imoveis = repositorio.listarImoveis();
+        this.imoveis = repositorio.listarImoveis();
         this.imovel = imoveis.isEmpty() ? null : imoveis.get(0);
         this.reformas = imovel == null ? List.of() : repositorio.listar(imovel.id());
 
@@ -47,9 +50,8 @@ public class ReformasView extends Div {
             }
         });
 
-        Button exportar = UiKit.secondary("Exportar", e -> UiKit.aviso("Exportação gerada com sucesso."));
         Button novo = UiKit.primaryIcon("Novo Registro", VaadinIcon.PLUS, e -> abrirNovo());
-        add(UiKit.header("Imóveis", null, exportar, novo));
+        add(UiKit.header("Reformas", null, novo));
 
         tabela.addClassName("table");
         Div card = UiKit.card(
@@ -69,6 +71,15 @@ public class ReformasView extends Div {
         this.reformas = repositorio.listar(selecionado.id());
         atualizarSubtitulo();
         renderizar();
+    }
+
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        event.getLocation().getQueryParameters().getParameters()
+                .getOrDefault("imovel", List.of()).stream().findFirst()
+                .flatMap(id -> imoveis.stream()
+                        .filter(info -> info.id().equals(id)).findFirst())
+                .ifPresent(seletor::setValue);
     }
 
     private void atualizarSubtitulo() {
@@ -100,7 +111,7 @@ public class ReformasView extends Div {
                     "Use o botão Novo Registro para adicionar."));
             return;
         }
-        for (DemoData.Reforma reforma : reformas) {
+        for (Modelos.Reforma reforma : reformas) {
             String data = reforma.data().getYear() >= 2025
                     ? UiKit.diaMes(reforma.data())
                     : DATA_ANO.format(reforma.data()).replace(".", "");
@@ -116,13 +127,16 @@ public class ReformasView extends Div {
         }
     }
 
-    private void adicionar(DemoData.Reforma reforma) {
+    private void adicionar(ReformaDialog.DadosReforma reforma) {
         if (imovel == null) {
             UiKit.erro("Selecione um imóvel antes de registrar reformas.");
             return;
         }
         try {
-            repositorio.salvar(imovel.id(), reforma.data(), reforma.descricao(), reforma.valor());
+            UiKit.ArquivoSelecionado comprovante = reforma.comprovante();
+            repositorio.salvarComComprovante(imovel.id(), reforma.data(), reforma.descricao(),
+                    reforma.valor(), reforma.formaPagamento(), comprovante.nome(),
+                    comprovante.mime(), comprovante.conteudo());
             reformas = repositorio.listar(imovel.id());
             renderizar();
             UiKit.aviso("Registro de reforma adicionado.");

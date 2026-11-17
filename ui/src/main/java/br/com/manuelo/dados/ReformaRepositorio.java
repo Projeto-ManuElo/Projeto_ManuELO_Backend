@@ -5,11 +5,15 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
-import br.com.manuelo.DemoData;
+import com.Projeto.manuelo.servico.MovimentacaoFinanceiraService;
+
+import br.com.manuelo.Modelos;
 
 @Repository
 public class ReformaRepositorio {
@@ -19,10 +23,18 @@ public class ReformaRepositorio {
 
     private final JdbcClient jdbc;
     private final SessaoUsuario sessao;
+    private final MovimentacaoFinanceiraService movimentacoes;
 
     public ReformaRepositorio(JdbcTemplate jdbcTemplate, SessaoUsuario sessao) {
+        this(jdbcTemplate, sessao, null);
+    }
+
+    @Autowired
+    public ReformaRepositorio(JdbcTemplate jdbcTemplate, SessaoUsuario sessao,
+            MovimentacaoFinanceiraService movimentacoes) {
         this.jdbc = JdbcClient.create(jdbcTemplate);
         this.sessao = sessao;
+        this.movimentacoes = movimentacoes;
     }
 
     public List<ImovelInfo> listarImoveis() {
@@ -50,7 +62,7 @@ public class ReformaRepositorio {
         return encontrados.isEmpty() ? null : encontrados.get(0);
     }
 
-    public List<DemoData.Reforma> listar(String imovelId) {
+    public List<Modelos.Reforma> listar(String imovelId) {
         return jdbc.sql("""
                 SELECT data_reforma, descricao, valor,
                        COALESCE(responsavel_periodo, 'Sem contrato vigente') AS proprietario
@@ -59,7 +71,7 @@ public class ReformaRepositorio {
                  ORDER BY data_reforma DESC
                 """)
                 .param("imovel", UUID.fromString(imovelId))
-                .query((rs, row) -> new DemoData.Reforma(
+                .query((rs, row) -> new Modelos.Reforma(
                         rs.getObject("data_reforma", LocalDate.class),
                         rs.getString("descricao"),
                         rs.getString("proprietario"),
@@ -68,12 +80,7 @@ public class ReformaRepositorio {
     }
 
     public void salvar(String imovelId, LocalDate data, String descricao, BigDecimal valor) {
-        if (descricao == null || descricao.isBlank()) {
-            throw new IllegalArgumentException("Informe a descrição da reforma.");
-        }
-        if (valor == null || valor.signum() <= 0) {
-            throw new IllegalArgumentException("Informe um valor maior que zero.");
-        }
+        validar(descricao, valor);
         jdbc.sql("""
                 INSERT INTO reformas (imovel_id, data_reforma, descricao, valor, criado_por)
                 VALUES (:imovel, :data, :descricao, :valor, :usuario)
@@ -84,5 +91,41 @@ public class ReformaRepositorio {
                 .param("valor", valor)
                 .param("usuario", UUID.fromString(sessao.id()))
                 .update();
+    }
+
+    @Transactional
+    public void salvarComComprovante(String imovelId, LocalDate data, String descricao,
+            BigDecimal valor, String formaPagamento, String nomeArquivo, String mime,
+            byte[] comprovante) {
+        validar(descricao, valor);
+        if (movimentacoes == null) {
+            throw new IllegalStateException(
+                    "Serviço financeiro indisponível para registrar a reforma.");
+        }
+        LocalDate quando = data == null ? LocalDate.now() : data;
+        String movimentacao = movimentacoes.registrarSaida("Reforma", valor, quando,
+                "Reforma - " + descricao.trim(), formaPagamento, null, nomeArquivo, mime,
+                comprovante);
+        jdbc.sql("""
+                INSERT INTO reformas (imovel_id, data_reforma, descricao, valor,
+                                      movimentacao_id, criado_por)
+                VALUES (:imovel, :data, :descricao, :valor, :movimentacao, :usuario)
+                """)
+                .param("imovel", UUID.fromString(imovelId))
+                .param("data", quando)
+                .param("descricao", descricao.trim())
+                .param("valor", valor)
+                .param("movimentacao", UUID.fromString(movimentacao))
+                .param("usuario", UUID.fromString(sessao.id()))
+                .update();
+    }
+
+    private void validar(String descricao, BigDecimal valor) {
+        if (descricao == null || descricao.isBlank()) {
+            throw new IllegalArgumentException("Informe a descrição da reforma.");
+        }
+        if (valor == null || valor.signum() <= 0) {
+            throw new IllegalArgumentException("Informe um valor maior que zero.");
+        }
     }
 }

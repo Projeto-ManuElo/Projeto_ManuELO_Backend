@@ -2,6 +2,10 @@
   "name": "no-name",
   "license": "UNLICENSED",
   "type": "module",
+  "scripts": {
+    "dev": "bash scripts/dev.sh",
+    "start": "npm run dev"
+  },
   "dependencies": {
     "@vaadin/aura": "25.3.5",
     "@vaadin/common-frontend": "0.0.25",

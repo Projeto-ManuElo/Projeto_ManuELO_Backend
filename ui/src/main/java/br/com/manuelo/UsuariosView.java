@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.UUID;
 
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.router.BeforeEnterEvent;
@@ -51,7 +53,8 @@ public class UsuariosView extends Div implements BeforeEnterObserver {
         for (UsuarioAdminService.UsuarioLista usuario : usuarios) {
             Div acoes = new Div();
             if ("PENDENTE_APROVACAO".equals(usuario.status())) {
-                acoes.add(UiKit.secondary("Aprovar", e -> aprovar(usuario.id())));
+                acoes.add(UiKit.secondary("Aprovar", e -> aprovar(usuario.id(), usuario.nome())));
+                acoes.add(UiKit.secondary("Reprovar", e -> reprovar(usuario.id(), usuario.nome())));
             } else if ("ATIVO".equals(usuario.status()) && !usuario.id().equals(sessao.id())) {
                 acoes.add(UiKit.secondary("Alterar perfil",
                         e -> alterarPerfil(usuario.id(), usuario.nome(), usuario.perfil())));
@@ -66,15 +69,30 @@ public class UsuariosView extends Div implements BeforeEnterObserver {
         }
     }
 
-    private void aprovar(String id) {
-        try {
-            servico.aprovar(UUID.fromString(id));
-            usuarios = servico.listar();
-            renderizar();
-            UiKit.aviso("Usuário aprovado.");
-        } catch (RuntimeException ex) {
-            UiKit.erro(ex.getMessage());
-        }
+    private void aprovar(String id, String nome) {
+        UiKit.confirmar("Aprovar usuário?", "O usuário " + nome + " terá acesso ao sistema.", "Aprovar", true, () -> {
+            try {
+                servico.aprovar(UUID.fromString(id));
+                usuarios = servico.listar();
+                renderizar();
+                UiKit.aviso("Usuário aprovado.");
+            } catch (RuntimeException ex) {
+                UiKit.erro(ex.getMessage());
+            }
+        });
+    }
+
+    private void reprovar(String id, String nome) {
+        UiKit.confirmar("Reprovar cadastro?", "O cadastro de " + nome + " será inativado.", "Reprovar", true, () -> {
+            try {
+                servico.inativar(UUID.fromString(id));
+                usuarios = servico.listar();
+                renderizar();
+                UiKit.aviso("Cadastro reprovado.");
+            } catch (RuntimeException ex) {
+                UiKit.erro(ex.getMessage());
+            }
+        });
     }
 
     private void inativar(String id) {
@@ -91,15 +109,36 @@ public class UsuariosView extends Div implements BeforeEnterObserver {
     }
 
     private void alterarPerfil(String id, String nome, String perfilAtual) {
-        PerfilUsuario novoPerfil = "ADMINISTRADOR".equals(perfilAtual)
-                ? PerfilUsuario.COLABORADOR
-                : PerfilUsuario.ADMINISTRADOR;
-        String pergunta = novoPerfil == PerfilUsuario.ADMINISTRADOR
-                ? "Tornar ADMINISTRADOR?"
-                : "Tornar COLABORADOR?";
-        UiKit.confirmar(pergunta, "O perfil de " + nome + " será alterado.", "Alterar perfil", false, () -> {
+        ComboBox<PerfilUsuario> perfil = new ComboBox<>("Perfil");
+        perfil.setItems(PerfilUsuario.values());
+        perfil.setItemLabelGenerator(item -> Dominio.perfil(item.name()));
+        perfil.setValue(perfilAtual == null ? null : PerfilUsuario.valueOf(perfilAtual));
+        perfil.setWidthFull();
+
+        Dialog dialog = new Dialog();
+        dialog.addClassName("modal");
+        dialog.setWidth("520px");
+        dialog.setMaxWidth("94vw");
+        dialog.setCloseOnOutsideClick(false);
+
+        Div conteudo = new Div();
+        conteudo.addClassName("confirm-content");
+        Span titulo = new Span("Alterar perfil");
+        titulo.addClassName("confirm-title");
+        Span texto = new Span("Escolha o novo perfil de " + nome + ".");
+        texto.addClassName("confirm-text");
+        conteudo.add(titulo, texto, perfil);
+
+        Button cancelar = UiKit.secondary("Cancelar", e -> dialog.close());
+        Button confirmar = UiKit.primary("Alterar perfil", e -> {
+            PerfilUsuario escolhido = perfil.getValue();
+            if (escolhido == null) {
+                UiKit.erro("Selecione um perfil.");
+                return;
+            }
+            dialog.close();
             try {
-                servico.alterarPerfil(UUID.fromString(id), novoPerfil);
+                servico.alterarPerfil(UUID.fromString(id), escolhido);
                 usuarios = servico.listar();
                 renderizar();
                 UiKit.aviso("Perfil alterado.");
@@ -107,5 +146,8 @@ public class UsuariosView extends Div implements BeforeEnterObserver {
                 UiKit.erro(ex.getMessage());
             }
         });
+
+        dialog.add(conteudo, UiKit.dialogFooter(cancelar, confirmar));
+        dialog.open();
     }
 }

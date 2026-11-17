@@ -8,7 +8,7 @@
 #   5. smoke: rotas do mapa respondem 200/redirect ao login, sem stack trace
 #   6. varredura do log: nenhum ERROR/Exception inesperado
 #   7. prova de persistência com reinício do contexto Spring
-#   8. guarda anti-protótipo: nenhuma lista em memória do DemoData como fonte de dados
+#   8. guarda anti-protótipo: nenhuma lista em memória nas views; DemoData proibido
 #
 # Runtime: usa DB_URL/DB_USER/DB_PASSWORD quando informados. Sem eles, sobe um
 # Postgres embutido temporário via Node (plano C do AGENTS.md) em 127.0.0.1:55433
@@ -16,10 +16,11 @@
 # um cluster compartilhado. O que o juiz sobe é encerrado por PID capturado no trap
 # — nunca usamos pkill/pgrep -f com o nome do jar.
 #
-# Etapa 8: os records de DemoData são permitidos como DTO (repositórios os constroem
+# Etapa 8: os records de Modelos são permitidos como DTO (repositórios os constroem
 # a partir do banco). São proibidos os padrões de protótipo:
-#   DemoData.imoveis( / contratos( / movimentacoes( / inquilinos( / documentos( / reformas(
-#   List<DemoData.X> campo = DemoData...
+#   qualquer referência ao legado DemoData
+#   Modelos.imoveis( / contratos( / movimentacoes( / inquilinos( / documentos( / reformas(
+#   List<Modelos.X> campo = Modelos...
 set -euo pipefail
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
@@ -428,8 +429,9 @@ if [ -d src/main/java ]; then DIRS+=("src/main/java"); fi
 if [ -d ui/src/main/java ]; then DIRS+=("ui/src/main/java"); fi
 if [ "${#DIRS[@]}" -gt 0 ]; then
   PADROES=(
-    'DemoData\.(imoveis|contratos|movimentacoes|inquilinos|documentos|reformas)[[:space:]]*\('
-    'List<DemoData\.[A-Za-z0-9_]+>[^;=]*=[[:space:]]*DemoData\.'
+    '\bDemoData\b'
+    'Modelos\.(imoveis|contratos|movimentacoes|inquilinos|documentos|reformas)[[:space:]]*\('
+    'List<Modelos\.[A-Za-z0-9_]+>[^;=]*=[[:space:]]*Modelos\.'
   )
   PROTOTIPO=0
   for PADRAO in "${PADROES[@]}"; do
@@ -443,7 +445,7 @@ if [ "${#DIRS[@]}" -gt 0 ]; then
     falhar "guarda anti-protótipo: ainda há protótipo em memória"
   fi
 fi
-log "Guarda anti-protótipo OK (records de DemoData como DTO são permitidos)."
+log "Guarda anti-protótipo OK (records de Modelos como DTO são permitidos)."
 
 log ""
 log "=============================================="

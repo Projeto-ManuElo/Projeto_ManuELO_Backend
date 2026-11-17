@@ -14,7 +14,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
-import br.com.manuelo.DemoData;
+import br.com.manuelo.Modelos;
 
 @Repository
 public class ContratoRepositorio {
@@ -40,11 +40,11 @@ public class ContratoRepositorio {
         this.sessao = sessao;
     }
 
-    public List<DemoData.Contrato> listar() {
+    public List<Modelos.Contrato> listar() {
         return listar(null, null, null, null, null);
     }
 
-    public List<DemoData.Contrato> listar(String nome, String cpf, String imovel, String validade,
+    public List<Modelos.Contrato> listar(String nome, String cpf, String imovel, String validade,
             String situacao) {
         StringBuilder sql = new StringBuilder("""
                 SELECT contrato_id::text AS id, inquilino_nome, inquilino_documento, inquilino_email,
@@ -89,7 +89,7 @@ public class ContratoRepositorio {
 
         return jdbc.sql(sql.toString())
                 .params(params)
-                .query((rs, row) -> new DemoData.Contrato(
+                .query((rs, row) -> new Modelos.Contrato(
                         rs.getString("id"),
                         rs.getString("inquilino_nome"),
                         Dominio.formatarDocumento(rs.getString("inquilino_documento")),

@@ -23,5 +23,7 @@ public class AprovacaoView extends AuthLayout {
         Span aviso = new Span("Espere até o administrador aprovar sua entrada para ter acesso completo ao sistema ManuElo!");
         aviso.addClassName("auth-note");
         form.add(aviso);
+
+        form.add(link("Já fui aprovado — tentar login", LoginView.class));
     }
 }

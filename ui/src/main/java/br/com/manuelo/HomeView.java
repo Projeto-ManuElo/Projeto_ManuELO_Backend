@@ -49,7 +49,7 @@ public class HomeView extends Div {
         tabela.addClassName("table");
         tabela.add(UiKit.tableHead("cols-home", "Data", "Descrição", "Categoria", "Valor"));
 
-        for (DemoData.Movimentacao movimentacao : movimentacoes.listar(10)) {
+        for (Modelos.Movimentacao movimentacao : movimentacoes.listar(10)) {
             Span valor = UiKit.money(movimentacao.valor(), true);
             valor.addClassName("amount");
             Div linha = UiKit.tableRow("cols-home",

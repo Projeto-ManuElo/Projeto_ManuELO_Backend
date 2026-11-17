@@ -227,7 +227,7 @@ class RelatorioServiceTest {
 	void relatorioDeContratosExistentesGravaSituacaoExistenteSemDias() {
 		LocalDate hoje = LocalDate.now();
 		UUID contrato = criarContrato(hoje.minusMonths(4).withDayOfMonth(1),
-				hoje.plusMonths(6), hoje, 5);
+				hoje.plusMonths(6), hoje.plusMonths(1).withDayOfMonth(1), 5);
 		assertThat(situacaoContrato(contrato).get("atrasado")).isEqualTo(false);
 
 		String id = relatorios.gerar("Contratos existentes", null, null, null);

@@ -23,6 +23,9 @@ public class DocumentoRepositorio {
             boolean pendente, String meta, String financeiro, LocalDate data) {
     }
 
+    public record DocumentoVinculo(String id, String nomeArquivo, String tipo, boolean pendente) {
+    }
+
     private static final DateTimeFormatter DIA_MES = DateTimeFormatter.ofPattern("dd MMM",
             Locale.forLanguageTag("pt-BR"));
 
@@ -153,6 +156,31 @@ public class DocumentoRepositorio {
                 """)
                 .query((rs, row) -> new Opcao(rs.getString("tipo"), rs.getString("id"),
                         rs.getString("rotulo")))
+                .list();
+    }
+
+    public List<DocumentoVinculo> listarPorVinculo(String tipo, String vinculoId) {
+        String coluna = switch (tipo == null ? "" : tipo.trim().toUpperCase(Locale.ROOT)) {
+            case "IMOVEL" -> "imovel_id";
+            case "INQUILINO" -> "inquilino_id";
+            case "CONTRATO" -> "contrato_id";
+            case "MOVIMENTACAO" -> "movimentacao_id";
+            default -> throw new IllegalArgumentException("Vínculo inválido: " + tipo);
+        };
+        if (vinculoId == null || vinculoId.isBlank()) {
+            return List.of();
+        }
+        return jdbc.sql("""
+                SELECT id::text AS id, nome_arquivo, tipo::text AS tipo,
+                       pendente_revisao
+                  FROM documentos
+                 WHERE %s = :vinculo
+                 ORDER BY enviado_em DESC
+                """.formatted(coluna))
+                .param("vinculo", UUID.fromString(vinculoId.trim()))
+                .query((rs, row) -> new DocumentoVinculo(rs.getString("id"),
+                        rs.getString("nome_arquivo"), rs.getString("tipo"),
+                        rs.getBoolean("pendente_revisao")))
                 .list();
     }
 
