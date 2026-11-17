@@ -53,6 +53,16 @@ Hibernate roda com `ddl-auto=validate` e não altera o schema.
 
 ## Executar em desenvolvimento
 
+O comando abaixo sobe o PostgreSQL embutido e a aplicação de uma vez:
+
+```sh
+npm run dev
+```
+
+Ele usa `http://localhost:8080`, cria o admin `admin@manuelo.local` / `admin123` (apenas
+desenvolvimento) e encerra o banco ao pressionar `Ctrl+C`. Para usar outro banco, defina
+`DB_URL`, `DB_USER` e `DB_PASSWORD` antes de rodar.
+
 O perfil `dev` é o padrão. Defina `MANUELO_ADMIN_EMAIL` e `MANUELO_ADMIN_SENHA` no `.env`
 para criar o primeiro administrador; sem essas variáveis nenhum admin é criado (DEC-I04).
 
