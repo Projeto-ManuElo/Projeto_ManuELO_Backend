@@ -1,0 +1,29 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "default_agent": "lider",
+  "experimental": { "todo": true },
+
+  // Regras globais (a última regra que casa vence; as regras de cada agente vêm depois destas).
+  // Ninguém pergunta nada ao usuário e comandos destrutivos ficam bloqueados.
+  "permissions": [
+    { "action": "question", "resource": "*", "effect": "deny" },
+    { "action": "read", "resource": "*.env", "effect": "deny" },
+    { "action": "read", "resource": "*.env.*", "effect": "deny" },
+    { "action": "read", "resource": "*.env.example", "effect": "allow" },
+    { "action": "shell", "resource": "git push *", "effect": "deny" },
+    { "action": "shell", "resource": "rm -rf *", "effect": "deny" },
+    { "action": "shell", "resource": "sudo *", "effect": "deny" }
+  ],
+
+  "commands": {
+    "continuar": {
+      "description": "Retoma o loop do projeto de onde parou",
+      "template": "Leia AGENTS.md, docs/integracao/progresso.md e docs/integracao/backlog.md e continue o loop a partir do primeiro item não concluído. Não faça perguntas."
+    },
+    "relatar": {
+      "description": "Resume o estado atual da integração",
+      "template": "Leia docs/integracao/problemas.md e docs/integracao/progresso.md e escreva um resumo: total por status, bloqueantes abertos, o que foi resolvido e o que falta. Não altere arquivos de código."
+    }
+  }
+}

@@ -1,8 +1,8 @@
 # Progresso (memória do loop; a conversa não é memória)
 
-Iteração atual: 20 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
-Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; docker e psql indisponíveis)
-Última atualização: T20 concluída
+Iteração atual: 24 | Orçamento: 40 iterações | Máx. 3 tentativas por tarefa
+Runtime usado: postgres embutido via Node (plano C; docker presente, mas `use_docker` perde a corrida do initdb)
+Última atualização: T25 concluída (persistência, autenticação e telas ligadas ao banco)
 
 ## Entendimento inicial (8 linhas)
 1. O ManuElo é um sistema financeiro/documental; o banco é PostgreSQL (Supabase) com migrations Flyway.
@@ -52,11 +52,147 @@ Runtime usado: postgres embutido via Node (embedded-postgres 18.6.0-beta.19; doc
 - [x] T20 Aplicador Node (sem sudo/psql) + correção do seed: `scripts/aplicar-supabase.mjs` com
       `node-postgres`, dependência em `scripts/package.json`; seed passa a acompanhar 17 meses para
       não marcar contratos pagos como atrasados.
+- [x] T21 Organização frontend/backend: cópia fiel dos 33 arquivos versionados do repositório de
+      frontend para `frontend/` (original intacto, backend intacto) e análise de integração em
+      `docs/db/integracao-estrutura.md`. Nenhuma integração implementada (DEC-17..DEC-19).
+- [x] T23 Consolidação do Maven: um único build na raiz compila `frontend/src/main/java`, copia os
+      recursos do frontend, empacota as migrations em `db/migration` e gera o JAR executável Vaadin
+      + Spring Boot. `frontend/pom.xml` removido (DEC-20..DEC-22). Sem alteração de Java, SQL ou
+      regras; build validado com `mvnw package`.
+- [x] T24 Integração Vaadin: renomeia `frontend/` para `ui/`, move assets para `src/main/frontend/`,
+      corrige `pom.xml`/`tsconfig.json`, move Dockerfile para a raiz, remove a classe de boot
+      duplicada, adiciona `scanBasePackages`, `SecurityConfig` temporário e baseline do Flyway;
+      valida dev (`/` 200) e `clean package -DskipTests` (DEC-24).
+- [x] T25 Persistência e autenticação: repositórios JdbcClient em `br.com.manuelo.dados`, login com
+      BCrypt e sessão Vaadin, cadastro/aprovação de usuários, CRUD real de imóveis/inquilinos/
+      contratos, movimentações, documentos, reformas, home e relatórios; V012 telefone do inquilino
+      (DEC-26..DEC-30).
 
 ## Bloqueios (tarefa travada: diagnóstico e o que já tentou)
 (nenhum)
 
 ## Log (uma entrada por iteração: tarefa, arquivos, resultado da verificação)
+### T25 — persistência, autenticação e telas ligadas ao banco
+- Arquivos: `db/migrations/V012__inquilino_telefone.sql`; `db/tests/13_inquilino_telefone.sql`;
+  `ui/src/main/java/br/com/manuelo/dados/*` (Dominio, SessaoUsuario, AutenticacaoService e
+  repositórios de usuário, imóvel, inquilino, contrato, movimentação, documento, reforma, home e
+  relatório); `config/AdminInicial.java`; `SecurityConfig`; views/dialogs de login, cadastro,
+  recuperação/redefinição, imóveis, inquilinos, contratos, detalhe, movimentação, documentos,
+  reformas, home, relatórios e `UsuariosView`; `AGENTS.md`.
+- Verificação: `./scripts/verificar-db.sh` → `12 migration(ões), 14 teste(s), 0 falha(s)`.
+  `./mvnw -B clean package -DskipTests` → BUILD SUCCESS. App em `:8081` (Postgres local `:55433`):
+  16 rotas respondem 200 sem erro no log. E2E Playwright: login admin, criação de imóvel e
+  inquilino, entrada financeira e relatório PDF (arquivo em `/tmp/manuelo-relatorios` + registro
+  em `relatorios`), cadastro → aprovação por `/usuarios` → login do novo usuário; dados seguem
+  após reiniciar o app; 13 logins seguidos sem esgotar o pool.
+- Correções durante a verificação: `SessaoUsuario` com proxy de escopo (singletons não resolvem
+  bean de sessão no boot); casts explícitos para enums (`tipo_imovel`, `status_imovel`,
+  `tipo_movimentacao`, `categoria_movimentacao`, `forma_pagamento`, `tipo_documento`,
+  `tipo_relatorio`); `AutenticacaoService.login` usa `.list()` em vez de `.stream()` (vazava
+  conexão do Hikari).
+- Decisões: DEC-26 (JdbcClient sem JPA), DEC-27 (sessão Vaadin), DEC-28 (admin inicial por env),
+  DEC-29 (`/usuarios`), DEC-30 (Laudo/relatórios).
+
+### T24 — integração Vaadin e execução local
+- Arquivos: `pom.xml`; `tsconfig.json`; `src/main/resources/application.properties`; `.gitignore`;
+  `.dockerignore`; `Dockerfile` (movido de `ui/`); `ui/**` (renomeado de `frontend/`);
+  `src/main/frontend/animacoes.css`; remoção de `ui/src/main/java/br/com/manuelo/Application.java`,
+  `ui/mvnw`, `ui/mvnw.cmd` e `ui/.mvn`; `src/main/java/com/Projeto/manuelo/config/SecurityConfig.java`;
+  `ManueloApplication.java`; `docs/db/decisoes.md` (DEC-24); `docs/db/integracao-estrutura.md`.
+- Causa raiz: o Vaadin trata `frontend/` como frontend legado no dev server e ignora
+  `<frontendDirectory>`; o build de produção usa o `frontendDirectory`. O CSS ficava em um caminho
+  para cada modo, gerando `[UNRESOLVED_IMPORT]` no Vite. O projeto também tinha duas classes
+  `@SpringBootApplication`, Spring Security bloqueando `/` e Flyway sem histórico no schema criado
+  pelo script SQL.
+- Correções: assets em `src/main/frontend/`; Java/resources em `ui/`; `scanBasePackages` inclui
+  `br.com.manuelo`; `SecurityConfig` libera todas as rotas (temporário, sem auth real);
+  `baseline-on-migrate`/`baseline-version=11`; `.env` local derivado de `SUPABASE_DB_URL`
+  (`DB_URL`, `DB_USER`, `DB_PASSWORD` preenchidos; segredo não versionado).
+- Verificação: `JAVA_HOME=/home/joaomiguel/.cache/manuelo/jdk21 ./mvnw -B clean package -DskipTests`
+  → BUILD SUCCESS (Vite 5,5 s; 13 fontes; JAR repackage). `spring-boot:run` contra Postgres embutido
+  (`127.0.0.1:39237/manuelo`) → `Started ManueloApplication`, `/` HTTP 200, sem erro do Vite;
+  `/tmp/app-ui2.log`. `mvnw test` falha apenas por ausência de Docker/Testcontainers.
+- P4/P7 resolvidos (wrappers inertes removidos; Dockerfile/.dockerignore na raiz); P5 resolvido
+  (`src/main/frontend/` agora é a fonte real); P6 mantido (`ui/src/main/bundles/` é bundle versionado
+  conforme o README do Vaadin).
+- Correção pós-validação: `/` exibia `No views found` porque o `RouteRegistry` não via
+  `br.com.manuelo`; `vaadin.allowed-packages` não acrescenta raízes de varredura. Adicionado
+  `@EnableVaadin("br.com.manuelo")`, removida a implementação duplicada de `AppShellConfigurator`
+  da classe de boot e o `HomeView` de exemplo em `com.Projeto.manuelo.views`. Confirmado por
+  listener temporário: 8 rotas registradas, incluindo `"" -> br.com.manuelo.LoginView` e
+  `home -> br.com.manuelo.HomeView` (DEC-25).
+- Pendentes: validar visualmente as telas em navegador; decidir auth real; trocar o baseline fixo
+  quando houver V012; `ui/README.md` e `ui/.mcp.json` continuam cópias históricas.
+- Nenhum commit/push nesta tarefa; working tree contém as mudanças.
+
+### T23.4 — configurações Vaadin/Vite da raiz (P1, P2 e P8)
+- Arquivos: `package.json`, `package-lock.json`, `tsconfig.json`, `types.d.ts` e `vite.config.ts` da
+  raiz (P1, adicionados ao índice); as cinco cópias correspondentes em `frontend/` (P2, retiradas do
+  índice com `git rm --cached`, preservadas no disco); `docs/db/decisoes.md` (DEC-23);
+  `docs/db/progresso.md`. Nenhum `.java`, `.sql`, `pom.xml`, `application.properties` ou arquivo de
+  `db/` foi alterado.
+- Contexto: a T23.3 (commit `341d389`) já havia ignorado os artefatos gerados e desrastreado 460
+  arquivos de `src/main/frontend/generated/`; a auditoria da T23.4, somente leitura, classificou os
+  arquivos de configuração e propôs as ações P1..P8.
+- P1 executada: os cinco arquivos de configuração da raiz passam a ser versionados. São a fonte
+  efetiva do build (`npmFolder` = raiz desde a DEC-21) e o próprio `tsconfig.json`/`types.d.ts` traz
+  "recommended to commit". `vite.generated.ts` continua ignorado por ser sobrescrito a cada execução
+  do `flow:prepare-frontend`.
+- P2 executada: as cinco cópias de `frontend/` saíram do controle de versão sem serem apagadas do
+  disco (mesmo SHA-256 antes e depois). Nada as referencia — nem `pom.xml`, nem Java, nem scripts — e
+  a cópia de `vite.generated.ts` estava inválida (`./..\target/...`).
+- P8 executada: DEC-23 registra a raiz como local oficial das configurações npm, Vite e TypeScript, a
+  origem das cópias antigas de `frontend/` e a distinção entre arquivo de configuração-fonte e arquivo
+  gerado pelo Vaadin/Vite.
+- Nenhum commit e nenhum push foram feitos; as mudanças ficaram no índice e no working tree.
+- Pendentes: P4 (remover do disco as cópias de `frontend/`, `frontend/target/` e
+  `frontend/node_modules/`), P5 (`src/main/frontend/` estale), P6
+  (`frontend/src/main/bundles/README.md` e `dev.bundle`) e P7 (resíduo Maven/Docker de `frontend/`;
+  o `Dockerfile` chama `./mvnw` sem `frontend/pom.xml`).
+- Pendente de validação: build `mvnw -B -DskipTests package` depois das mudanças (não executado nesta
+  tarefa). Banco não afetado: nenhuma migration, seed ou teste alterado.
+
+### T23 — consolidação do Maven na raiz
+- Arquivos: `pom.xml` (raiz); `frontend/pom.xml` (removido); `docs/db/decisoes.md` (DEC-20..DEC-22);
+  `docs/db/progresso.md`. Nenhum `.java`, `.sql`, `application.properties` ou `db/` alterado.
+- `pom.xml`: `build-helper-maven-plugin:3.6.1` (add-source de `frontend/src/main/java`); `<resource>`
+  de `frontend/src/main/resources` com `application.properties` excluído; dependência
+  `com.vaadin:vaadin` (como no frontend); `vaadin-maven-plugin` com
+  `<frontendDirectory>frontend/src/main/frontend</frontendDirectory>`;
+  `spring-boot-maven-plugin` com `<mainClass>com.Projeto.manuelo.ManueloApplication</mainClass>`.
+- Build: `mvnw -B -DskipTests package` → BUILD SUCCESS em 4min39 (Vite 27 s; 13 fontes compiladas;
+  11 migrations + 2 recursos do frontend em `target/classes`; JAR repackage com
+  `Start-Class: com.Projeto.manuelo.ManueloApplication`). Repetido com
+  `mvnw -B -DskipTests clean package` → BUILD SUCCESS em 4min27 (JAR de 106 MB, 15 `.class` de
+  `br.com.manuelo`, 11 migrations, `META-INF/VAADIN` em modo produção).
+- JAR executado sem `DB_URL`: Spring Boot 4.1.2 sobe o Tomcat e o contexto e falha apenas em
+  `dataSource`/`flyway` (`'url' must start with "jdbc"`), sem tocar em banco. Inicialização real
+  com banco não foi validada (sem DB nesta tarefa).
+- `mvnw -B -DskipTests test-compile` → BUILD SUCCESS. `dependency:tree` confirma `com.vaadin:vaadin:25.3.5`.
+- Verificação de banco (plano C, `node scripts/pg-verify.mjs`): `11 migration(ões), 13 teste(s),
+  0 falha(s)` → OK; `scripts/verificar-db.sh` não roda no bash do WSL por CRLF no working tree
+  (arquivo intocado).
+- Efeitos colaterais de build (não versionados): `package.json`, `package-lock.json`, `tsconfig.json`,
+  `types.d.ts`, `vite.config.ts`, `vite.generated.ts`, `node_modules/`, `src/main/bundles/prod.bundle`
+  na raiz, além de `frontend/target/` e `frontend/src/main/frontend/generated/`. O
+  `.vaadin-node-tasks.lock` preexistente foi apagado pelo próprio build (arquivo de trava efêmero);
+  não foi recriado para não forjar PID.
+
+### T21 — organização frontend/backend e cópia do frontend
+- Arquivos: `frontend/**` (33 arquivos versionados copiados de
+  `C:\Users\ronald\CESAR\Projeto_ManuELO_Frontend`); `docs/db/integracao-estrutura.md`;
+  `docs/db/decisoes.md` (DEC-17..DEC-19); `docs/db/progresso.md`.
+- Nada em `db/`, `src/`, `pom.xml`, `scripts/` ou `docker-compose.yml` foi alterado.
+- Cópia por `git archive HEAD | tar -x` (só versionados); fora `.git`, `target/`, `node_modules/`,
+  `src/main/frontend/generated/`, `.vscode/`, `.github/`. 33/33 com SHA-256 idêntico; origem com
+  `git status` limpo e HEAD `a335026`.
+- Conflitos: nenhum no destino (`frontend/` não existia); `pom.xml`, `README.md`, `.mvn/`,
+  `application.properties` e `mvnw` do frontend ficaram isolados sob `frontend/`.
+- Verificação: `11 migration(ões), 13 teste(s), 0 falha(s)` → VERIFICAÇÃO OK (plano C). O Docker está
+  disponível, mas `use_docker` falha com `FATAL: the database system is shutting down` porque
+  `pg_isready` responde no servidor temporário do `initdb`; corrigir em tarefa futura (aguardar o
+  healthcheck do container).
+
 ### T20 — aplicador Node e correção do seed
 - Arquivos: scripts/aplicar-supabase.mjs; scripts/package.json; scripts/package-lock.json;
   scripts/aplicar-supabase.sh; .gitignore; db/seed/dev_seed.sql; db/tests/11_seed_ficticio.sql;

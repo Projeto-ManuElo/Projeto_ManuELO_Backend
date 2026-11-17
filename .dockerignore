@@ -1,0 +1,23 @@
+# The Docker build runs the Maven build from scratch, so it doesn't need
+# local build output, dependencies, or IDE files
+target/
+**/target/
+node_modules/
+**/node_modules/
+.git
+.idea/
+.vscode/
+.settings
+.project
+.classpath
+*.iml
+.DS_Store
+
+# Segredos locais nunca entram na imagem
+.env
+.env.*
+!.env.example
+
+# Artefatos gerados pelo Vaadin/Vite
+vite.generated.ts
+src/main/frontend/generated/

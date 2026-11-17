@@ -1,36 +1,34 @@
 {
-  "$schema": "https://opencode.ai",
+  "$schema": "https://opencode.ai/config.json",
   "model": "opencode/deepseek-v4.1-flash-free",
-  "default_agent": "db",
+  "default_agent": "lider",
   "experimental": { "todo": true },
 
-  // Formato V1 correto: Objeto mapeando ferramentas específicas com efeito de bloqueio (deny)
+  // Regras globais no formato V1 ("permission" no singular e "bash" em vez de "shell").
+  // Ninguém pergunta nada ao usuário e comandos destrutivos ficam bloqueados.
   "permission": {
     "question": "deny",
     "read": {
       "*.env": "deny",
-      "*.env.*": "deny"
+      "*.env.*": "deny",
+      "*.env.example": "allow"
     },
     "bash": {
+      "*": "allow",
       "git push *": "deny",
       "rm -rf *": "deny",
       "sudo *": "deny"
     }
   },
 
-  "agents": {
-    "db": {
-      "description": "Engenheiro de banco do ManuElo (autônomo, sem perguntas)",
-      "mode": "primary",
-      "steps": 200,
-      "system": "Siga o AGENTS.md. O estado do trabalho está em docs/db/progresso.md. Nunca faça perguntas nem peça autorização."
-    }
-  },
-
-  "commands": {
+  "command": {
     "continuar": {
-      "description": "Retoma o loop do banco de onde parou",
-      "template": "Leia AGENTS.md e docs/db/progresso.md e continue o protocolo de loop a partir da primeira tarefa pendente. Não faça perguntas."
+      "description": "Retoma o loop do projeto de onde parou",
+      "template": "Leia AGENTS.md, docs/integracao/progresso.md e docs/integracao/backlog.md e continue o loop a partir do primeiro item não concluído. Não faça perguntas."
+    },
+    "relatar": {
+      "description": "Resume o estado atual da integração",
+      "template": "Leia docs/integracao/problemas.md e docs/integracao/progresso.md e escreva um resumo: total por status, bloqueantes abertos, o que foi resolvido e o que falta. Não altere arquivos de código."
     }
   }
 }
