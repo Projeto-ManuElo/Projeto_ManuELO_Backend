@@ -354,3 +354,46 @@ Modelo de bloco (copie para cada problema):
 - Resolução: A-90 entregou filtros SQL e edição; `InquilinoCadastroTest` cobre rollback após INSERT com trigger temporária.
 - Tentativas: 0/3
 - Commit: be15137 (A-90); teste de rollback nesta rodada (não commitado)
+
+## P-028 Dockerfile rejeitado pelo Railway (cache mount sem id)
+- Severidade: ALTA (bloqueia deploy)
+- Camada: qa (build/deploy)
+- Evidência: Railway: `Dockerfile invalid: flag '--mount=type=cache,target=/root/.m2' is missing an id argument at Line 21`.
+- Causa raiz: o parser do Railway exige `id` em `--mount=type=cache`; o Dockerfile herdado do template Vaadin também montava secrets `proKey`/`offlineKey` inexistentes e usava `target=/root/.m2` com `HOME=/app`.
+- Reprodução: apontar o deploy do Railway para o repositório e aguardar a fase de build.
+- Dono: qa
+- Critério de aceite: Dockerfile parseável pelo Railway; estágio de build sem secret mounts obrigatórios; cache em `/app/.m2`.
+- Status: RESOLVIDO
+- Resolução: DEC-I15; `RUN --mount=type=cache,id=manuelo-m2,target=/app/.m2 ./mvnw clean package -DskipTests`, sem estágio `jq` e sem secrets.
+- Tentativas: 0/3
+- Commit: este commit (fix(deploy): Dockerfile Railway)
+
+## P-029 Railway responde "The train has not arrived at the station" (404 de borda)
+- Severidade: ALTA (bloqueia acesso público)
+- Camada: qa (deploy/infra Railway)
+- Evidência: `Not Found — The train has not arrived at the station. Please check your network settings to confirm that your domain has provisioned.` com Request ID `L4kegJ6XRZmB7Pt9Aax-fw`.
+- Causa raiz: ainda não determinada. A página é gerada pela borda do Railway, não pelo Spring: a requisição não chega na aplicação (não há log dela). Hipóteses, em ordem: (1) Private Networking desabilitado no serviço — mudança de plataforma do Railway que exige habilitar Settings > Networking > Private Networking e redeployar; (2) deployment sem container saudável (variáveis obrigatórias do perfil `prod` ausentes derrubam o boot por placeholder não resolvido); (3) target port do domínio diferente da porta em que o app escuta (Railway injeta `PORT=8080`; a app lê `server.port=${PORT:...}`).
+- Reprodução: acessar o domínio público do serviço no Railway.
+- Dono: qa (infra) + back (diagnóstico de boot, se necessário)
+- Critério de aceite: domínio público responde do app (ex.: `/login` renderiza ou redireciona), log do container mostra `Tomcat started on port <PORT>` e o deploy fica `Online` sem crash.
+- Status: EM ANÁLISE
+- Tentativas: 0/3
+- Checklist: conferir status/logs do deploy; habilitar Private Networking e Redeploy; conferir target port = porta do log; conferir `DB_URL`, `DB_USER`, `DB_PASSWORD`, `MANUELO_ADMIN_EMAIL`, `MANUELO_ADMIN_SENHA`, `MANUELO_APP_URL`, `MANUELO_STORAGE_DIR`; se domínio custom/Cloudflare, conferir CNAME e SSL/TLS Full.
+- Commit: pendente
+
+## P-030 Navegação entre abas acima de 5 s (meta 1-3 s)
+- Severidade: ALTA (usabilidade em produção)
+- Camada: front + back + qa
+- Evidência: relato do usuário: clicar em uma aba (ex.: Documentos) leva mais de 5 s para responder.
+- Causa raiz provável: excesso de round-trips ao banco no caminho da navegação. (1) `SessaoUsuario.usuario()` chama
+  `usuarios.findById` a cada invocação — `MainLayout` invoca `autenticado()`, `administrador()` e `usuario()`, ou seja,
+  2-3 transações JPA por navegação. (2) `DocumentosView` monta `documentosOpcoes()` no construtor (UNION ALL de imóveis,
+  inquilinos, contratos e movimentações, ordenado) mesmo sem o usuário abrir o diálogo. (3) Cada método `@Transactional`
+  gera BEGIN/SELECT/COMMIT, multiplicando o RTT. (4) Railway e Supabase podem estar em regiões diferentes.
+- Reprodução: autenticar em produção e clicar nas abas; comparar com o tempo no log de requisições.
+- Dono: front (sessão/opções), back (compressão/log), qa (testes)
+- Critério de aceite: nenhuma chamada `*Opcoes()` em construtores de view; `SessaoUsuario` revalida no máximo 1x a cada
+  30 s; compressão habilitada; log de requisições > 1,5 s; navegação medida em 1-3 s.
+- Status: EM_ANDAMENTO (correções aplicadas; teste novo verde; falta juiz completo e medição em produção)
+- Resolução parcial: SessaoUsuario com TTL de 30 s; `*Opcoes()` fora dos construtores; compressão HTTP; filtro `Requisição lenta` (commit 823c387).
+- Tentativas: 1/3

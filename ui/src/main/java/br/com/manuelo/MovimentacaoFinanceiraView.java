@@ -71,6 +71,7 @@ public class MovimentacaoFinanceiraView extends Div {
     private final Button registrar = UiKit.primary("Registrar Entrada", e -> registrar());
     private final boolean administrador;
     private boolean tipoEntrada = true;
+    private boolean opcoesCarregadas;
     private UiKit.ArquivoSelecionado comprovante;
 
     public MovimentacaoFinanceiraView(MovimentacaoFinanceiraService servico,
@@ -83,21 +84,21 @@ public class MovimentacaoFinanceiraView extends Div {
         this.administrador = sessao.administrador();
         addClassName("page");
 
-        imovel.setItems(consulta.imoveisOpcoes());
+        // DEC-I16: as opções de imóvel/contrato só vão ao banco quando o usuário
+        // escolhe uma categoria que precisa delas (Aluguel/Caução), não na navegação.
         imovel.setItemLabelGenerator(ConsultaService.ImovelOpcao::rotulo);
         imovel.setPlaceholder("Selecione o imóvel");
         imovel.setWidthFull();
         imovel.setClearButtonVisible(true);
         imovel.setVisible(false);
         competencia.setVisible(false);
-
-        for (ConsultaService.ContratoOpcao opcao : consulta.contratosOpcoes()) {
-            contratosPorRotulo.put(opcao.rotulo(), opcao.id());
-        }
-        contrato.setItems(contratosPorRotulo.keySet());
         contrato.setVisible(false);
+
         categoria.addValueChangeListener(e -> {
             boolean aluguel = "Aluguel".equals(e.getValue());
+            if (exigeContrato(e.getValue())) {
+                carregarOpcoes();
+            }
             contrato.setVisible(exigeContrato(e.getValue()));
             imovel.setVisible(aluguel && tipoEntrada);
             competencia.setVisible(aluguel && tipoEntrada);
@@ -204,6 +205,18 @@ public class MovimentacaoFinanceiraView extends Div {
         competencia.setVisible(false);
         favorecido.setVisible(!tipoEntrada);
         registrar.setText(tipoEntrada ? "Registrar Entrada" : "Registrar saída");
+    }
+
+    private void carregarOpcoes() {
+        if (opcoesCarregadas) {
+            return;
+        }
+        opcoesCarregadas = true;
+        imovel.setItems(consulta.imoveisOpcoes());
+        for (ConsultaService.ContratoOpcao opcao : consulta.contratosOpcoes()) {
+            contratosPorRotulo.put(opcao.rotulo(), opcao.id());
+        }
+        contrato.setItems(contratosPorRotulo.keySet());
     }
 
     private boolean exigeContrato(String categoriaSelecionada) {

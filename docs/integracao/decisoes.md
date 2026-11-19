@@ -35,3 +35,18 @@ Modelo para novas decisões:
 - Escolha:
 - Motivo:
 - Reverter:
+
+## DEC-I15 Dockerfile compatível com o builder do Railway
+- Contexto: o build no Railway falhava na validação do Dockerfile: `flag '--mount=type=cache,target=/root/.m2' is missing an id argument` (linha 21). O Dockerfile também usava `--mount=type=secret` para chaves Vaadin Pro/Offline, que o projeto não possui (Vaadin core), e apontava o cache para `/root/.m2` embora `HOME=/app`.
+- Escolha: remover o estágio `jq` e os secret mounts; manter o cache do Maven com `id=manuelo-m2` e `target=/app/.m2`; build com `./mvnw clean package -DskipTests`.
+- Motivo: o parser do Railway exige `id` em mounts de cache; sem chaves Vaadin Pro não há segredo a montar; o cache precisa apontar para o `.m2` real (`HOME=/app`).
+- Reverter: reintroduzir `--mount=type=secret,id=proKey`/`offlineKey` e o estágio `jq` somente se houver chave Vaadin Pro/Offline; nesse caso usar `required=false` para não quebrar o build sem segredo.
+
+## DEC-I16 Latência de navegação: menos idas ao banco no caminho crítico
+- Contexto: navegação entre abas acima de 5 s em produção; o caminho crítico fazia várias transações por clique
+  (revalidação de sessão repetida e opções de diálogo carregadas no construtor) contra um Postgres remoto (Supabase).
+- Escolha: (1) `SessaoUsuario` revalida o usuário no banco no máximo 1x a cada 30 s; (2) listas de opções de combo são
+  carregadas sob demanda ao abrir o diálogo, nunca no construtor da view; (3) compressão HTTP habilitada; (4) log de
+  requisições acima de 1,5 s para medir a meta; (5) recomendar Railway e Supabase na mesma região.
+- Motivo: cada transação custa BEGIN/SELECT/COMMIT; com RTT alto, cortar transações reduz segundos. O alvo é 1-3 s.
+- Reverter: baixar o TTL para 0 (revalidar sempre) e voltar a carregar as opções no construtor; remover o log de lentidão.

@@ -3,6 +3,7 @@ package br.com.manuelo;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -28,14 +29,16 @@ public class DocumentoDialog extends Dialog {
     private final ComboBox<String> tipo = UiKit.select("Tipo de documento", "Selecione",
             List.of("Contrato", "Comprovante", "Laudo", "Cadastro", "Nota fiscal"));
     private final DatePicker data = UiKit.date("Data do documento");
+    private final Supplier<List<ConsultaService.DocumentoOpcao>> vinculos;
     private final ComboBox<ConsultaService.DocumentoOpcao> vinculo;
     private final Upload arquivoUpload;
     private UiKit.ArquivoSelecionado arquivo;
 
-    public DocumentoDialog(List<ConsultaService.DocumentoOpcao> vinculos, Consumer<DadosDocumento> aoSalvar) {
+    public DocumentoDialog(Supplier<List<ConsultaService.DocumentoOpcao>> vinculos,
+            Consumer<DadosDocumento> aoSalvar) {
         this.aoSalvar = aoSalvar;
+        this.vinculos = vinculos;
         vinculo = new ComboBox<>("Vincular a");
-        vinculo.setItems(vinculos);
         vinculo.setItemLabelGenerator(ConsultaService.DocumentoOpcao::rotulo);
         vinculo.setPlaceholder("Imóvel, inquilino, contrato ou movimentação");
         vinculo.setWidthFull();
@@ -68,6 +71,8 @@ public class DocumentoDialog extends Dialog {
     }
 
     public void abrir() {
+        List<ConsultaService.DocumentoOpcao> opcoes = vinculos.get();
+        vinculo.setItems(opcoes == null ? List.of() : opcoes);
         nome.clear();
         tipo.clear();
         data.clear();

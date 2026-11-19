@@ -91,3 +91,11 @@ Status: PENDENTE | EM_ANDAMENTO | CONCLUIDO | BLOQUEADO. Dono: ordem banco -> ba
 - A-90 Auditoria final: DemoData removido, nenhum botão morto, todas as rotas do Figma funcionais, juiz verde,
   RELATORIO-FINAL.md.
   **CONCLUIDO** (DemoData -> Modelos; botões mortos removidos; P-002/P-019/P-021/P-023/P-027 resolvidos; juiz 8/8; RELATORIO-FINAL.md).
+
+## S9 Desempenho percebido
+- A-91 Latência de navegação entre abas: alvo 1-3 s (hoje >5 s em produção). Reduzir idas ao banco no caminho
+  crítico: cache curto da revalidação de sessão, opções de diálogo carregadas só ao abrir, compressão HTTP e log de
+  requisições lentas para medir. Aceite: navegar entre /documentos, /imoveis, /inquilinos, /contratos e
+  /movimentacao-financeira sem consulta de opções no construtor e com no máximo 1 revalidação de sessão a cada 30 s;
+  log `Requisição lenta` disponível para comprovar a meta em produção.
+  **EM_ANDAMENTO** (P-030; DEC-I16).

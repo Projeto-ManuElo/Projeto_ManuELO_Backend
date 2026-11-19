@@ -43,7 +43,8 @@ public class DocumentosView extends Div {
     public DocumentosView(ConsultaService consulta, DocumentoService documentoService) {
         this.consulta = consulta;
         this.documentoService = documentoService;
-        this.dialog = new DocumentoDialog(consulta.documentosOpcoes(), this::adicionar);
+        // DEC-I16: opções carregadas só ao abrir o diálogo, fora do caminho da navegação.
+        this.dialog = new DocumentoDialog(consulta::documentosOpcoes, this::adicionar);
         addClassName("page");
 
         Button adicionar = UiKit.primaryIcon("Adicionar documento", VaadinIcon.PLUS, e -> dialog.abrir());

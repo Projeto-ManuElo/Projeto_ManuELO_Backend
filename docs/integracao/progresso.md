@@ -49,3 +49,12 @@ Nenhum. Os 5 problemas abertos (P-002/P-019/P-021/P-023/P-027) foram concluídos
 - Iteração 22: A-15/A-80/A-81/A-90 — AuditoriaTest 4/4, erro global/fuso pt-BR, perfis dev/prod + README, remoção do DemoData legado e botões mortos; juiz 8/8.
 - Iteração 23: A-90 — 67 lacunas de interface tratadas (auth/usuários, imóveis/reformas, inquilinos/contratos/caução, movimentação/documentos/relatórios); P-022/P-026 resolvidos; juiz 8/8; commits 2302e95, 5f1af2f, be15137.
 - Iteração 24: P-002/P-019/P-021/P-023/P-027 — `ConsultaService` + views sem repositórios, insert-only nos imutáveis, cadastro JPA com novo contexto, token após commit com lock e rollback pós-INSERT; juiz 8/8; 109 testes, 1 skip.
+- Iteração 25: P-028 — Dockerfile corrigido para o Railway (cache mount com `id=manuelo-m2` em `/app/.m2`, remoção dos secret mounts Vaadin Pro/Offline e do estágio `jq`); sem Docker local para build de validação, revalidar no deploy (DEC-I15).
+- Iteração 26: P-029 — Railway retorna 404 de borda ("train has not arrived"); Dockerfile já corrigido e app lê `PORT`; triagem registrada (Private Networking, env obrigatórias do perfil prod, target port). Sem acesso ao painel/logs do Railway nesta sessão.
+- Iteração 27: A-91/P-030 — `SessaoUsuario` revalida no banco no máximo 1x/30 s; opções de diálogo
+  (`Documentos`, `Contratos`, `Inquilinos`, `ContratoDetalhe`) e de `MovimentacaoFinanceiraView` passam a ser
+  carregadas sob demanda ao abrir/interagir, não no construtor; compressão HTTP habilitada; filtro
+  `Requisições lentas` (>1,5 s) adicionado; teste vermelho `SessaoUsuarioCacheTest`. JDK/Docker ausentes neste
+  ambiente: juiz e teste não executados aqui — rodar `./scripts/verificar-integracao.sh` com JDK 21.
+  Verificação local: `JAVA_HOME=~/.jdks/openjdk-26.0.2.1 ./mvnw -B -Dtest=ArquiteturaViewsTest,SessaoUsuarioCacheTest test` -> 3 testes, 0 falhas (release 21);
+  `SessaoUsuarioCacheTest` 2/2. Juiz completo ainda requer Docker/Postgres e não rodou neste ambiente.

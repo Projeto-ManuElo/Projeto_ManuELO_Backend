@@ -3,6 +3,7 @@ package br.com.manuelo;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -25,7 +26,7 @@ public class InquilinoDialog extends Dialog {
     }
 
     private final Consumer<DadosInquilino> aoSalvar;
-    private final List<ConsultaService.ImovelOpcao> imoveis;
+    private final Supplier<List<ConsultaService.ImovelOpcao>> imoveis;
     private final Span titulo = new Span("Adicionar Inquilino");
     private final TextField nome = UiKit.text("Nome", "Ex: João Miguel Oliveira de Souza");
     private final TextField cpf = UiKit.text("CPF", "ex: 123.xxx.xxx.123");
@@ -45,11 +46,11 @@ public class InquilinoDialog extends Dialog {
 
     private String idAtual;
 
-    public InquilinoDialog(List<ConsultaService.ImovelOpcao> imoveis, Consumer<DadosInquilino> aoSalvar) {
+    public InquilinoDialog(Supplier<List<ConsultaService.ImovelOpcao>> imoveis,
+            Consumer<DadosInquilino> aoSalvar) {
         this.aoSalvar = aoSalvar;
-        this.imoveis = imoveis == null ? List.of() : List.copyOf(imoveis);
+        this.imoveis = imoveis;
         imovel = new ComboBox<>("Imóvel vinculado");
-        imovel.setItems(this.imoveis);
         imovel.setItemLabelGenerator(ConsultaService.ImovelOpcao::rotulo);
         imovel.setPlaceholder("Selecione o imóvel");
         imovel.setWidthFull();
@@ -98,7 +99,15 @@ public class InquilinoDialog extends Dialog {
         add(header, body, footer);
     }
 
+    private List<ConsultaService.ImovelOpcao> carregarImoveis() {
+        List<ConsultaService.ImovelOpcao> opcoes = imoveis.get();
+        opcoes = opcoes == null ? List.of() : List.copyOf(opcoes);
+        imovel.setItems(opcoes);
+        return opcoes;
+    }
+
     public void abrirNovo() {
+        carregarImoveis();
         idAtual = null;
         titulo.setText("Adicionar Inquilino");
         nome.clear();
@@ -120,6 +129,7 @@ public class InquilinoDialog extends Dialog {
     }
 
     public void abrirEdicao(Modelos.Inquilino inquilino, ConsultaService.InquilinoDadosEdicao detalhe) {
+        List<ConsultaService.ImovelOpcao> imoveisDisponiveis = carregarImoveis();
         idAtual = inquilino.id();
         titulo.setText("Editar Inquilino");
         nome.setValue(inquilino.nome());
@@ -138,7 +148,7 @@ public class InquilinoDialog extends Dialog {
             cpfFiador.setValue(detalhe.documentoFiador() == null ? "" : detalhe.documentoFiador());
             emailFiador.setValue(detalhe.emailFiador() == null ? "" : detalhe.emailFiador());
             if (detalhe.imovelId() != null) {
-                imoveis.stream()
+                imoveisDisponiveis.stream()
                         .filter(opcao -> detalhe.imovelId().equals(opcao.id()))
                         .findFirst()
                         .ifPresent(imovel::setValue);

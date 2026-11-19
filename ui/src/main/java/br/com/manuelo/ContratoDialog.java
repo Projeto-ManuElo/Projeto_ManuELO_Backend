@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -41,6 +42,7 @@ public class ContratoDialog extends Dialog {
     }
 
     private final Consumer<DadosContrato> aoSalvar;
+    private final Supplier<List<ConsultaService.ImovelOpcao>> imoveisExistentes;
     private final Span titulo = new Span("Novo contrato");
     private final ComboBox<ConsultaService.ImovelOpcao> imovel = new ComboBox<>("Imóvel existente");
     private final TextField endereco = UiKit.text("Endereço", "Ex: Ap 302. Ed. Aurora");
@@ -62,10 +64,11 @@ public class ContratoDialog extends Dialog {
     private final Upload contratoUpload;
     private UiKit.ArquivoSelecionado arquivo;
 
-    public ContratoDialog(List<ConsultaService.ImovelOpcao> imoveis, Consumer<DadosContrato> aoSalvar) {
+    public ContratoDialog(Supplier<List<ConsultaService.ImovelOpcao>> imoveis,
+            Consumer<DadosContrato> aoSalvar) {
         this.aoSalvar = aoSalvar;
+        this.imoveisExistentes = imoveis;
 
-        imovel.setItems(imoveis == null ? List.of() : imoveis);
         imovel.setItemLabelGenerator(ConsultaService.ImovelOpcao::rotulo);
         imovel.setPlaceholder("Selecione o imóvel");
         imovel.setWidthFull();
@@ -136,6 +139,8 @@ public class ContratoDialog extends Dialog {
     }
 
     public void abrir() {
+        List<ConsultaService.ImovelOpcao> opcoes = imoveisExistentes.get();
+        imovel.setItems(opcoes == null ? List.of() : opcoes);
         titulo.setText("Novo contrato");
         imovel.clear();
         endereco.clear();
