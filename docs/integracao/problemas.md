@@ -367,3 +367,16 @@ Modelo de bloco (copie para cada problema):
 - Resolução: DEC-I15; `RUN --mount=type=cache,id=manuelo-m2,target=/app/.m2 ./mvnw clean package -DskipTests`, sem estágio `jq` e sem secrets.
 - Tentativas: 0/3
 - Commit: este commit (fix(deploy): Dockerfile Railway)
+
+## P-029 Railway responde "The train has not arrived at the station" (404 de borda)
+- Severidade: ALTA (bloqueia acesso público)
+- Camada: qa (deploy/infra Railway)
+- Evidência: `Not Found — The train has not arrived at the station. Please check your network settings to confirm that your domain has provisioned.` com Request ID `L4kegJ6XRZmB7Pt9Aax-fw`.
+- Causa raiz: ainda não determinada. A página é gerada pela borda do Railway, não pelo Spring: a requisição não chega na aplicação (não há log dela). Hipóteses, em ordem: (1) Private Networking desabilitado no serviço — mudança de plataforma do Railway que exige habilitar Settings > Networking > Private Networking e redeployar; (2) deployment sem container saudável (variáveis obrigatórias do perfil `prod` ausentes derrubam o boot por placeholder não resolvido); (3) target port do domínio diferente da porta em que o app escuta (Railway injeta `PORT=8080`; a app lê `server.port=${PORT:...}`).
+- Reprodução: acessar o domínio público do serviço no Railway.
+- Dono: qa (infra) + back (diagnóstico de boot, se necessário)
+- Critério de aceite: domínio público responde do app (ex.: `/login` renderiza ou redireciona), log do container mostra `Tomcat started on port <PORT>` e o deploy fica `Online` sem crash.
+- Status: EM ANÁLISE
+- Tentativas: 0/3
+- Checklist: conferir status/logs do deploy; habilitar Private Networking e Redeploy; conferir target port = porta do log; conferir `DB_URL`, `DB_USER`, `DB_PASSWORD`, `MANUELO_ADMIN_EMAIL`, `MANUELO_ADMIN_SENHA`, `MANUELO_APP_URL`, `MANUELO_STORAGE_DIR`; se domínio custom/Cloudflare, conferir CNAME e SSL/TLS Full.
+- Commit: pendente
