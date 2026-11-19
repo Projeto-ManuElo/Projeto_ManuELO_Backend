@@ -162,3 +162,44 @@ dados conferem, estado vazio, paginação, testes antigos e novos verdes,
 
 Cada passo: compilar, rodar testes do relatório, revisar diff staged e commitar somente
 arquivos da missão. Ao final de cada PDF e no fim: `./scripts/verificar-integracao.sh`.
+
+## FASE C — Execução
+
+### 10. Implementação entregue
+
+- `RelatorioDesign`: tokens de cor/fonte/margem e carregamento embutido das fontes DejaVu.
+- `RelatorioPdfModelo`: records imutáveis de documento, seção, linha, célula e indicador.
+- `RelatorioDados`: consultas de contratos e movimentações; o renderer não acessa banco.
+- `RelatorioPdfRenderer`: duas passadas para “Página X de Y”, cabeçalho/rodapé em todas as
+  páginas, logo em `/META-INF/resources/images/logo.png`, cartões, tabelas com cabeçalho
+  repetido, estado vazio, cores e fontes embutidas.
+- `RelatorioService`: mantém a API pública e a persistência insert-only; monta os quatro
+  modelos, assina valores de movimentação, separa estornos e persiste totais líquidos.
+- Totais persistidos de entradas/saídas são limitados a zero para respeitar
+  `chk_relatorios_totais_nao_negativos`; o PDF continua exibindo o líquido real e o saldo
+  pode ser negativo quando o estorno é de período anterior.
+- Subtotais por categoria respeitam o filtro Entrada/Saída; o relatório completo mostra
+  as seis categorias.
+- Saídas usam “Favorecido” como destino e não exibem imóvel, pois o serviço de saída não
+  grava `imovel_id`; contratos usam o rótulo “Documento”.
+- Grafia do PDF: “Fundação Manuel Cruz”. A divergência com “Manoel” nas telas segue como
+  PEDIDO_CROSS.
+
+### 11. Testes e evidências
+
+- `RelatorioServiceTest`: 13 testes verdes, incluindo os 7 originais e novos testes de:
+  conteúdo/acentos, cartões, subtotais, origem/destino, comprovante, estornos,
+  bruto/estornos/líquido, estado vazio, logo, paginação e estorno de período anterior.
+- Teste de logo inspeciona o XObject da primeira página; teste de paginação cria 80
+  entradas e valida “Página 1 de N” e “Página N de N”.
+- `./scripts/verificar-integracao.sh`: **8/8 etapas OK**, 101 testes, 1 skip; build limpo,
+  migrations do zero, `ddl-auto=validate`, smoke, log sem ERROR inesperado, prova de
+  persistência e guarda anti-protótipo verdes.
+- Nenhuma migration/schema novo; nenhuma alteração em `RelatoriosView`.
+- PEDIDO_CROSS pendente: formalizar A-73/DEC-I15 em `backlog.md`/`decisoes.md` e alinhar
+  a grafia “Manoel” das telas para “Manuel”; ambos fora dos arquivos permitidos.
+
+### 12. Estado dos commits
+
+- Plano: `ea36166 docs(relatorios): registra plano de implementação do design dos PDFs`.
+- Implementação e testes serão commitados em seguida, sem push/deploy, conforme a missão.
