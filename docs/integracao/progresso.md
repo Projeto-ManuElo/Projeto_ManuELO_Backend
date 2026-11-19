@@ -49,3 +49,4 @@ Nenhum. Os 5 problemas abertos (P-002/P-019/P-021/P-023/P-027) foram concluídos
 - Iteração 22: A-15/A-80/A-81/A-90 — AuditoriaTest 4/4, erro global/fuso pt-BR, perfis dev/prod + README, remoção do DemoData legado e botões mortos; juiz 8/8.
 - Iteração 23: A-90 — 67 lacunas de interface tratadas (auth/usuários, imóveis/reformas, inquilinos/contratos/caução, movimentação/documentos/relatórios); P-022/P-026 resolvidos; juiz 8/8; commits 2302e95, 5f1af2f, be15137.
 - Iteração 24: P-002/P-019/P-021/P-023/P-027 — `ConsultaService` + views sem repositórios, insert-only nos imutáveis, cadastro JPA com novo contexto, token após commit com lock e rollback pós-INSERT; juiz 8/8; 109 testes, 1 skip.
+- Iteração 25: P-028 — Dockerfile corrigido para o Railway (cache mount com `id=manuelo-m2` em `/app/.m2`, remoção dos secret mounts Vaadin Pro/Offline e do estágio `jq`); sem Docker local para build de validação, revalidar no deploy (DEC-I15).

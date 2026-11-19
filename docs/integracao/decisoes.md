@@ -35,3 +35,9 @@ Modelo para novas decisões:
 - Escolha:
 - Motivo:
 - Reverter:
+
+## DEC-I15 Dockerfile compatível com o builder do Railway
+- Contexto: o build no Railway falhava na validação do Dockerfile: `flag '--mount=type=cache,target=/root/.m2' is missing an id argument` (linha 21). O Dockerfile também usava `--mount=type=secret` para chaves Vaadin Pro/Offline, que o projeto não possui (Vaadin core), e apontava o cache para `/root/.m2` embora `HOME=/app`.
+- Escolha: remover o estágio `jq` e os secret mounts; manter o cache do Maven com `id=manuelo-m2` e `target=/app/.m2`; build com `./mvnw clean package -DskipTests`.
+- Motivo: o parser do Railway exige `id` em mounts de cache; sem chaves Vaadin Pro não há segredo a montar; o cache precisa apontar para o `.m2` real (`HOME=/app`).
+- Reverter: reintroduzir `--mount=type=secret,id=proKey`/`offlineKey` e o estágio `jq` somente se houver chave Vaadin Pro/Offline; nesse caso usar `required=false` para não quebrar o build sem segredo.

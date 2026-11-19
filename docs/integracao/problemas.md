@@ -354,3 +354,16 @@ Modelo de bloco (copie para cada problema):
 - Resolução: A-90 entregou filtros SQL e edição; `InquilinoCadastroTest` cobre rollback após INSERT com trigger temporária.
 - Tentativas: 0/3
 - Commit: be15137 (A-90); teste de rollback nesta rodada (não commitado)
+
+## P-028 Dockerfile rejeitado pelo Railway (cache mount sem id)
+- Severidade: ALTA (bloqueia deploy)
+- Camada: qa (build/deploy)
+- Evidência: Railway: `Dockerfile invalid: flag '--mount=type=cache,target=/root/.m2' is missing an id argument at Line 21`.
+- Causa raiz: o parser do Railway exige `id` em `--mount=type=cache`; o Dockerfile herdado do template Vaadin também montava secrets `proKey`/`offlineKey` inexistentes e usava `target=/root/.m2` com `HOME=/app`.
+- Reprodução: apontar o deploy do Railway para o repositório e aguardar a fase de build.
+- Dono: qa
+- Critério de aceite: Dockerfile parseável pelo Railway; estágio de build sem secret mounts obrigatórios; cache em `/app/.m2`.
+- Status: RESOLVIDO
+- Resolução: DEC-I15; `RUN --mount=type=cache,id=manuelo-m2,target=/app/.m2 ./mvnw clean package -DskipTests`, sem estágio `jq` e sem secrets.
+- Tentativas: 0/3
+- Commit: este commit (fix(deploy): Dockerfile Railway)
