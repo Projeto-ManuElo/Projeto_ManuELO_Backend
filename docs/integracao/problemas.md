@@ -380,3 +380,19 @@ Modelo de bloco (copie para cada problema):
 - Tentativas: 0/3
 - Checklist: conferir status/logs do deploy; habilitar Private Networking e Redeploy; conferir target port = porta do log; conferir `DB_URL`, `DB_USER`, `DB_PASSWORD`, `MANUELO_ADMIN_EMAIL`, `MANUELO_ADMIN_SENHA`, `MANUELO_APP_URL`, `MANUELO_STORAGE_DIR`; se domínio custom/Cloudflare, conferir CNAME e SSL/TLS Full.
 - Commit: pendente
+
+## P-030 Navegação entre abas acima de 5 s (meta 1-3 s)
+- Severidade: ALTA (usabilidade em produção)
+- Camada: front + back + qa
+- Evidência: relato do usuário: clicar em uma aba (ex.: Documentos) leva mais de 5 s para responder.
+- Causa raiz provável: excesso de round-trips ao banco no caminho da navegação. (1) `SessaoUsuario.usuario()` chama
+  `usuarios.findById` a cada invocação — `MainLayout` invoca `autenticado()`, `administrador()` e `usuario()`, ou seja,
+  2-3 transações JPA por navegação. (2) `DocumentosView` monta `documentosOpcoes()` no construtor (UNION ALL de imóveis,
+  inquilinos, contratos e movimentações, ordenado) mesmo sem o usuário abrir o diálogo. (3) Cada método `@Transactional`
+  gera BEGIN/SELECT/COMMIT, multiplicando o RTT. (4) Railway e Supabase podem estar em regiões diferentes.
+- Reprodução: autenticar em produção e clicar nas abas; comparar com o tempo no log de requisições.
+- Dono: front (sessão/opções), back (compressão/log), qa (testes)
+- Critério de aceite: nenhuma chamada `*Opcoes()` em construtores de view; `SessaoUsuario` revalida no máximo 1x a cada
+  30 s; compressão habilitada; log de requisições > 1,5 s; navegação medida em 1-3 s.
+- Status: EM_ANDAMENTO
+- Tentativas: 0/3
