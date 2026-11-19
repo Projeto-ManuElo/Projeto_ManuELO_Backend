@@ -56,3 +56,5 @@ Nenhum. Os 5 problemas abertos (P-002/P-019/P-021/P-023/P-027) foram concluídos
   carregadas sob demanda ao abrir/interagir, não no construtor; compressão HTTP habilitada; filtro
   `Requisições lentas` (>1,5 s) adicionado; teste vermelho `SessaoUsuarioCacheTest`. JDK/Docker ausentes neste
   ambiente: juiz e teste não executados aqui — rodar `./scripts/verificar-integracao.sh` com JDK 21.
+  Verificação local: `JAVA_HOME=~/.jdks/openjdk-26.0.2.1 ./mvnw -B -Dtest=ArquiteturaViewsTest,SessaoUsuarioCacheTest test` -> 3 testes, 0 falhas (release 21);
+  `SessaoUsuarioCacheTest` 2/2. Juiz completo ainda requer Docker/Postgres e não rodou neste ambiente.

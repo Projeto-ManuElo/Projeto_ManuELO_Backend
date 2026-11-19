@@ -394,5 +394,6 @@ Modelo de bloco (copie para cada problema):
 - Dono: front (sessão/opções), back (compressão/log), qa (testes)
 - Critério de aceite: nenhuma chamada `*Opcoes()` em construtores de view; `SessaoUsuario` revalida no máximo 1x a cada
   30 s; compressão habilitada; log de requisições > 1,5 s; navegação medida em 1-3 s.
-- Status: EM_ANDAMENTO (correções aplicadas; falta juiz com JDK 21 e medição em produção)
+- Status: EM_ANDAMENTO (correções aplicadas; teste novo verde; falta juiz completo e medição em produção)
+- Resolução parcial: SessaoUsuario com TTL de 30 s; `*Opcoes()` fora dos construtores; compressão HTTP; filtro `Requisição lenta` (commit 823c387).
 - Tentativas: 1/3
