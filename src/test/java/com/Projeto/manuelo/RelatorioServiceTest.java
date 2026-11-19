@@ -34,6 +34,11 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.lowagie.text.pdf.PdfDictionary;
+import com.lowagie.text.pdf.PdfName;
+import com.lowagie.text.pdf.PdfReader;
+import com.lowagie.text.pdf.parser.PdfTextExtractor;
+
 import com.Projeto.manuelo.servico.MovimentacaoFinanceiraService;
 import com.Projeto.manuelo.servico.RelatorioService;
 import com.Projeto.manuelo.servico.RelatorioService.Arquivo;
@@ -329,6 +334,153 @@ class RelatorioServiceTest {
 		assertThat(dois).as("listarRecentes respeita o limite")
 				.containsExactlyElementsOf(recentes.subList(0, 2));
 		assertThat(relatorios.listarRecentes(0)).isEmpty();
+	}
+
+	@Test
+	void pdfDeMovimentacaoTrazCartoesSubtotaisOrigemFavorecidoComprovanteETotais() {
+		LocalDate hoje = LocalDate.now();
+		movimentacoes.registrarEntrada("Doação", null, new BigDecimal("100.00"), hoje,
+				"Entrada design " + MARCADOR, "PIX");
+		String saida = movimentacoes.registrarSaida("MANUTENCAO", new BigDecimal("30.00"), hoje,
+				"Saída design " + MARCADOR, "BOLETO", "Fornecedor Design " + MARCADOR,
+				"comprovante-design-" + MARCADOR + ".pdf", "application/pdf", COMPROVANTE);
+		movimentacoes.estornar(saida, "Estorno design " + MARCADOR);
+
+		String id = relatorios.gerar("Movimentação", hoje.minusDays(1), hoje.plusDays(1),
+				"Todos");
+		byte[] conteudo = relatorios.baixar(id).conteudo();
+		assertThat(temImagem(conteudo)).as("cabeçalho deve conter o logo").isTrue();
+		String texto = textoPdf(conteudo);
+
+		String apenasEntradas = textoPdf(relatorios.baixar(relatorios.gerar("Movimentação",
+				hoje.minusDays(1), hoje.plusDays(1), "Entrada")).conteudo());
+		assertThat(apenasEntradas).contains("Aluguel", "Outras entradas")
+				.doesNotContain("Manutenção", "Administrativo");
+
+		assertThat(texto).contains("Fundação Manuel Cruz", "RELATÓRIO GERENCIAL",
+				"Entradas", "Saídas", "Saldo", "Registros", "Subtotais por categoria",
+				"Aluguel", "Outras entradas", "Manutenção", "Tributos", "Administrativo",
+				"Outras saídas", "Origem", "Favorecido", "Comprovante", "Sim",
+				"Estornos do período", "Justificativa", "Bruto", "Estornos", "Líquido",
+				"Página 1 de");
+		assertThat(texto).contains("Entrada design " + MARCADOR, "Saída design " + MARCADOR,
+				"Fornecedor Design " + MARCADOR, "Estorno design " + MARCADOR);
+	}
+
+	@Test
+	void relatorioDeMovimentacaoEstornoDePeriodoAnteriorNaoGravaTotalNegativo() {
+		LocalDate hoje = LocalDate.now();
+		String entrada = movimentacoes.registrarEntrada("Doação", null,
+				new BigDecimal("100.00"), hoje.minusMonths(1).withDayOfMonth(1),
+				"Entrada período anterior " + MARCADOR, "PIX");
+		movimentacoes.estornar(entrada, "Estorno período anterior " + MARCADOR);
+
+		String id = relatorios.gerar("Movimentação", hoje.withDayOfMonth(1), hoje, "Todos");
+		Map<String, Object> linha = relatorio(id);
+		assertThat((BigDecimal) linha.get("total_entradas")).isEqualByComparingTo("0");
+		assertThat((BigDecimal) linha.get("total_saidas")).isEqualByComparingTo("0");
+		assertThat((BigDecimal) linha.get("saldo")).isEqualByComparingTo("-100.00");
+		assertThat(textoPdf(relatorios.baixar(id).conteudo()))
+				.contains("Estornos do período", "-R$ 100,00");
+	}
+
+	@Test
+	void pdfDeMovimentacaoSemDadosTrazEstadoVazioETotaisZerados() {
+		String id = relatorios.gerar("Movimentação", LocalDate.of(2001, 1, 1),
+				LocalDate.of(2001, 1, 31), "Todos");
+		String texto = textoPdf(relatorios.baixar(id).conteudo());
+
+		assertThat(texto).contains("Nenhum registro no período.", "Entradas", "Saídas",
+				"Totais do período", "R$ 0,00", "Página 1 de");
+	}
+
+	@Test
+	void pdfDeContratosTrazDocumentoSituacaoEIdentidadeVisual() {
+		LocalDate hoje = LocalDate.now();
+		criarContrato(hoje.minusMonths(4).withDayOfMonth(1), hoje.plusMonths(6),
+				hoje.plusMonths(1).withDayOfMonth(1), 5);
+
+		String id = relatorios.gerar("Contratos existentes", null, null, null);
+		String texto = textoPdf(relatorios.baixar(id).conteudo());
+
+		assertThat(texto).contains("Fundação Manuel Cruz", "Documento", "Situação", "Vigente",
+				"Contratos existentes", "Página 1 de");
+	}
+
+	@Test
+	void pdfDeContratosAtrasadosEAVencerTrazemDiasEData() {
+		LocalDate hoje = LocalDate.now();
+		criarContrato(hoje.minusMonths(2).withDayOfMonth(1), hoje.plusMonths(6),
+				hoje.minusMonths(2).withDayOfMonth(1), 5);
+		criarContrato(hoje.minusMonths(2).withDayOfMonth(1), hoje.plusDays(3),
+				hoje.plusMonths(1).withDayOfMonth(1), 5);
+
+		String atrasado = textoPdf(relatorios.baixar(
+				relatorios.gerar("Contratos atrasados", null, null, null)).conteudo());
+		assertThat(atrasado).contains("Contratos atrasados", "Dias de atraso", "Vencimento",
+				"VALOR EM ATRASO");
+
+		String aVencer = textoPdf(relatorios.baixar(
+				relatorios.gerar("Contratos a vencer", null, null, null)).conteudo());
+		assertThat(aVencer).contains("Contratos a vencer", "Dias restantes", "Janela",
+				"7 dias");
+	}
+
+	@Test
+	void pdfDeMovimentacaoPaginaEContinuaCabecalhoRodape() throws IOException {
+		LocalDate hoje = LocalDate.now();
+		for (int i = 0; i < 80; i++) {
+			movimentacoes.registrarEntrada("Doação", null, new BigDecimal("10.00"), hoje,
+					"Paginação " + i + " " + MARCADOR, "PIX");
+		}
+		String id = relatorios.gerar("Movimentação", hoje.minusDays(1), hoje.plusDays(1),
+				"Todos");
+		byte[] pdf = relatorios.baixar(id).conteudo();
+		PdfReader leitor = new PdfReader(pdf);
+		try {
+			int paginas = leitor.getNumberOfPages();
+			assertThat(paginas).isGreaterThan(1);
+			assertThat(new PdfTextExtractor(leitor).getTextFromPage(1))
+					.contains("Fundação Manuel Cruz", "Página 1 de");
+			assertThat(new PdfTextExtractor(leitor).getTextFromPage(paginas))
+					.contains("Fundação Manuel Cruz", "Página " + paginas + " de " + paginas);
+		} finally {
+			leitor.close();
+		}
+	}
+
+	private boolean temImagem(byte[] pdf) {
+		try {
+			PdfReader leitor = new PdfReader(pdf);
+			try {
+				PdfDictionary recursos = leitor.getPageN(1).getAsDict(PdfName.RESOURCES);
+				PdfDictionary xobjects = recursos == null ? null
+						: recursos.getAsDict(PdfName.XOBJECT);
+				return xobjects != null && !xobjects.getKeys().isEmpty();
+			} finally {
+				leitor.close();
+			}
+		} catch (IOException ex) {
+			throw new UncheckedIOException(ex);
+		}
+	}
+
+	private String textoPdf(byte[] pdf) {
+		try {
+			PdfReader leitor = new PdfReader(pdf);
+			try {
+				StringBuilder texto = new StringBuilder();
+				for (int pagina = 1; pagina <= leitor.getNumberOfPages(); pagina++) {
+					texto.append(new PdfTextExtractor(leitor).getTextFromPage(pagina))
+							.append('\n');
+				}
+				return texto.toString().replace('\u00A0', ' ').replaceAll("\\s+", " ");
+			} finally {
+				leitor.close();
+			}
+		} catch (IOException ex) {
+			throw new UncheckedIOException(ex);
+		}
 	}
 
 	private void autenticarAdmin() {
