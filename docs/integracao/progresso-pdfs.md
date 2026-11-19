@@ -202,4 +202,8 @@ arquivos da missão. Ao final de cada PDF e no fim: `./scripts/verificar-integra
 ### 12. Estado dos commits
 
 - Plano: `ea36166 docs(relatorios): registra plano de implementação do design dos PDFs`.
-- Implementação e testes serão commitados em seguida, sem push/deploy, conforme a missão.
+- Implementação: `ca7d5fa feat(relatorios-pdf): aplica design e conteúdo aos quatro PDFs`.
+- Testes: `739a8c1 test(relatorios-pdf): cobre conteúdo, logo, estado vazio e paginação`.
+- Documentação: `0909141 docs(relatorios): registra execução do design dos PDFs`.
+- Juiz final após os commits: **8/8 etapas OK**, 101 testes, 1 skip.
+- Sem push/deploy, conforme a missão.
