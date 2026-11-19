@@ -18,9 +18,8 @@ import com.vaadin.flow.server.StreamRegistration;
 import com.vaadin.flow.server.StreamResource;
 
 import com.Projeto.manuelo.servico.DocumentoService;
+import com.Projeto.manuelo.servico.consulta.ConsultaService;
 
-import br.com.manuelo.dados.DocumentoRepositorio;
-import br.com.manuelo.dados.DocumentoRepositorio.DocumentoLista;
 import br.com.manuelo.dados.Dominio;
 
 @Route(value = "documentos", layout = MainLayout.class)
@@ -30,7 +29,7 @@ public class DocumentosView extends Div {
     private static final int LIMITE = 60;
     private static final List<String> TIPOS = List.of("Contrato", "Comprovante", "Laudo", "Cadastro");
 
-    private final DocumentoRepositorio repositorio;
+    private final ConsultaService consulta;
     private final DocumentoService documentoService;
     private final TextField nomeInquilino = UiKit.text("Nome do inquilino", "nome do inquilino, sobrenome");
     private final ComboBox<String> tipoDocumento = UiKit.select("Tipo de documento", "Todos", TIPOS);
@@ -41,10 +40,10 @@ public class DocumentosView extends Div {
     private final DocumentoDialog dialog;
     private int limite = LIMITE;
 
-    public DocumentosView(DocumentoRepositorio repositorio, DocumentoService documentoService) {
-        this.repositorio = repositorio;
+    public DocumentosView(ConsultaService consulta, DocumentoService documentoService) {
+        this.consulta = consulta;
         this.documentoService = documentoService;
-        this.dialog = new DocumentoDialog(repositorio.opcoes(), this::adicionar);
+        this.dialog = new DocumentoDialog(consulta.documentosOpcoes(), this::adicionar);
         addClassName("page");
 
         Button adicionar = UiKit.primaryIcon("Adicionar documento", VaadinIcon.PLUS, e -> dialog.abrir());
@@ -84,9 +83,9 @@ public class DocumentosView extends Div {
     private void renderizar() {
         lista.removeAll();
         paginacao.removeAll();
-        List<DocumentoLista> documentos;
+        List<ConsultaService.DocumentoLista> documentos;
         try {
-            documentos = repositorio.listar(valor(nomeInquilino.getValue()),
+            documentos = consulta.listarDocumentos(valor(nomeInquilino.getValue()),
                     valor(tipoDocumento.getValue()), valor(tipoFinanceiro.getValue()), limite + 1);
         } catch (RuntimeException ex) {
             UiKit.erro(ex.getMessage());
@@ -103,7 +102,7 @@ public class DocumentosView extends Div {
             return;
         }
 
-        for (DocumentoLista documento : documentos) {
+        for (ConsultaService.DocumentoLista documento : documentos) {
             Div icone = new Div(VaadinIcon.FILE_TEXT.create());
             icone.addClassName("doc-icon");
 
@@ -144,7 +143,7 @@ public class DocumentosView extends Div {
         }
     }
 
-    private void abrirClassificacao(DocumentoLista documento) {
+    private void abrirClassificacao(ConsultaService.DocumentoLista documento) {
         ComboBox<String> tipo = UiKit.select("Tipo de documento", "Selecione", TIPOS);
         DatePicker data = UiKit.date("Data do documento");
 
@@ -180,7 +179,7 @@ public class DocumentosView extends Div {
         modal.open();
     }
 
-    private void baixar(DocumentoLista documento) {
+    private void baixar(ConsultaService.DocumentoLista documento) {
         try {
             DocumentoService.Arquivo arquivo = documentoService.baixar(documento.id());
             StreamResource resource = new StreamResource(arquivo.nome(),

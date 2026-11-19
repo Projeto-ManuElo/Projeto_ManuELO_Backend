@@ -14,7 +14,7 @@ import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
-import br.com.manuelo.dados.ReformaRepositorio;
+import com.Projeto.manuelo.servico.consulta.ConsultaService;
 
 @Route(value = "imoveis/reformas", layout = MainLayout.class)
 @PageTitle("Histórico de reformas")
@@ -22,26 +22,26 @@ public class ReformasView extends Div implements BeforeEnterObserver {
 
     private static final DateTimeFormatter DATA_ANO = DateTimeFormatter.ofPattern("dd MMM yyyy", UiKit.PT_BR);
 
-    private final ReformaRepositorio repositorio;
-    private final List<ReformaRepositorio.ImovelInfo> imoveis;
-    private final ComboBox<ReformaRepositorio.ImovelInfo> seletor = new ComboBox<>("Imóvel");
+    private final ConsultaService consulta;
+    private final List<ConsultaService.ReformaImovel> imoveis;
+    private final ComboBox<ConsultaService.ReformaImovel> seletor = new ComboBox<>("Imóvel");
     private final Span subtitulo = new Span();
-    private ReformaRepositorio.ImovelInfo imovel;
+    private ConsultaService.ReformaImovel imovel;
     private List<Modelos.Reforma> reformas;
     private final Div tabela = new Div();
     private final ReformaDialog dialog;
 
-    public ReformasView(ReformaRepositorio repositorio) {
-        this.repositorio = repositorio;
+    public ReformasView(ConsultaService consulta) {
+        this.consulta = consulta;
         this.dialog = new ReformaDialog(this::adicionar);
         addClassName("page");
 
-        this.imoveis = repositorio.listarImoveis();
+        this.imoveis = consulta.reformasImoveis();
         this.imovel = imoveis.isEmpty() ? null : imoveis.get(0);
-        this.reformas = imovel == null ? List.of() : repositorio.listar(imovel.id());
+        this.reformas = imovel == null ? List.of() : consulta.listarReformas(imovel.id());
 
         seletor.setItems(imoveis);
-        seletor.setItemLabelGenerator(ReformaRepositorio.ImovelInfo::endereco);
+        seletor.setItemLabelGenerator(ConsultaService.ReformaImovel::endereco);
         seletor.setPlaceholder("Selecione o imóvel");
         seletor.setWidth("320px");
         seletor.addValueChangeListener(event -> {
@@ -66,9 +66,9 @@ public class ReformasView extends Div implements BeforeEnterObserver {
         renderizar();
     }
 
-    private void selecionar(ReformaRepositorio.ImovelInfo selecionado) {
+    private void selecionar(ConsultaService.ReformaImovel selecionado) {
         this.imovel = selecionado;
-        this.reformas = repositorio.listar(selecionado.id());
+        this.reformas = consulta.listarReformas(selecionado.id());
         atualizarSubtitulo();
         renderizar();
     }
@@ -134,10 +134,10 @@ public class ReformasView extends Div implements BeforeEnterObserver {
         }
         try {
             UiKit.ArquivoSelecionado comprovante = reforma.comprovante();
-            repositorio.salvarComComprovante(imovel.id(), reforma.data(), reforma.descricao(),
+            consulta.registrarReforma(imovel.id(), reforma.data(), reforma.descricao(),
                     reforma.valor(), reforma.formaPagamento(), comprovante.nome(),
                     comprovante.mime(), comprovante.conteudo());
-            reformas = repositorio.listar(imovel.id());
+            reformas = consulta.listarReformas(imovel.id());
             renderizar();
             UiKit.aviso("Registro de reforma adicionado.");
         } catch (RuntimeException ex) {

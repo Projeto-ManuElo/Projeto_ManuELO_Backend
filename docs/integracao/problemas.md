@@ -1,6 +1,6 @@
 # Registro de problemas (o mapeador cria; o líder mantém o status)
 
-Resumo: total 27 | abertos 5 | em correção 0 | em revisão 0 | resolvidos 22 | bloqueados 0
+Resumo: total 27 | abertos 0 | em correção 0 | em revisão 0 | resolvidos 27 | bloqueados 0
 
 Modelo de bloco (copie para cada problema):
 
@@ -25,7 +25,8 @@ Modelo de bloco (copie para cada problema):
 - Reprodução: `grep -rn "@Service" src ui --include=*.java`; inspecionar construtores das views.
 - Dono: back (serviços) + front (religar views)
 - Critério de aceite: views dependem apenas de serviços; serviços `@Transactional`; repositórios usados só por serviços; teste que falha se uma view injetar repositório.
-- Status: ABERTO
+- Status: RESOLVIDO
+- Resolução: `ConsultaService` (`src/main/java/com/Projeto/manuelo/servico/consulta`) encapsula os repositórios JDBC; views/dialogs passaram a depender apenas de serviços; `ArquiteturaViewsTest` falha se `*Repositorio` reaparecer na UI.
 - Tentativas: 0/3
 - Commit:
 
@@ -245,7 +246,8 @@ Modelo de bloco (copie para cada problema):
 - Reprodução: `grep -n "extends JpaRepository" src/main/java/com/Projeto/manuelo/dominio/repositorio/*.java`.
 - Dono: back
 - Critério de aceite: interface mínima de escrita (insert/find) para os agregados imutáveis; teste garante que não há update/delete exposto.
-- Status: ABERTO
+- Status: RESOLVIDO
+- Resolução: `InsercaoSomente`/`InsercaoSomenteImpl` com `EntityManager.persist`; os 5 repositórios imutáveis só expõem insert/find; `RoundTripEntidadesTest` valida a API.
 - Tentativas: 0/3
 - Commit:
 
@@ -270,7 +272,8 @@ Modelo de bloco (copie para cada problema):
 - Reprodução: `grep -n "INSERT INTO usuarios" ui/.../AutenticacaoService.java`.
 - Dono: back + front
 - Critério de aceite: cadastro via serviço JPA transacional e teste com novo contexto Spring lendo o registro.
-- Status: ABERTO
+- Status: RESOLVIDO
+- Resolução: `CadastroUsuarioService` JPA transacional; `AutenticacaoService` JDBC removido; `CadastroUsuarioPersistenciaTest` grava, reinicia o contexto e lê de volta.
 - Tentativas: 0/3
 - Commit:
 
@@ -295,7 +298,8 @@ Modelo de bloco (copie para cada problema):
 - Reprodução: revisão de `RecuperacaoSenhaService.java:60-115`.
 - Dono: back
 - Critério de aceite: envio após commit (ou outbox) e lock/constraint que garanta um único token pendente por usuário.
-- Status: ABERTO
+- Status: RESOLVIDO
+- Resolução: `findByEmailIgnoreCaseForUpdate` com lock pessimista + entrega em `afterCommit`; testes de after-commit e concorrência em `RecuperacaoSenhaTest`.
 - Tentativas: 0/3
 - Commit:
 
@@ -346,7 +350,7 @@ Modelo de bloco (copie para cada problema):
 - Reprodução: editar inquilino e tentar alterar fiador/imóvel; filtrar no banco; forçar EXCLUDE de contrato.
 - Dono: front + qa
 - Critério de aceite: filtros via SQL; edição do vínculo/fiador suportada ou campos ocultos; teste de rollback pós-INSERT.
-- Status: ABERTO
-- Resolução parcial: A-90 entregou filtros SQL e edição de fiador/imóvel/aluguel/dia/caução; falta teste de rollback pós-INSERT.
+- Status: RESOLVIDO
+- Resolução: A-90 entregou filtros SQL e edição; `InquilinoCadastroTest` cobre rollback após INSERT com trigger temporária.
 - Tentativas: 0/3
-- Commit: be15137
+- Commit: be15137 (A-90); teste de rollback nesta rodada (não commitado)

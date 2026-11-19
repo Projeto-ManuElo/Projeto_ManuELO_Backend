@@ -15,10 +15,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
 import com.Projeto.manuelo.servico.DocumentoService;
-
-import br.com.manuelo.dados.ContratoRepositorio;
-import br.com.manuelo.dados.ImovelRepositorio;
-import br.com.manuelo.dados.ReformaRepositorio;
+import com.Projeto.manuelo.servico.consulta.ConsultaService;
 
 @Route(value = "imoveis", layout = MainLayout.class)
 @PageTitle("Imóveis")
@@ -26,10 +23,8 @@ public class ImoveisView extends Div implements BeforeEnterObserver {
 
     private static final int PAGINA = 30;
 
-    private final ImovelRepositorio repositorio;
-    private final ContratoRepositorio contratos;
+    private final ConsultaService consulta;
     private final DocumentoService documentoService;
-    private final ReformaRepositorio reformas;
     private final TextField endereco = UiKit.text("Endereço", "Rua, número, bairro");
     private final ComboBox<String> tipo = UiKit.select("Tipo", "Todos",
             List.of("Apartamento", "Casa", "Comercial", "Terreno"));
@@ -41,12 +36,9 @@ public class ImoveisView extends Div implements BeforeEnterObserver {
     private final ImovelDialog dialog;
     private int limite = PAGINA;
 
-    public ImoveisView(ImovelRepositorio repositorio, ContratoRepositorio contratos,
-            DocumentoService documentoService, ReformaRepositorio reformas) {
-        this.repositorio = repositorio;
-        this.contratos = contratos;
+    public ImoveisView(ConsultaService consulta, DocumentoService documentoService) {
+        this.consulta = consulta;
         this.documentoService = documentoService;
-        this.reformas = reformas;
         addClassName("page");
         dialog = new ImovelDialog(this::salvarImovel);
 
@@ -118,7 +110,7 @@ public class ImoveisView extends Div implements BeforeEnterObserver {
         paginacao.removeAll();
         tabela.add(UiKit.tableHead("cols-imoveis", "Endereço", "Tipo", "Inquilino", "Status"));
 
-        List<Modelos.Imovel> filtrados = repositorio.listar(
+        List<Modelos.Imovel> filtrados = consulta.listarImoveis(
                 endereco.getValue(), tipo.getValue(), status.getValue(), inquilino.getValue(),
                 limite + 1);
         boolean temMais = filtrados.size() > limite;
@@ -140,7 +132,7 @@ public class ImoveisView extends Div implements BeforeEnterObserver {
                             : new Span(imovel.inquilino()),
                     UiKit.badge(imovel.status()));
             linha.addClassName("clickable");
-            linha.addClickListener(e -> new ImovelDetalheDialog(imovel, contratos, reformas,
+            linha.addClickListener(e -> new ImovelDetalheDialog(imovel, consulta,
                     this::editarImovel).open());
             tabela.add(linha);
         }
@@ -162,7 +154,7 @@ public class ImoveisView extends Div implements BeforeEnterObserver {
     private void salvarImovel(ImovelDialog.DadosImovel dados) {
         String id;
         try {
-            id = repositorio.salvar(new ImovelRepositorio.Dados(dados.id(), dados.logradouro(),
+            id = consulta.salvarImovel(new ConsultaService.ImovelDados(dados.id(), dados.logradouro(),
                     dados.numero(), dados.complemento(), dados.bairro(), dados.cidade(), dados.uf(),
                     dados.cep(), dados.tipo(), dados.status()));
         } catch (RuntimeException ex) {

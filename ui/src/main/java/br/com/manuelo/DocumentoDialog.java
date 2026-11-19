@@ -14,12 +14,12 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.upload.Upload;
 
-import br.com.manuelo.dados.DocumentoRepositorio;
+import com.Projeto.manuelo.servico.consulta.ConsultaService;
 
 public class DocumentoDialog extends Dialog {
 
     public record DadosDocumento(String nome, String tipo, LocalDate data,
-            DocumentoRepositorio.Opcao vinculo, String nomeArquivo, String mime, byte[] conteudo) {
+            ConsultaService.DocumentoOpcao vinculo, String nomeArquivo, String mime, byte[] conteudo) {
     }
 
     private final Consumer<DadosDocumento> aoSalvar;
@@ -28,15 +28,15 @@ public class DocumentoDialog extends Dialog {
     private final ComboBox<String> tipo = UiKit.select("Tipo de documento", "Selecione",
             List.of("Contrato", "Comprovante", "Laudo", "Cadastro", "Nota fiscal"));
     private final DatePicker data = UiKit.date("Data do documento");
-    private final ComboBox<DocumentoRepositorio.Opcao> vinculo;
+    private final ComboBox<ConsultaService.DocumentoOpcao> vinculo;
     private final Upload arquivoUpload;
     private UiKit.ArquivoSelecionado arquivo;
 
-    public DocumentoDialog(List<DocumentoRepositorio.Opcao> vinculos, Consumer<DadosDocumento> aoSalvar) {
+    public DocumentoDialog(List<ConsultaService.DocumentoOpcao> vinculos, Consumer<DadosDocumento> aoSalvar) {
         this.aoSalvar = aoSalvar;
         vinculo = new ComboBox<>("Vincular a");
         vinculo.setItems(vinculos);
-        vinculo.setItemLabelGenerator(DocumentoRepositorio.Opcao::rotulo);
+        vinculo.setItemLabelGenerator(ConsultaService.DocumentoOpcao::rotulo);
         vinculo.setPlaceholder("Imóvel, inquilino, contrato ou movimentação");
         vinculo.setWidthFull();
         vinculo.setAllowCustomValue(false);

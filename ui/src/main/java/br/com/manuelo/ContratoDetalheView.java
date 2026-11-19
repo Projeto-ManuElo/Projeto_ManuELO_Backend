@@ -28,11 +28,7 @@ import com.Projeto.manuelo.servico.CaucaoService;
 import com.Projeto.manuelo.servico.ContratoCadastroService;
 import com.Projeto.manuelo.servico.DocumentoService;
 import com.Projeto.manuelo.servico.PagamentoAluguelService;
-
-import br.com.manuelo.dados.ContratoRepositorio;
-import br.com.manuelo.dados.DocumentoRepositorio;
-import br.com.manuelo.dados.DocumentoRepositorio.DocumentoVinculo;
-import br.com.manuelo.dados.ImovelRepositorio;
+import com.Projeto.manuelo.servico.consulta.ConsultaService;
 
 @Route(value = "contratos/detalhe", layout = MainLayout.class)
 @PageTitle("Detalhes do contrato")
@@ -41,26 +37,23 @@ public class ContratoDetalheView extends Div implements BeforeEnterObserver {
     private static final DateTimeFormatter DATA = DateTimeFormatter.ofPattern("dd/MM/yyyy",
             Locale.forLanguageTag("pt-BR"));
 
-    private final ContratoRepositorio repositorio;
+    private final ConsultaService consulta;
     private final ContratoCadastroService cadastro;
     private final PagamentoAluguelService pagamentos;
-    private final DocumentoRepositorio documentos;
     private final DocumentoService documentoService;
     private final CaucaoService caucao;
     private final ContratoDialog novoContrato;
-    private ContratoRepositorio.Detalhe contrato;
+    private ConsultaService.ContratoDetalhe contrato;
 
-    public ContratoDetalheView(ContratoRepositorio repositorio, ContratoCadastroService cadastro,
-            PagamentoAluguelService pagamentos, ImovelRepositorio imoveis,
-            DocumentoRepositorio documentos, DocumentoService documentoService,
+    public ContratoDetalheView(ConsultaService consulta, ContratoCadastroService cadastro,
+            PagamentoAluguelService pagamentos, DocumentoService documentoService,
             CaucaoService caucao) {
-        this.repositorio = repositorio;
+        this.consulta = consulta;
         this.cadastro = cadastro;
         this.pagamentos = pagamentos;
-        this.documentos = documentos;
         this.documentoService = documentoService;
         this.caucao = caucao;
-        this.novoContrato = new ContratoDialog(imoveis.opcoes(), this::criarContrato);
+        this.novoContrato = new ContratoDialog(consulta.imoveisOpcoes(), this::criarContrato);
         addClassName("page");
     }
 
@@ -68,11 +61,11 @@ public class ContratoDetalheView extends Div implements BeforeEnterObserver {
     public void beforeEnter(BeforeEnterEvent event) {
         String id = event.getLocation().getQueryParameters().getParameters()
                 .getOrDefault("id", List.of()).stream().findFirst().orElse("");
-        contrato = id.isBlank() ? null : repositorio.buscar(id);
+        contrato = id.isBlank() ? null : consulta.buscarContrato(id);
         if (contrato == null) {
-            List<Modelos.Contrato> todos = repositorio.listar();
+            List<Modelos.Contrato> todos = consulta.listarContratos();
             if (!todos.isEmpty()) {
-                contrato = repositorio.buscar(todos.get(0).id());
+                contrato = consulta.buscarContrato(todos.get(0).id());
             }
         }
         renderizar();
@@ -114,7 +107,7 @@ public class ContratoDetalheView extends Div implements BeforeEnterObserver {
     }
 
     private void atualizar() {
-        contrato = repositorio.buscar(contrato.id());
+        contrato = consulta.buscarContrato(contrato.id());
         renderizar();
     }
 
@@ -162,11 +155,11 @@ public class ContratoDetalheView extends Div implements BeforeEnterObserver {
         Div card = UiKit.card();
         card.add(UiKit.cardHeader("Contrato referente", null));
 
-        List<DocumentoVinculo> anexos = documentos.listarPorVinculo("CONTRATO", contrato.id());
+        List<ConsultaService.DocumentoVinculo> anexos = consulta.documentosPorVinculo("CONTRATO", contrato.id());
         if (anexos.isEmpty()) {
             card.add(UiKit.muted("Nenhum documento anexado a este contrato."));
         } else {
-            for (DocumentoVinculo anexo : anexos) {
+            for (ConsultaService.DocumentoVinculo anexo : anexos) {
                 card.add(UiKit.secondary("Baixar " + anexo.nomeArquivo(), e -> baixar(anexo)));
             }
         }
@@ -286,7 +279,7 @@ public class ContratoDetalheView extends Div implements BeforeEnterObserver {
         modal.open();
     }
 
-    private void baixar(DocumentoVinculo documento) {
+    private void baixar(ConsultaService.DocumentoVinculo documento) {
         try {
             DocumentoService.Arquivo arquivo = documentoService.baixar(documento.id());
             StreamResource resource = new StreamResource(arquivo.nome(),

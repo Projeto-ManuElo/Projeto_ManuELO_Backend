@@ -189,6 +189,52 @@ class InquilinoCadastroTest {
 	}
 
 	@Test
+	void falhaDepoisDosInsertsReverteInquilinoFiadorContratoECaucao() {
+		UUID imovelId = inserirImovelVago();
+		String nome = nomeUnico("InquilinoRollback");
+		String documento = cpfValido();
+		String documentoFiador = cpfValido();
+
+		jdbc.execute("DROP TRIGGER IF EXISTS qa_a21_falha_caucao ON caucao_movimentacoes");
+		jdbc.execute("DROP FUNCTION IF EXISTS qa_a21_falha_caucao()");
+		jdbc.execute("""
+				CREATE FUNCTION qa_a21_falha_caucao() RETURNS trigger AS $$
+				BEGIN
+				  RAISE EXCEPTION 'falha simulada depois dos INSERTs';
+				END;
+				$$ LANGUAGE plpgsql
+				""");
+		jdbc.execute("""
+				CREATE TRIGGER qa_a21_falha_caucao
+				BEFORE INSERT ON caucao_movimentacoes
+				FOR EACH ROW EXECUTE FUNCTION qa_a21_falha_caucao()
+				""");
+		try {
+			assertThatThrownBy(() -> comSavepoint(() -> service.salvar(dados(null, nome, documento,
+					emailUnico("rollback"), "79999999999", nomeUnico("FiadorRollback"),
+					documentoFiador, emailUnico("fiador-rollback"), imovelId,
+					new BigDecimal("1500.00"), 5, new BigDecimal("3000.00"), null))))
+					.as("a falha no depósito de caução deve abortar a transação inteira")
+					.isInstanceOf(RuntimeException.class);
+		} finally {
+			jdbc.execute("DROP TRIGGER IF EXISTS qa_a21_falha_caucao ON caucao_movimentacoes");
+			jdbc.execute("DROP FUNCTION IF EXISTS qa_a21_falha_caucao()");
+		}
+
+		assertThat(contar("SELECT count(*) FROM inquilinos WHERE documento = ?", documento))
+				.as("o inquilino inserido antes da falha deve ser revertido").isZero();
+		assertThat(contar("SELECT count(*) FROM fiadores WHERE documento = ?", documentoFiador))
+				.as("o fiador inserido antes da falha deve ser revertido").isZero();
+		assertThat(contar("SELECT count(*) FROM contratos WHERE imovel_id = ?", imovelId))
+				.as("o contrato inserido antes da falha deve ser revertido").isZero();
+		assertThat(contar("""
+				SELECT count(*) FROM caucao_movimentacoes c
+				 JOIN contratos ct ON ct.id = c.contrato_id
+				 WHERE ct.imovel_id = ?
+				""", imovelId)).as("nenhum depósito pode permanecer").isZero();
+	}
+
+	@Test
 	void cpfInvalidoRecusaSemPersistirNada() {
 		UUID imovelId = inserirImovelVago();
 		String nome = nomeUnico("InquilinoCpfInvalido");

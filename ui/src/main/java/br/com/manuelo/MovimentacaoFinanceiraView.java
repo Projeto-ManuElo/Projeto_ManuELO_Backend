@@ -26,12 +26,9 @@ import com.Projeto.manuelo.servico.MovimentacaoFinanceiraService;
 import com.Projeto.manuelo.servico.MovimentacaoFinanceiraService.ExtratoItem;
 import com.Projeto.manuelo.servico.MovimentacaoFinanceiraService.Resumo;
 import com.Projeto.manuelo.servico.RelatorioService;
+import com.Projeto.manuelo.servico.consulta.ConsultaService;
 
-import br.com.manuelo.dados.ContratoRepositorio;
-import br.com.manuelo.dados.DocumentoRepositorio;
-import br.com.manuelo.dados.DocumentoRepositorio.DocumentoVinculo;
 import br.com.manuelo.dados.Dominio;
-import br.com.manuelo.dados.ImovelRepositorio;
 import br.com.manuelo.dados.SessaoUsuario;
 
 @Route(value = "movimentacao-financeira", layout = MainLayout.class)
@@ -46,14 +43,14 @@ public class MovimentacaoFinanceiraView extends Div {
 
     private final MovimentacaoFinanceiraService servico;
     private final RelatorioService relatorios;
-    private final DocumentoRepositorio documentos;
+    private final ConsultaService consulta;
     private final DocumentoService documentoService;
     private final Map<String, String> contratosPorRotulo = new LinkedHashMap<>();
 
     private final ComboBox<String> categoria = UiKit.select("Categoria", "Selecione uma categoria",
             CATEGORIAS_ENTRADA);
     private final ComboBox<String> contrato = UiKit.select("Contrato", "Selecione o contrato", List.of());
-    private final ComboBox<ImovelRepositorio.Opcao> imovel = new ComboBox<>("Imóvel");
+    private final ComboBox<ConsultaService.ImovelOpcao> imovel = new ComboBox<>("Imóvel");
     private final DatePicker competencia = UiKit.date("Competência");
     private final ComboBox<String> forma = UiKit.select("Forma de pagamento", "Selecione a forma de pagamento",
             FORMAS);
@@ -77,25 +74,24 @@ public class MovimentacaoFinanceiraView extends Div {
     private UiKit.ArquivoSelecionado comprovante;
 
     public MovimentacaoFinanceiraView(MovimentacaoFinanceiraService servico,
-            RelatorioService relatorios, ContratoRepositorio contratoRepositorio,
-            ImovelRepositorio imovelRepositorio, DocumentoRepositorio documentos,
+            RelatorioService relatorios, ConsultaService consulta,
             DocumentoService documentoService, SessaoUsuario sessao) {
         this.servico = servico;
         this.relatorios = relatorios;
-        this.documentos = documentos;
+        this.consulta = consulta;
         this.documentoService = documentoService;
         this.administrador = sessao.administrador();
         addClassName("page");
 
-        imovel.setItems(imovelRepositorio.opcoes());
-        imovel.setItemLabelGenerator(ImovelRepositorio.Opcao::rotulo);
+        imovel.setItems(consulta.imoveisOpcoes());
+        imovel.setItemLabelGenerator(ConsultaService.ImovelOpcao::rotulo);
         imovel.setPlaceholder("Selecione o imóvel");
         imovel.setWidthFull();
         imovel.setClearButtonVisible(true);
         imovel.setVisible(false);
         competencia.setVisible(false);
 
-        for (ContratoRepositorio.Opcao opcao : contratoRepositorio.opcoes()) {
+        for (ConsultaService.ContratoOpcao opcao : consulta.contratosOpcoes()) {
             contratosPorRotulo.put(opcao.rotulo(), opcao.id());
         }
         contrato.setItems(contratosPorRotulo.keySet());
@@ -416,15 +412,15 @@ public class MovimentacaoFinanceiraView extends Div {
     }
 
     private Div comprovante(ExtratoItem item) {
-        List<DocumentoVinculo> anexos = documentos.listarPorVinculo("MOVIMENTACAO", item.id());
+        List<ConsultaService.DocumentoVinculo> anexos = consulta.documentosPorVinculo("MOVIMENTACAO", item.id());
         if (anexos.isEmpty()) {
             return new Div();
         }
-        DocumentoVinculo anexo = anexos.get(0);
+        ConsultaService.DocumentoVinculo anexo = anexos.get(0);
         return new Div(UiKit.tertiary("Comprovante", e -> baixar(anexo)));
     }
 
-    private void baixar(DocumentoVinculo documento) {
+    private void baixar(ConsultaService.DocumentoVinculo documento) {
         try {
             DocumentoService.Arquivo arquivo = documentoService.baixar(documento.id());
             StreamResource resource = new StreamResource(arquivo.nome(),

@@ -19,9 +19,9 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.upload.Upload;
 
 import com.Projeto.manuelo.servico.ContratoCadastroService;
+import com.Projeto.manuelo.servico.consulta.ConsultaService;
 
 import br.com.manuelo.dados.Dominio;
-import br.com.manuelo.dados.ImovelRepositorio;
 
 public class ContratoDialog extends Dialog {
 
@@ -42,7 +42,7 @@ public class ContratoDialog extends Dialog {
 
     private final Consumer<DadosContrato> aoSalvar;
     private final Span titulo = new Span("Novo contrato");
-    private final ComboBox<ImovelRepositorio.Opcao> imovel = new ComboBox<>("Imóvel existente");
+    private final ComboBox<ConsultaService.ImovelOpcao> imovel = new ComboBox<>("Imóvel existente");
     private final TextField endereco = UiKit.text("Endereço", "Ex: Ap 302. Ed. Aurora");
     private final TextField nome = UiKit.text("Nome", "Ex: João Miguel Oliveira dos Santos");
     private final TextField cpf = UiKit.text("CPF", "Ex: 074.xxx.39-xy");
@@ -62,11 +62,11 @@ public class ContratoDialog extends Dialog {
     private final Upload contratoUpload;
     private UiKit.ArquivoSelecionado arquivo;
 
-    public ContratoDialog(List<ImovelRepositorio.Opcao> imoveis, Consumer<DadosContrato> aoSalvar) {
+    public ContratoDialog(List<ConsultaService.ImovelOpcao> imoveis, Consumer<DadosContrato> aoSalvar) {
         this.aoSalvar = aoSalvar;
 
         imovel.setItems(imoveis == null ? List.of() : imoveis);
-        imovel.setItemLabelGenerator(ImovelRepositorio.Opcao::rotulo);
+        imovel.setItemLabelGenerator(ConsultaService.ImovelOpcao::rotulo);
         imovel.setPlaceholder("Selecione o imóvel");
         imovel.setWidthFull();
         imovel.setClearButtonVisible(true);

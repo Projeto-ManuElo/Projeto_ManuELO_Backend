@@ -29,12 +29,12 @@ import com.Projeto.manuelo.dominio.enums.StatusUsuario;
 import com.Projeto.manuelo.dominio.repositorio.UsuarioJpaRepository;
 import com.Projeto.manuelo.seguranca.UsuarioAdminService;
 
-import br.com.manuelo.dados.AutenticacaoService;
+import com.Projeto.manuelo.seguranca.CadastroUsuarioService;
 
 /**
  * A-11 (cadastro real) e A-12 (gestão de usuários/perfil) contra o Postgres real.
  *
- * A-11 prova que {@link AutenticacaoService#cadastrar} grava PENDENTE_APROVACAO/COLABORADOR
+ * A-11 prova que {@link CadastroUsuarioService#cadastrar} grava PENDENTE_APROVACAO/COLABORADOR
  * com hash BCrypt e recusa e-mail repetido (índice único em lower(email)).
  * A-12 prova {@link UsuarioAdminService}: listagem com pendentes primeiro, aprovação com
  * aprovado_por/em, alteração de perfil auditada, inativação (sem auto-inativação) e o
@@ -57,7 +57,7 @@ class CadastroUsuariosTest {
 	private UsuarioJpaRepository usuarios;
 
 	@Autowired
-	private AutenticacaoService autenticacao;
+	private CadastroUsuarioService autenticacao;
 
 	@Autowired
 	private UsuarioAdminService adminService;

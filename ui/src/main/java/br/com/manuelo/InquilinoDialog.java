@@ -14,8 +14,7 @@ import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.upload.Upload;
 
-import br.com.manuelo.dados.ImovelRepositorio;
-import br.com.manuelo.dados.InquilinoRepositorio;
+import com.Projeto.manuelo.servico.consulta.ConsultaService;
 
 public class InquilinoDialog extends Dialog {
 
@@ -26,7 +25,7 @@ public class InquilinoDialog extends Dialog {
     }
 
     private final Consumer<DadosInquilino> aoSalvar;
-    private final List<ImovelRepositorio.Opcao> imoveis;
+    private final List<ConsultaService.ImovelOpcao> imoveis;
     private final Span titulo = new Span("Adicionar Inquilino");
     private final TextField nome = UiKit.text("Nome", "Ex: João Miguel Oliveira de Souza");
     private final TextField cpf = UiKit.text("CPF", "ex: 123.xxx.xxx.123");
@@ -34,7 +33,7 @@ public class InquilinoDialog extends Dialog {
     private final TextField nomeFiador = UiKit.text("Nome do fiador", "Ex: João Miguel Oliveira de Souza");
     private final TextField cpfFiador = UiKit.text("CPF do fiador", "ex: 123.xxx.xxx.123");
     private final EmailField emailFiador = UiKit.email("Email do fiador", "ex: jteste@gmail.com");
-    private final ComboBox<ImovelRepositorio.Opcao> imovel;
+    private final ComboBox<ConsultaService.ImovelOpcao> imovel;
     private final TextField telefone = UiKit.text("Telefone", "Ex: (11) 99999-9999");
     private final TextField valorAluguel = UiKit.text("Valor do aluguel", "R$ 0,00");
     private final TextField diaVencimento = UiKit.text("Dia de vencimento", "Ex: 5");
@@ -46,12 +45,12 @@ public class InquilinoDialog extends Dialog {
 
     private String idAtual;
 
-    public InquilinoDialog(List<ImovelRepositorio.Opcao> imoveis, Consumer<DadosInquilino> aoSalvar) {
+    public InquilinoDialog(List<ConsultaService.ImovelOpcao> imoveis, Consumer<DadosInquilino> aoSalvar) {
         this.aoSalvar = aoSalvar;
         this.imoveis = imoveis == null ? List.of() : List.copyOf(imoveis);
         imovel = new ComboBox<>("Imóvel vinculado");
         imovel.setItems(this.imoveis);
-        imovel.setItemLabelGenerator(ImovelRepositorio.Opcao::rotulo);
+        imovel.setItemLabelGenerator(ConsultaService.ImovelOpcao::rotulo);
         imovel.setPlaceholder("Selecione o imóvel");
         imovel.setWidthFull();
         addClassName("modal");
@@ -120,7 +119,7 @@ public class InquilinoDialog extends Dialog {
         open();
     }
 
-    public void abrirEdicao(Modelos.Inquilino inquilino, InquilinoRepositorio.DadosEdicao detalhe) {
+    public void abrirEdicao(Modelos.Inquilino inquilino, ConsultaService.InquilinoDadosEdicao detalhe) {
         idAtual = inquilino.id();
         titulo.setText("Editar Inquilino");
         nome.setValue(inquilino.nome());

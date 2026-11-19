@@ -13,20 +13,19 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.textfield.TextField;
 
-import br.com.manuelo.dados.ContratoRepositorio;
-
 import com.Projeto.manuelo.servico.PagamentoAluguelService;
+import com.Projeto.manuelo.servico.consulta.ConsultaService;
 
 public class PagarAluguelDialog extends Dialog {
 
-    private final ContratoRepositorio.Detalhe contrato;
+    private final ConsultaService.ContratoDetalhe contrato;
     private final PagamentoAluguelService pagamentos;
     private final Runnable atualizar;
     private final TextField valor;
     private final ComboBox<String> forma;
     private final DatePicker competencia;
 
-    public PagarAluguelDialog(ContratoRepositorio.Detalhe contrato, PagamentoAluguelService pagamentos,
+    public PagarAluguelDialog(ConsultaService.ContratoDetalhe contrato, PagamentoAluguelService pagamentos,
             Runnable atualizar) {
         this.contrato = contrato;
         this.pagamentos = pagamentos;

@@ -12,6 +12,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,12 +33,12 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.Projeto.manuelo.seguranca.EnvioTokenSenha;
 import com.Projeto.manuelo.seguranca.RecuperacaoSenhaService;
 
-import jakarta.persistence.EntityManager;
 
 /**
  * A-13 (DEC-I05): recuperação/redefinição de senha por token.
@@ -45,14 +50,13 @@ import jakarta.persistence.EntityManager;
  * hash BCrypt uma única vez e recusa token inexistente, expirado, já usado, senha
  * curta e usuário não ATIVO.
  *
- * O teste é vermelho enquanto o serviço e a interface de entrega não existirem. O
- * bean de captura abaixo substitui a entrega real (SMTP/log) e guarda os tokens em
- * memória para as asserções. A transação de teste é revertida ao final, de modo que
- * os tokens criados não precisam (nem podem) ser apagados por causa do trigger.
+ * O bean de captura abaixo substitui a entrega real (SMTP/log) e guarda os tokens
+ * em memória para as asserções. Os testes não usam transação de teste porque a
+ * entrega deve ocorrer somente após o commit; os tokens são imutáveis e permanecem
+ * no banco, com e-mails únicos por execução.
  */
 @SpringBootTest
 @ActiveProfiles("test")
-@Transactional
 @Import(RecuperacaoSenhaTest.CapturaEnvioConfig.class)
 class RecuperacaoSenhaTest {
 
@@ -72,10 +76,10 @@ class RecuperacaoSenhaTest {
 	private PasswordEncoder passwordEncoder;
 
 	@Autowired
-	private AuthenticationManager authenticationManager;
+	private PlatformTransactionManager transactionManager;
 
 	@Autowired
-	private EntityManager entityManager;
+	private AuthenticationManager authenticationManager;
 
 	@BeforeEach
 	void limparEntregas() {
@@ -131,6 +135,46 @@ class RecuperacaoSenhaTest {
 		assertThat(segundosAteExpirar)
 				.as("expira_em deve ficar em ~1 hora")
 				.isBetween(3500.0, 3700.0);
+	}
+
+	@Test
+	void entregaSomenteDepoisDoCommitDaTransacao() {
+		UsuarioCriado usuario = criarUsuario("ATIVO");
+		TransactionTemplate transacao = new TransactionTemplate(transactionManager);
+
+		transacao.executeWithoutResult(status -> {
+			recuperacao.solicitar(usuario.email());
+			assertThat(capturaEnvio.totalPara(usuario.email()))
+					.as("o token não pode ser entregue antes do commit")
+					.isZero();
+		});
+
+		assertThat(capturaEnvio.totalPara(usuario.email()))
+				.as("o token deve ser entregue uma vez após o commit")
+				.isEqualTo(1);
+	}
+
+	@Test
+	void solicitacoesConcorrentesMantemUmUnicoTokenPendente() throws Exception {
+		UsuarioCriado usuario = criarUsuario("ATIVO");
+		ExecutorService executor = Executors.newFixedThreadPool(2);
+		CountDownLatch inicio = new CountDownLatch(1);
+		try {
+			Future<?> primeira = executor.submit(() -> solicitarApos(inicio, usuario.email()));
+			Future<?> segunda = executor.submit(() -> solicitarApos(inicio, usuario.email()));
+			inicio.countDown();
+			primeira.get(15, TimeUnit.SECONDS);
+			segunda.get(15, TimeUnit.SECONDS);
+		} finally {
+			executor.shutdownNow();
+		}
+
+		assertThat(contarTokensPendentes(usuario.id()))
+				.as("o lock por usuário deve deixar apenas um token pendente")
+				.isEqualTo(1);
+		assertThat(capturaEnvio.totalPara(usuario.email()))
+				.as("cada solicitação concluída deve entregar seu token")
+				.isEqualTo(2);
 	}
 
 	@Test
@@ -375,6 +419,13 @@ class RecuperacaoSenhaTest {
 				Integer.class, usuarioId);
 	}
 
+	private int contarTokensPendentes(UUID usuarioId) {
+		return jdbc.queryForObject("""
+				SELECT count(*) FROM tokens_redefinicao_senha
+				 WHERE usuario_id = ? AND usado_em IS NULL
+				""", Integer.class, usuarioId);
+	}
+
 	private long contarTodosTokens() {
 		return jdbc.queryForObject("SELECT count(*) FROM tokens_redefinicao_senha", Long.class);
 	}
@@ -397,7 +448,17 @@ class RecuperacaoSenhaTest {
 	 * leituras JDBC de asserção dentro da mesma transação de teste.
 	 */
 	private void sincronizar() {
-		entityManager.flush();
+		// As chamadas do serviço agora commitam antes da entrega; não há flush manual.
+	}
+
+	private void solicitarApos(CountDownLatch inicio, String email) {
+		try {
+			inicio.await();
+		} catch (InterruptedException ex) {
+			Thread.currentThread().interrupt();
+			return;
+		}
+		recuperacao.solicitar(email);
 	}
 
 	private static String sha256Hex(String valor) {

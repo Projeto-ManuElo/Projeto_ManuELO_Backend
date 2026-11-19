@@ -1,6 +1,6 @@
 # RELATÓRIO FINAL — ManuElo
 
-Data: 13/11/2026
+Data: 19/11/2026
 Status: **ENTREGA FUNCIONAL CONCLUÍDA** — backlog A-01..A-90 concluído; juiz de integração verde.
 
 ## Resultado do juiz
@@ -16,7 +16,7 @@ Runtime do banco: cluster PostgreSQL temporário do juiz
 EXIT 0
 ```
 
-- 96 testes, 0 falhas, 0 erros, 1 skip; 17 classes de teste.
+- 109 testes, 0 falhas, 0 erros, 1 skip; 21 classes de teste.
 - Etapas verdes: build limpo, suíte completa, migrations do zero, `ddl-auto=validate`, smoke das rotas, varredura de log, prova de persistência após reinício do contexto e guarda anti-protótipo.
 
 ## O que foi entregue
@@ -36,9 +36,9 @@ EXIT 0
 | Item | Evidência |
 |---|---|
 | A-01..A-03 | juiz 8/8; 14 entidades/repositórios; round-trip |
-| A-10..A-14 | `SegurancaAutenticacaoTest`, `CadastroUsuariosTest`, `UsuarioAdminService`, `RecuperacaoSenhaTest`, `BootstrapAdminTest` |
+| A-10..A-14 | `SegurancaAutenticacaoTest`, `CadastroUsuariosTest`, `CadastroUsuarioPersistenciaTest`, `UsuarioAdminService`, `RecuperacaoSenhaTest`, `BootstrapAdminTest` |
 | A-15 | `AuditoriaTest` 4/4 |
-| A-20..A-22 | `ImoveisFiltrosTest` 6/6, `InquilinoCadastroTest` 4/4, `ReformasHistoricoTest` 2/2 |
+| A-20..A-22 | `ImoveisFiltrosTest` 6/6, `InquilinoCadastroTest` 5/5, `ReformasHistoricoTest` 2/2 |
 | A-30..A-32 | `ContratosFiltrosTest` 7/7, `ContratoCadastroTest` 5/5, `PagamentoAluguelTest` 4/4 |
 | A-40..A-43 | `MovimentacaoFinanceiraTest` 10/10, `RelatorioServiceTest` 7/7 |
 | A-50..A-51 | `UploadDocumentoTest` 7/7 |
@@ -46,6 +46,7 @@ EXIT 0
 | A-70..A-72 | `RelatorioServiceTest` 7/7; `SecurityConfig` restringe `/relatorios` |
 | A-80..A-81 | `ErrosGlobalConfig`, perfis dev/prod, `.env.example`, README |
 | A-90 | guarda anti-protótipo endurecida; sem `DemoData`; sem botões mortos; juiz verde |
+| P-002/P-019/P-021/P-023/P-027 | `ArquiteturaViewsTest`, `RoundTripEntidadesTest`, `CadastroUsuarioPersistenciaTest`, `RecuperacaoSenhaTest`, `InquilinoCadastroTest` |
 
 ## Como executar
 
@@ -68,15 +69,12 @@ Produção: `--spring.profiles.active=prod`, com `DB_URL`, `DB_USER`, `DB_PASSWO
 
 O arquivo `docs/integracao/lacunas-interface.md` mapeava **67 lacunas de interface** (25 ALTO, 26 MÉDIO, 16 BAIXO); todas foram tratadas na rodada A-90 (commits 2302e95, 5f1af2f e be15137), com as ressalvas registradas no próprio documento.
 
-Problemas residuais registrados em `docs/integracao/problemas.md` (5 abertos):
-P-002 (views de leitura de imóveis/reformas ainda usam repositório direto), P-019 (repositórios imutáveis expõem `save/delete`), P-021 (cadastro A-11 ainda em JDBC), P-023 (envio de token antes do commit) e P-027 (falta teste de rollback pós-INSERT em inquilinos; edição/filtros já corrigidos).
-
-Nenhum desses impede o juiz ou o fluxo principal; ficam documentados para a próxima rodada.
+Problemas residuais registrados em `docs/integracao/problemas.md`: nenhum aberto. P-002 (views/serviços), P-019 (insert-only), P-021 (cadastro JPA com novo contexto), P-023 (token após commit + lock) e P-027 (rollback pós-INSERT) foram concluídos na rodada final.
 
 ## Documentos de estado
 
 - `docs/integracao/backlog.md` — itens e evidências
 - `docs/integracao/progresso.md` — iterações e runtime
-- `docs/integracao/problemas.md` — 22 resolvidos / 5 abertos
+- `docs/integracao/problemas.md` — 27 resolvidos / 0 abertos
 - `docs/integracao/decisoes.md` — DEC-I01..DEC-I14
 - `docs/integracao/lacunas-interface.md` — 67 lacunas tratadas (com ressalvas)
