@@ -18,7 +18,7 @@ COPY . $HOME
 #
 #   $ docker build --secret id=offlineKey,src=$HOME/.vaadin/offlineKey .
 
-RUN --mount=type=cache,target=/root/.m2 \
+RUN --mount=type=cache,id=s/afc20b6d-5356-4f6d-9231-5745f3c0e8f8-/root/.m2,target=/root/.m2 \
     --mount=type=secret,id=proKey \
     --mount=type=secret,id=offlineKey \
     sh -c 'PRO_KEY=$(jq -r ".proKey // empty" /run/secrets/proKey 2>/dev/null || echo "") && \
