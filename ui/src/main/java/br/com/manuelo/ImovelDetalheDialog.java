@@ -15,8 +15,7 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.textfield.TextField;
 
-import br.com.manuelo.dados.ContratoRepositorio;
-import br.com.manuelo.dados.ReformaRepositorio;
+import com.Projeto.manuelo.servico.consulta.ConsultaService;
 
 public class ImovelDetalheDialog extends Dialog {
 
@@ -24,15 +23,13 @@ public class ImovelDetalheDialog extends Dialog {
             Locale.forLanguageTag("pt-BR"));
 
     private final Modelos.Imovel imovel;
-    private final ContratoRepositorio contratos;
-    private final ReformaRepositorio reformas;
+    private final ConsultaService consulta;
     private final Consumer<Modelos.Imovel> aoEditar;
 
-    public ImovelDetalheDialog(Modelos.Imovel imovel, ContratoRepositorio contratos,
-            ReformaRepositorio reformas, Consumer<Modelos.Imovel> aoEditar) {
+    public ImovelDetalheDialog(Modelos.Imovel imovel, ConsultaService consulta,
+            Consumer<Modelos.Imovel> aoEditar) {
         this.imovel = imovel;
-        this.contratos = contratos;
-        this.reformas = reformas;
+        this.consulta = consulta;
         this.aoEditar = aoEditar;
 
         addClassName("modal");
@@ -75,8 +72,8 @@ public class ImovelDetalheDialog extends Dialog {
     }
 
     private Div cardContrato() {
-        ContratoRepositorio.Detalhe contrato = imovel.id() == null ? null
-                : contratos.buscarVigentePorImovel(imovel.id());
+        ConsultaService.ContratoDetalhe contrato = imovel.id() == null ? null
+                : consulta.contratoVigentePorImovel(imovel.id());
         if (contrato == null) {
             Span semContrato = new Span("Sem contrato vigente");
             semContrato.addClassName("muted");
@@ -106,7 +103,7 @@ public class ImovelDetalheDialog extends Dialog {
         tabela.addClassName("table");
 
         List<Modelos.Reforma> historico = imovel.id() == null ? List.of()
-                : reformas.listar(imovel.id());
+                : consulta.listarReformas(imovel.id());
         if (historico.isEmpty()) {
             Span vazio = new Span("Nenhuma reforma registrada");
             vazio.addClassName("muted");

@@ -1,7 +1,7 @@
 # Progresso (memória do loop; a conversa não é memória)
 
-Iteração: 22 | Orçamento: 120 | Runtime: postgres embutido do juiz (cluster temporário; sem Docker/psql na máquina)
-Última atualização: A-80/A-81/A-90 concluídos; juiz 8/8 verde; fechando RELATORIO-FINAL
+Iteração: 24 | Orçamento: 120 | Runtime: postgres embutido do juiz (cluster temporário; sem Docker/psql na máquina)
+Última atualização: P-002/P-019/P-021/P-023/P-027 concluídos; juiz 8/8; 109 testes, 1 skip
 
 ## Entendimento inicial (8 linhas)
 1. O pacote ManuElo_Equipe_Completa foi copiado para a raiz: AGENTS.md, opencode.jsonc, .opencode/agents e docs/integracao.
@@ -22,7 +22,7 @@ Iteração: 22 | Orçamento: 120 | Runtime: postgres embutido do juiz (cluster t
 - [x] F4 Fecho: A-90, juiz 8/8 e RELATORIO-FINAL.md
 
 ## Item em andamento
-Nenhum. Entrega concluída; as 67 lacunas de interface foram tratadas na rodada A-90 (commits 2302e95, 5f1af2f e be15137). Restam 5 problemas abertos documentados.
+Nenhum. Os 5 problemas abertos (P-002/P-019/P-021/P-023/P-027) foram concluídos; juiz 8/8 e suíte com 109 testes. Alterações ainda não commitadas nesta rodada.
 
 ## Log (uma linha por iteração: fase, item, agente, resultado do juiz)
 - Iteração 1: pacote da equipe instalado; baseline T25 commitada (b33ff36); F0 despachada (QA + mapeador).
@@ -48,3 +48,4 @@ Nenhum. Entrega concluída; as 67 lacunas de interface foram tratadas na rodada 
 - Iteração 21: A-70/A-71/A-72 — 4 PDFs OpenPDF, persistência/composição, download ADMIN, RelatoriosView e exportar extrato; 7/7.
 - Iteração 22: A-15/A-80/A-81/A-90 — AuditoriaTest 4/4, erro global/fuso pt-BR, perfis dev/prod + README, remoção do DemoData legado e botões mortos; juiz 8/8.
 - Iteração 23: A-90 — 67 lacunas de interface tratadas (auth/usuários, imóveis/reformas, inquilinos/contratos/caução, movimentação/documentos/relatórios); P-022/P-026 resolvidos; juiz 8/8; commits 2302e95, 5f1af2f, be15137.
+- Iteração 24: P-002/P-019/P-021/P-023/P-027 — `ConsultaService` + views sem repositórios, insert-only nos imutáveis, cadastro JPA com novo contexto, token após commit com lock e rollback pós-INSERT; juiz 8/8; 109 testes, 1 skip.

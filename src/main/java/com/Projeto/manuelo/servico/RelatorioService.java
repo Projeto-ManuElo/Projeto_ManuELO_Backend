@@ -1,17 +1,17 @@
 package com.Projeto.manuelo.servico;
 
-import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.sql.Types;
 import java.text.Normalizer;
 import java.text.NumberFormat;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -26,21 +26,18 @@ import com.Projeto.manuelo.arquivos.ArmazenamentoArquivos;
 import com.Projeto.manuelo.dominio.enums.PerfilUsuario;
 import com.Projeto.manuelo.dominio.enums.SituacaoRelatorioContrato;
 import com.Projeto.manuelo.seguranca.UsuarioDetalhes;
-import com.lowagie.text.Document;
-import com.lowagie.text.Element;
-import com.lowagie.text.Font;
-import com.lowagie.text.PageSize;
-import com.lowagie.text.Paragraph;
-import com.lowagie.text.Phrase;
-import com.lowagie.text.pdf.BaseFont;
-import com.lowagie.text.pdf.PdfContentByte;
-import com.lowagie.text.pdf.PdfPCell;
-import com.lowagie.text.pdf.PdfPTable;
-import com.lowagie.text.pdf.PdfPageEventHelper;
-import com.lowagie.text.pdf.PdfWriter;
+import com.Projeto.manuelo.servico.RelatorioDados.ContratoLinha;
+import com.Projeto.manuelo.servico.RelatorioDados.MovimentoLinha;
+import com.Projeto.manuelo.servico.RelatorioPdfModelo.Celula;
+import com.Projeto.manuelo.servico.RelatorioPdfModelo.Documento;
+import com.Projeto.manuelo.servico.RelatorioPdfModelo.Indicador;
+import com.Projeto.manuelo.servico.RelatorioPdfModelo.Linha;
+import com.Projeto.manuelo.servico.RelatorioPdfModelo.Secao;
+import com.Projeto.manuelo.servico.RelatorioPdfModelo.Tom;
+import com.Projeto.manuelo.servico.RelatorioPdfRenderer.PdfGerado;
 
 /**
- * A-70/A-71: geração dos 4 PDFs, composição insert-only e download de relatórios.
+ * A-70/A-71/A-73: geração dos 4 PDFs, composição insert-only e download.
  *
  * <p>Os relatórios são exclusivos do ADMINISTRADOR (DEC-08, R09) e guardam a
  * composição exata do PDF em {@code relatorio_contratos} ou
@@ -58,13 +55,6 @@ public class RelatorioService {
     private static final DateTimeFormatter DATA_HORA =
             DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", BR);
 
-    private static final Font FONTE_FUNDACAO = new Font(Font.HELVETICA, 16, Font.BOLD);
-    private static final Font FONTE_TITULO = new Font(Font.HELVETICA, 13, Font.BOLD);
-    private static final Font FONTE_META = new Font(Font.HELVETICA, 9);
-    private static final Font FONTE_CABECALHO = new Font(Font.HELVETICA, 8, Font.BOLD);
-    private static final Font FONTE_CELULA = new Font(Font.HELVETICA, 8);
-    private static final Font FONTE_RODAPE = new Font(Font.HELVETICA, 8);
-
     public record Arquivo(String nome, String mime, byte[] conteudo) {
     }
 
@@ -72,32 +62,28 @@ public class RelatorioService {
             int qtd) {
     }
 
-    private record ContratoLinha(String contratoId, String inquilino, String documento,
-            String imovel, LocalDate inicio, LocalDate fim, String situacaoValidade,
-            boolean atrasado, Integer diasAtraso, Integer diasParaVencer, BigDecimal valorAluguel,
-            BigDecimal valorEmAtraso) {
-    }
-
-    private record MovimentoLinha(String id, String tipo, String tipoOriginal, String categoria,
-            BigDecimal valorAssinado, LocalDate data, String descricao, String forma) {
-    }
-
-    private record Totais(BigDecimal entradas, BigDecimal saidas, BigDecimal saldo) {
-    }
-
-    private record PdfGerado(byte[] conteudo, int paginas) {
+    private record Totais(BigDecimal brutoEntradas, BigDecimal brutoSaidas,
+            BigDecimal estornosEntradas, BigDecimal estornosSaidas,
+            BigDecimal liquidoEntradas, BigDecimal liquidoSaidas, BigDecimal saldo,
+            int quantidade) {
     }
 
     private enum Tipo {
-        CONTRATOS_EXISTENTES("Contratos existentes"),
-        CONTRATOS_ATRASADOS("Contratos atrasados"),
-        CONTRATOS_A_VENCER("Contratos a vencer"),
-        MOVIMENTACAO("Movimentação financeira");
+        CONTRATOS_EXISTENTES("Contratos existentes", "", "inquilino_nome"),
+        CONTRATOS_ATRASADOS("Contratos atrasados", "WHERE atrasado",
+                "dias_atraso DESC, inquilino_nome"),
+        CONTRATOS_A_VENCER("Contratos a vencer", "WHERE situacao_validade = 'A_VENCER'",
+                "dias_para_vencer, inquilino_nome"),
+        MOVIMENTACAO("Movimentação financeira", null, null);
 
         private final String titulo;
+        private final String condicao;
+        private final String ordem;
 
-        Tipo(String titulo) {
+        Tipo(String titulo, String condicao, String ordem) {
             this.titulo = titulo;
+            this.condicao = condicao;
+            this.ordem = ordem;
         }
 
         String titulo() {
@@ -107,10 +93,13 @@ public class RelatorioService {
 
     private final JdbcClient jdbc;
     private final ArmazenamentoArquivos armazenamento;
+    private final RelatorioDados dados;
+    private final RelatorioPdfRenderer renderer = new RelatorioPdfRenderer();
 
     public RelatorioService(JdbcTemplate jdbcTemplate, ArmazenamentoArquivos armazenamento) {
         this.jdbc = JdbcClient.create(jdbcTemplate);
         this.armazenamento = armazenamento;
+        this.dados = new RelatorioDados(this.jdbc);
     }
 
     public String gerar(String tipoUi, LocalDate inicio, LocalDate fim,
@@ -167,37 +156,19 @@ public class RelatorioService {
     }
 
     private String gerarContratos(UsuarioDetalhes ator, Tipo tipo) {
-        List<ContratoLinha> linhas = consultarContratos(tipo);
+        List<ContratoLinha> linhas = dados.contratos(tipo.condicao, tipo.ordem);
         LocalDate hoje = LocalDate.now();
         String id = UUID.randomUUID().toString();
         String nome = nome(tipo, hoje);
         String codigo = codigo(id);
+        String geradoEm = DATA_HORA.format(java.time.LocalDateTime.now());
 
-        List<String> informacoes = new ArrayList<>();
-        informacoes.add("Data de referência: " + DATA.format(hoje));
-        informacoes.add("Registros: " + linhas.size());
-
-        List<String[]> dados = new ArrayList<>();
-        for (ContratoLinha linha : linhas) {
-            dados.add(new String[] {
-                    texto(linha.inquilino()),
-                    texto(linha.documento()),
-                    texto(linha.imovel()),
-                    vigencia(linha.inicio(), linha.fim()),
-                    situacao(linha, tipo),
-                    dias(linha, tipo),
-                    dinheiro(valor(linha, tipo)) });
-        }
-
-        PdfGerado pdf = montarPdf("Relatório de " + tipo.titulo().toLowerCase(BR), codigo,
-                ator.getNome(), informacoes,
-                new String[] { "Inquilino", "Documento", "Imóvel", "Vigência", "Situação", "Dias",
-                        "Valor" },
-                new float[] { 3.2f, 2.1f, 3.4f, 2.2f, 1.7f, 0.9f, 1.6f },
-                dados, true);
-
+        Documento documento = documentoContratos(tipo, linhas, hoje, codigo, ator.getNome(),
+                geradoEm);
+        PdfGerado pdf = renderer.renderizar(documento);
         String caminho = armazenamento.salvar(nome + ".pdf", MIME_PDF, pdf.conteudo());
         Integer janela = tipo == Tipo.CONTRATOS_A_VENCER ? janelaDias() : null;
+
         jdbc.sql("""
                 INSERT INTO relatorios (id, nome, tipo, data_referencia, janela_dias,
                                         qtd_registros, caminho_arquivo, gerado_por)
@@ -251,40 +222,20 @@ public class RelatorioService {
             throw new IllegalArgumentException("Período inválido: início posterior ao fim.");
         }
         String filtro = filtro(filtroUi);
-        List<MovimentoLinha> linhas = consultarMovimentacoes(inicio, fim, filtro);
+        List<MovimentoLinha> linhas = dados.movimentacoes(inicio, fim, filtro);
         Totais totais = totais(linhas);
 
         LocalDate hoje = LocalDate.now();
         String id = UUID.randomUUID().toString();
         String nome = nome(Tipo.MOVIMENTACAO, hoje);
         String codigo = codigo(id);
+        String geradoEm = DATA_HORA.format(java.time.LocalDateTime.now());
 
-        List<String> informacoes = new ArrayList<>();
-        informacoes.add("Período: " + DATA.format(inicio) + " a " + DATA.format(fim));
-        informacoes.add("Filtro: " + (filtro == null ? "Todos" : rotulo(filtro)));
-        informacoes.add("Entradas: " + dinheiro(totais.entradas())
-                + "    Saídas: " + dinheiro(totais.saidas())
-                + "    Saldo: " + dinheiro(totais.saldo()));
-        informacoes.add("Registros: " + linhas.size());
-
-        List<String[]> dados = new ArrayList<>();
-        for (MovimentoLinha linha : linhas) {
-            dados.add(new String[] {
-                    DATA.format(linha.data()),
-                    rotulo(linha.tipo()),
-                    linha.categoria() == null ? "-" : rotulo(linha.categoria()),
-                    texto(linha.descricao()),
-                    linha.forma() == null ? "-" : rotulo(linha.forma()),
-                    dinheiro(linha.valorAssinado()) });
-        }
-
-        PdfGerado pdf = montarPdf("Relatório de movimentação financeira", codigo,
-                ator.getNome(), informacoes,
-                new String[] { "Data", "Tipo", "Categoria", "Descrição", "Forma", "Valor" },
-                new float[] { 1.3f, 1.1f, 1.5f, 3.5f, 1.5f, 1.3f },
-                dados, false);
-
+        Documento documento = documentoMovimentacao(linhas, totais, inicio, fim, filtro, codigo,
+                ator.getNome(), geradoEm);
+        PdfGerado pdf = renderer.renderizar(documento);
         String caminho = armazenamento.salvar(nome + ".pdf", MIME_PDF, pdf.conteudo());
+
         jdbc.sql("""
                 INSERT INTO relatorios (id, nome, tipo, data_referencia, periodo_inicio,
                                         periodo_fim, filtro_tipo_movimentacao, total_entradas,
@@ -300,8 +251,8 @@ public class RelatorioService {
                 .param("inicio", inicio)
                 .param("fim", fim)
                 .param("filtro", filtro, Types.VARCHAR)
-                .param("entradas", totais.entradas())
-                .param("saidas", totais.saidas())
+                .param("entradas", naoNegativo(totais.liquidoEntradas()))
+                .param("saidas", naoNegativo(totais.liquidoSaidas()))
                 .param("saldo", totais.saldo())
                 .param("qtd", linhas.size())
                 .param("caminho", caminho)
@@ -321,212 +272,348 @@ public class RelatorioService {
         return id;
     }
 
-    private List<ContratoLinha> consultarContratos(Tipo tipo) {
-        String condicao = switch (tipo) {
-            case CONTRATOS_ATRASADOS -> "WHERE atrasado";
-            case CONTRATOS_A_VENCER -> "WHERE situacao_validade = 'A_VENCER'";
-            default -> "";
+    private Documento documentoContratos(Tipo tipo, List<ContratoLinha> linhas, LocalDate hoje,
+            String codigo, String autor, String geradoEm) {
+        List<Indicador> indicadores = new ArrayList<>();
+        List<Secao> secoes = new ArrayList<>();
+        String subtitulo = switch (tipo) {
+            case CONTRATOS_ATRASADOS -> "Contratos com competências em aberto";
+            case CONTRATOS_A_VENCER -> "Vencimento em até " + janelaDias() + " dias";
+            default -> "Contratos cadastrados e sua situação atual";
         };
-        String ordem = switch (tipo) {
-            case CONTRATOS_ATRASADOS -> "dias_atraso DESC, inquilino_nome";
-            case CONTRATOS_A_VENCER -> "dias_para_vencer, inquilino_nome";
-            default -> "inicio, inquilino_nome";
-        };
-        return jdbc.sql("""
-                SELECT contrato_id, inquilino_nome, inquilino_documento, imovel_endereco,
-                       inicio, fim, situacao_validade, atrasado, dias_atraso, dias_para_vencer,
-                       valor_aluguel, valor_em_atraso
-                  FROM vw_contratos_situacao
-                """ + " " + condicao + " ORDER BY " + ordem)
-                .query((rs, rowNum) -> new ContratoLinha(
-                        rs.getObject("contrato_id", UUID.class).toString(),
-                        rs.getString("inquilino_nome"),
-                        rs.getString("inquilino_documento"),
-                        rs.getString("imovel_endereco"),
-                        rs.getObject("inicio", LocalDate.class),
-                        rs.getObject("fim", LocalDate.class),
-                        rs.getString("situacao_validade"),
-                        rs.getBoolean("atrasado"),
-                        rs.getObject("dias_atraso", Integer.class),
-                        rs.getObject("dias_para_vencer", Integer.class),
-                        rs.getBigDecimal("valor_aluguel"),
-                        rs.getBigDecimal("valor_em_atraso")))
-                .list();
+
+        switch (tipo) {
+            case CONTRATOS_ATRASADOS -> {
+                BigDecimal soma = somarContratos(linhas, true);
+                indicadores.add(new Indicador("Contratos atrasados",
+                        String.valueOf(linhas.size()), Tom.NEGATIVO));
+                indicadores.add(new Indicador("Valor em atraso", dinheiro(soma), Tom.NEGATIVO));
+                secoes.add(new Secao("Contratos atrasados", null,
+                        new String[] { "Inquilino", "Documento", "Imóvel", "Vencimento",
+                                "Dias de atraso", "Valor" },
+                        new float[] { 3.2f, 2.0f, 3.4f, 1.7f, 1.5f, 1.7f },
+                        linhas.stream().map(linha -> linhaAtrasado(linha, hoje)).toList(), List.of()));
+            }
+            case CONTRATOS_A_VENCER -> {
+                BigDecimal soma = somarContratos(linhas, false);
+                indicadores.add(new Indicador("Contratos", String.valueOf(linhas.size()),
+                        Tom.NORMAL));
+                indicadores.add(new Indicador("Janela", janelaDias() + " dias", Tom.ALERTA));
+                indicadores.add(new Indicador("Soma mensal", dinheiro(soma), Tom.NORMAL));
+                secoes.add(new Secao("Contratos a vencer", null,
+                        new String[] { "Inquilino", "Documento", "Imóvel", "Vencimento",
+                                "Dias restantes", "Valor" },
+                        new float[] { 3.2f, 2.0f, 3.4f, 1.7f, 1.5f, 1.7f },
+                        linhas.stream().map(this::linhaAVencer).toList(), List.of()));
+            }
+            default -> {
+                long vigentes = linhas.stream().filter(linha -> vigente(linha, hoje)).count();
+                BigDecimal soma = somarContratosVigentes(linhas, hoje);
+                indicadores.add(new Indicador("Contratos", String.valueOf(linhas.size()),
+                        Tom.NORMAL));
+                indicadores.add(new Indicador("Vigentes", String.valueOf(vigentes),
+                        Tom.POSITIVO));
+                indicadores.add(new Indicador("Soma mensal", dinheiro(soma), Tom.NORMAL));
+                secoes.add(new Secao("Contratos existentes", null,
+                        new String[] { "Inquilino", "Documento", "Imóvel", "Início", "Fim",
+                                "Valor", "Situação" },
+                        new float[] { 3.2f, 2.0f, 3.4f, 1.6f, 1.6f, 1.7f, 2.0f },
+                        linhas.stream().map(this::linhaExistente).toList(), List.of()));
+            }
+        }
+
+        String referencia = "Data de referência: " + DATA.format(hoje)
+                + "    Registros: " + linhas.size()
+                + (tipo == Tipo.CONTRATOS_A_VENCER ? "    Janela: até " + janelaDias() + " dias"
+                        : "");
+        return new Documento("Relatório de " + tipo.titulo().toLowerCase(BR), subtitulo, codigo,
+                autor, geradoEm, referencia, indicadores, secoes, false);
     }
 
-    private List<MovimentoLinha> consultarMovimentacoes(LocalDate inicio, LocalDate fim,
-            String filtro) {
-        StringBuilder condicoes = new StringBuilder(
-                " WHERE mv.data_movimentacao BETWEEN :inicio AND :fim");
-        if ("ENTRADA".equals(filtro)) {
-            condicoes.append(" AND (mv.tipo = 'ENTRADA'"
-                    + " OR (mv.tipo = 'ESTORNO' AND o.tipo = 'ENTRADA'))");
-        } else if ("SAIDA".equals(filtro)) {
-            condicoes.append(" AND (mv.tipo = 'SAIDA'"
-                    + " OR (mv.tipo = 'ESTORNO' AND o.tipo = 'SAIDA'))");
+    private Documento documentoMovimentacao(List<MovimentoLinha> linhas, Totais totais,
+            LocalDate inicio, LocalDate fim, String filtro, String codigo, String autor,
+            String geradoEm) {
+        List<Indicador> indicadores = List.of(
+                new Indicador("Entradas", dinheiro(totais.liquidoEntradas()), Tom.POSITIVO),
+                new Indicador("Saídas", dinheiro(totais.liquidoSaidas()), Tom.NEGATIVO),
+                new Indicador("Saldo", dinheiro(totais.saldo()),
+                        totais.saldo().signum() < 0 ? Tom.NEGATIVO : Tom.POSITIVO),
+                new Indicador("Registros", String.valueOf(totais.quantidade()), Tom.NORMAL));
+
+        List<Secao> secoes = new ArrayList<>();
+        secoes.add(secaoSubtotais(linhas, filtro));
+
+        if (!"SAIDA".equals(filtro)) {
+            List<MovimentoLinha> entradas = porTipo(linhas, "ENTRADA");
+            secoes.add(new Secao("Entradas",
+                    "Origem = inquilino e imóvel ou descrição da entrada.",
+                    new String[] { "Data", "Descrição", "Categoria", "Origem", "Forma", "Valor",
+                            "Registrado por", "Comprovante" },
+                    new float[] { 1.0f, 2.4f, 1.3f, 3.2f, 1.2f, 1.4f, 1.7f, 1.2f },
+                    entradas.stream().map(this::linhaEntrada).toList(),
+                    List.of("Subtotal líquido de entradas: "
+                            + dinheiro(totais.liquidoEntradas()))));
         }
-        return jdbc.sql("""
-                SELECT mv.id,
-                       mv.tipo::text AS tipo,
-                       o.tipo::text AS tipo_original,
-                       mv.categoria::text AS categoria,
-                       CASE
-                         WHEN mv.tipo = 'ENTRADA' THEN mv.valor
-                         WHEN mv.tipo = 'SAIDA' THEN -mv.valor
-                         WHEN mv.tipo = 'ESTORNO' AND o.tipo = 'ENTRADA' THEN -mv.valor
-                         WHEN mv.tipo = 'ESTORNO' AND o.tipo = 'SAIDA' THEN mv.valor
-                         ELSE mv.valor
-                       END AS valor_assinado,
-                       mv.data_movimentacao,
-                       mv.descricao,
-                       mv.forma_pagamento::text AS forma
-                  FROM movimentacoes mv
-                  LEFT JOIN movimentacoes o ON o.id = mv.movimentacao_original_id
-                """ + condicoes + """
-                 ORDER BY mv.data_movimentacao, mv.criado_em, mv.id
-                """)
-                .param("inicio", inicio)
-                .param("fim", fim)
-                .query((rs, rowNum) -> new MovimentoLinha(
-                        rs.getObject("id", UUID.class).toString(),
-                        rs.getString("tipo"),
-                        rs.getString("tipo_original"),
-                        rs.getString("categoria"),
-                        rs.getBigDecimal("valor_assinado"),
-                        rs.getObject("data_movimentacao", LocalDate.class),
-                        rs.getString("descricao"),
-                        rs.getString("forma")))
-                .list();
+
+        if (!"ENTRADA".equals(filtro)) {
+            List<MovimentoLinha> saidas = porTipo(linhas, "SAIDA");
+            secoes.add(new Secao("Saídas", "Destino = favorecido.",
+                    new String[] { "Data", "Descrição", "Categoria", "Favorecido", "Forma",
+                            "Valor", "Registrado por", "Comprovante" },
+                    new float[] { 1.0f, 2.4f, 1.3f, 3.2f, 1.2f, 1.4f, 1.7f, 1.2f },
+                    saidas.stream().map(this::linhaSaida).toList(),
+                    List.of("Subtotal líquido de saídas: "
+                            + dinheiro(totais.liquidoSaidas()))));
+        }
+
+        List<MovimentoLinha> estornos = porTipo(linhas, "ESTORNO");
+        if (!estornos.isEmpty()) {
+            secoes.add(new Secao("Estornos do período",
+                    "Estornos contam na data do estorno (R09).",
+                    new String[] { "Data", "Lançamento original", "Justificativa",
+                            "Estornado por", "Valor" },
+                    new float[] { 1.2f, 3.5f, 3.5f, 2.2f, 1.4f },
+                    estornos.stream().map(this::linhaEstorno).toList(), List.of()));
+        }
+
+        secoes.add(secaoTotais(totais));
+
+        String referencia = "Período: " + DATA.format(inicio) + " a " + DATA.format(fim)
+                + "    Filtro: " + (filtro == null ? "Todos" : rotulo(filtro))
+                + "    Registros: " + linhas.size();
+        return new Documento("Relatório de movimentação financeira",
+                "Entradas, saídas, estornos e totais do período", codigo, autor, geradoEm,
+                referencia, indicadores, secoes, true);
+    }
+
+    private Secao secaoSubtotais(List<MovimentoLinha> linhas, String filtro) {
+        List<Linha> rows = new ArrayList<>();
+        if (!"SAIDA".equals(filtro)) {
+            subtotais(linhas, "ENTRADA").forEach((categoria, valor) -> rows.add(Linha.de(
+                    Celula.texto(rotulo(categoria)),
+                    Celula.colorida(dinheiro(valor), Tom.POSITIVO, false))));
+        }
+        if (!"ENTRADA".equals(filtro)) {
+            subtotais(linhas, "SAIDA").forEach((categoria, valor) -> rows.add(Linha.de(
+                    Celula.texto(rotulo(categoria)),
+                    Celula.colorida(dinheiro(valor), Tom.NEGATIVO, false))));
+        }
+        return new Secao("Subtotais por categoria", "Valores líquidos de estornos.",
+                new String[] { "Categoria", "Valor" }, new float[] { 3.0f, 1.5f }, rows,
+                List.of());
+    }
+
+    private Secao secaoTotais(Totais totais) {
+        BigDecimal brutoSaldo = totais.brutoEntradas().subtract(totais.brutoSaidas());
+        BigDecimal estornosSaldo = totais.estornosEntradas().subtract(totais.estornosSaidas());
+        List<Linha> rows = List.of(
+                Linha.de(Celula.negrito("Entradas"), Celula.texto(dinheiro(totais.brutoEntradas())),
+                        Celula.texto(dinheiro(totais.estornosEntradas())),
+                        Celula.colorida(dinheiro(totais.liquidoEntradas()), Tom.POSITIVO, true)),
+                Linha.de(Celula.negrito("Saídas"), Celula.texto(dinheiro(totais.brutoSaidas())),
+                        Celula.texto(dinheiro(totais.estornosSaidas())),
+                        Celula.colorida(dinheiro(totais.liquidoSaidas()), Tom.NEGATIVO, true)),
+                Linha.de(Celula.negrito("Saldo"), Celula.texto(dinheiro(brutoSaldo)),
+                        Celula.texto(dinheiro(estornosSaldo)),
+                        Celula.colorida(dinheiro(totais.saldo()),
+                                totais.saldo().signum() < 0 ? Tom.NEGATIVO : Tom.POSITIVO,
+                                true)));
+        return new Secao("Totais do período", "Bruto, estornos e líquido.",
+                new String[] { "Descrição", "Bruto", "Estornos", "Líquido" },
+                new float[] { 3.0f, 1.6f, 1.6f, 1.6f }, rows, List.of());
+    }
+
+    private Linha linhaExistente(ContratoLinha linha) {
+        return Linha.de(
+                Celula.texto(linha.inquilino()),
+                Celula.texto(linha.documento()),
+                Celula.texto(linha.imovel()),
+                Celula.texto(data(linha.inicio())),
+                Celula.texto(data(linha.fim())),
+                Celula.texto(dinheiro(linha.valorAluguel())),
+                Celula.colorida(situacao(linha, Tipo.CONTRATOS_EXISTENTES),
+                        tomSituacao(linha, Tipo.CONTRATOS_EXISTENTES), true));
+    }
+
+    private Linha linhaAtrasado(ContratoLinha linha, LocalDate hoje) {
+        LocalDate vencimento = linha.diasAtraso() == null ? null
+                : hoje.minusDays(linha.diasAtraso());
+        return Linha.de(
+                Celula.texto(linha.inquilino()),
+                Celula.texto(linha.documento()),
+                Celula.texto(linha.imovel()),
+                Celula.texto(data(vencimento)),
+                Celula.colorida(dias(linha.diasAtraso()), Tom.NEGATIVO, true),
+                Celula.colorida(dinheiro(linha.valorEmAtraso()), Tom.NEGATIVO, false));
+    }
+
+    private Linha linhaAVencer(ContratoLinha linha) {
+        return Linha.de(
+                Celula.texto(linha.inquilino()),
+                Celula.texto(linha.documento()),
+                Celula.texto(linha.imovel()),
+                Celula.texto(data(linha.fim())),
+                Celula.colorida(dias(linha.diasParaVencer()), Tom.ALERTA, true),
+                Celula.texto(dinheiro(linha.valorAluguel())));
+    }
+
+    private Linha linhaEntrada(MovimentoLinha linha) {
+        return Linha.de(
+                Celula.texto(data(linha.data())),
+                Celula.texto(linha.descricao()),
+                Celula.texto(rotulo(linha.categoria())),
+                Celula.texto(origem(linha)),
+                Celula.texto(rotulo(linha.forma())),
+                Celula.colorida(dinheiro(linha.valorAssinado()), Tom.POSITIVO, true),
+                Celula.texto(linha.responsavel()),
+                Celula.texto(linha.comprovante() ? "Sim" : "Não"));
+    }
+
+    private Linha linhaSaida(MovimentoLinha linha) {
+        return Linha.de(
+                Celula.texto(data(linha.data())),
+                Celula.texto(linha.descricao()),
+                Celula.texto(rotulo(linha.categoria())),
+                Celula.texto(linha.favorecido()),
+                Celula.texto(rotulo(linha.forma())),
+                Celula.colorida(dinheiro(linha.valorAssinado()), Tom.NEGATIVO, true),
+                Celula.texto(linha.responsavel()),
+                Celula.texto(linha.comprovante() ? "Sim" : "Não"));
+    }
+
+    private Linha linhaEstorno(MovimentoLinha linha) {
+        Tom tom = linha.valorAssinado() != null && linha.valorAssinado().signum() < 0
+                ? Tom.NEGATIVO : Tom.POSITIVO;
+        return Linha.de(
+                Celula.texto(data(linha.data())),
+                Celula.texto(linha.descricaoOriginal()),
+                Celula.texto(linha.justificativa()),
+                Celula.texto(linha.responsavel()),
+                Celula.colorida(dinheiro(linha.valorAssinado()), tom, true));
+    }
+
+    private String origem(MovimentoLinha linha) {
+        if ("ALUGUEL".equals(linha.categoria()) && linha.inquilino() != null) {
+            return texto(linha.inquilino()) + " · " + texto(linha.imovel());
+        }
+        return texto(linha.origem() == null ? linha.descricao() : linha.origem());
     }
 
     private Totais totais(List<MovimentoLinha> linhas) {
-        BigDecimal entradas = BigDecimal.ZERO;
-        BigDecimal saidas = BigDecimal.ZERO;
-        BigDecimal saldo = BigDecimal.ZERO;
+        BigDecimal brutoEntradas = BigDecimal.ZERO;
+        BigDecimal brutoSaidas = BigDecimal.ZERO;
+        BigDecimal estornosEntradas = BigDecimal.ZERO;
+        BigDecimal estornosSaidas = BigDecimal.ZERO;
         for (MovimentoLinha linha : linhas) {
-            BigDecimal valor = linha.valorAssinado() == null
-                    ? BigDecimal.ZERO : linha.valorAssinado();
-            saldo = saldo.add(valor);
+            BigDecimal valor = linha.valor() == null ? BigDecimal.ZERO : linha.valor();
             if ("ENTRADA".equals(linha.tipo())) {
-                entradas = entradas.add(valor);
+                brutoEntradas = brutoEntradas.add(valor);
             } else if ("SAIDA".equals(linha.tipo())) {
-                saidas = saidas.add(valor.abs());
+                brutoSaidas = brutoSaidas.add(valor);
             } else if ("ESTORNO".equals(linha.tipo()) && "ENTRADA".equals(linha.tipoOriginal())) {
-                entradas = entradas.subtract(valor.abs());
+                estornosEntradas = estornosEntradas.add(valor);
             } else if ("ESTORNO".equals(linha.tipo()) && "SAIDA".equals(linha.tipoOriginal())) {
-                saidas = saidas.subtract(valor.abs());
+                estornosSaidas = estornosSaidas.add(valor);
             }
         }
-        if (entradas.signum() < 0) {
-            entradas = BigDecimal.ZERO;
-        }
-        if (saidas.signum() < 0) {
-            saidas = BigDecimal.ZERO;
-        }
-        return new Totais(entradas, saidas, saldo);
+        BigDecimal liquidoEntradas = brutoEntradas.subtract(estornosEntradas);
+        BigDecimal liquidoSaidas = brutoSaidas.subtract(estornosSaidas);
+        return new Totais(brutoEntradas, brutoSaidas, estornosEntradas, estornosSaidas,
+                liquidoEntradas, liquidoSaidas, liquidoEntradas.subtract(liquidoSaidas),
+                linhas.size());
     }
 
-    private PdfGerado montarPdf(String titulo, String codigo, String autor,
-            List<String> informacoes, String[] colunas, float[] larguras, List<String[]> linhas,
-            boolean paisagem) {
-        int paginas = renderizar(titulo, codigo, autor, informacoes, colunas, larguras, linhas,
-                paisagem, 0).paginas();
-        return renderizar(titulo, codigo, autor, informacoes, colunas, larguras, linhas, paisagem,
-                paginas);
+    private Map<String, BigDecimal> subtotais(List<MovimentoLinha> linhas, String tipoOriginal) {
+        Map<String, BigDecimal> mapa = new LinkedHashMap<>();
+        if ("ENTRADA".equals(tipoOriginal)) {
+            mapa.put("ALUGUEL", BigDecimal.ZERO);
+            mapa.put("OUTRAS_ENTRADAS", BigDecimal.ZERO);
+        } else {
+            mapa.put("MANUTENCAO", BigDecimal.ZERO);
+            mapa.put("TRIBUTOS", BigDecimal.ZERO);
+            mapa.put("ADMINISTRATIVO", BigDecimal.ZERO);
+            mapa.put("OUTRAS_SAIDAS", BigDecimal.ZERO);
+        }
+        for (MovimentoLinha linha : linhas) {
+            String categoria = linha.categoriaOriginal() == null
+                    ? linha.categoria() : linha.categoriaOriginal();
+            if (categoria == null || !mapa.containsKey(categoria)) {
+                continue;
+            }
+            BigDecimal valor = linha.valor() == null ? BigDecimal.ZERO : linha.valor();
+            if (tipoOriginal.equals(linha.tipo())) {
+                mapa.put(categoria, mapa.get(categoria).add(valor));
+            } else if ("ESTORNO".equals(linha.tipo())
+                    && tipoOriginal.equals(linha.tipoOriginal())) {
+                mapa.put(categoria, mapa.get(categoria).subtract(valor));
+            }
+        }
+        return mapa;
     }
 
-    private PdfGerado renderizar(String titulo, String codigo, String autor,
-            List<String> informacoes, String[] colunas, float[] larguras, List<String[]> linhas,
-            boolean paisagem, int totalPaginas) {
-        ByteArrayOutputStream saida = new ByteArrayOutputStream();
-        try {
-            Document documento = new Document(paisagem ? PageSize.A4.rotate() : PageSize.A4,
-                    32, 32, 40, 44);
-            PdfWriter escritor = PdfWriter.getInstance(documento, saida);
-            escritor.setPageEvent(new Rodape(totalPaginas));
-            documento.open();
-
-            Paragraph fundacao = new Paragraph("Fundação Manoel Cruz", FONTE_FUNDACAO);
-            fundacao.setAlignment(Element.ALIGN_CENTER);
-            documento.add(fundacao);
-
-            Paragraph tituloPdf = new Paragraph(titulo, FONTE_TITULO);
-            tituloPdf.setAlignment(Element.ALIGN_CENTER);
-            documento.add(tituloPdf);
-
-            Paragraph autoria = new Paragraph("Gerado por: " + autor
-                    + "    Data e hora: " + DATA_HORA.format(LocalDateTime.now()), FONTE_META);
-            autoria.setAlignment(Element.ALIGN_CENTER);
-            documento.add(autoria);
-
-            Paragraph referencia = new Paragraph("Código: " + codigo + "    "
-                    + String.join("    ", informacoes), FONTE_META);
-            referencia.setAlignment(Element.ALIGN_CENTER);
-            documento.add(referencia);
-            documento.add(new Paragraph(" ", FONTE_META));
-
-            PdfPTable tabela = new PdfPTable(larguras);
-            tabela.setWidthPercentage(100);
-            tabela.setHeaderRows(1);
-            for (String coluna : colunas) {
-                PdfPCell celula = new PdfPCell(new Phrase(coluna, FONTE_CABECALHO));
-                celula.setHorizontalAlignment(Element.ALIGN_LEFT);
-                celula.setPadding(4);
-                celula.setGrayFill(0.88f);
-                tabela.addCell(celula);
-            }
-            if (linhas.isEmpty()) {
-                PdfPCell vazio = new PdfPCell(
-                        new Phrase("Nenhum registro encontrado.", FONTE_CELULA));
-                vazio.setColspan(colunas.length);
-                vazio.setPadding(6);
-                tabela.addCell(vazio);
-            } else {
-                for (String[] linha : linhas) {
-                    for (String valor : linha) {
-                        PdfPCell celula = new PdfPCell(new Phrase(texto(valor), FONTE_CELULA));
-                        celula.setPadding(4);
-                        tabela.addCell(celula);
-                    }
-                }
-            }
-            documento.add(tabela);
-            int paginas = escritor.getPageNumber();
-            documento.close();
-            return new PdfGerado(saida.toByteArray(), paginas);
-        } catch (Exception ex) {
-            throw new IllegalStateException(
-                    "Falha ao gerar o PDF do relatório: " + ex.getMessage(), ex);
-        }
+    private List<MovimentoLinha> porTipo(List<MovimentoLinha> linhas, String tipo) {
+        return linhas.stream().filter(linha -> tipo.equals(linha.tipo())).toList();
     }
 
-    private static final class Rodape extends PdfPageEventHelper {
-
-        private final int totalPaginas;
-
-        private Rodape(int totalPaginas) {
-            this.totalPaginas = totalPaginas;
-        }
-
-        @Override
-        public void onEndPage(PdfWriter writer, Document document) {
-            try {
-                PdfContentByte conteudo = writer.getDirectContent();
-                BaseFont fonte = BaseFont.createFont(BaseFont.HELVETICA, BaseFont.WINANSI,
-                        BaseFont.NOT_EMBEDDED);
-                conteudo.beginText();
-                conteudo.setFontAndSize(fonte, 8);
-                conteudo.setTextMatrix(0, 0);
-                conteudo.endText();
-                float x = (document.left() + document.right()) / 2;
-                String texto = "Página " + writer.getPageNumber() + " de " + totalPaginas;
-                com.lowagie.text.pdf.ColumnText.showTextAligned(conteudo,
-                        Element.ALIGN_CENTER, new Phrase(texto, FONTE_RODAPE), x,
-                        document.bottomMargin() - 18, 0);
-            } catch (Exception ex) {
-                throw new IllegalStateException("Falha ao escrever o rodapé do PDF.", ex);
+    private BigDecimal somarContratos(List<ContratoLinha> linhas, boolean atraso) {
+        BigDecimal soma = BigDecimal.ZERO;
+        for (ContratoLinha linha : linhas) {
+            BigDecimal valor = atraso ? linha.valorEmAtraso() : linha.valorAluguel();
+            if (valor != null) {
+                soma = soma.add(valor);
             }
         }
+        return soma;
+    }
+
+    private BigDecimal somarContratosVigentes(List<ContratoLinha> linhas, LocalDate hoje) {
+        BigDecimal soma = BigDecimal.ZERO;
+        for (ContratoLinha linha : linhas) {
+            if (vigente(linha, hoje) && linha.valorAluguel() != null) {
+                soma = soma.add(linha.valorAluguel());
+            }
+        }
+        return soma;
+    }
+
+    private boolean vigente(ContratoLinha linha, LocalDate hoje) {
+        return linha.inicio() != null && !linha.inicio().isAfter(hoje)
+                && (linha.fim() == null || !linha.fim().isBefore(hoje));
+    }
+
+    private String situacao(ContratoLinha linha, Tipo tipo) {
+        if (tipo == Tipo.CONTRATOS_ATRASADOS || linha.atrasado()) {
+            return "Atrasado";
+        }
+        if (tipo == Tipo.CONTRATOS_A_VENCER
+                || "A_VENCER".equals(texto(linha.situacaoValidade()))) {
+            return "Próximo do vencimento";
+        }
+        if ("VENCIDO".equals(texto(linha.situacaoValidade()))) {
+            return "Vencido";
+        }
+        return "Vigente";
+    }
+
+    private Tom tomSituacao(ContratoLinha linha, Tipo tipo) {
+        String situacao = situacao(linha, tipo);
+        return switch (situacao) {
+            case "Atrasado" -> Tom.NEGATIVO;
+            case "Próximo do vencimento" -> Tom.ALERTA;
+            case "Vencido" -> Tom.MUTED;
+            default -> Tom.POSITIVO;
+        };
+    }
+
+    private String dias(Integer dias) {
+        if (dias == null) {
+            return "—";
+        }
+        return dias + (dias == 1 ? " dia" : " dias");
+    }
+
+    private String data(LocalDate data) {
+        return data == null ? "Indeterminado" : DATA.format(data);
     }
 
     private String nome(Tipo tipo, LocalDate data) {
@@ -543,54 +630,11 @@ public class RelatorioService {
     }
 
     private int janelaDias() {
-        return jdbc.sql("""
-                SELECT valor::int
-                  FROM configuracoes
-                 WHERE chave = 'dias_alerta_vencimento'
-                """)
-                .query(Integer.class)
-                .optional()
-                .orElse(7);
+        return dados.janelaDias();
     }
 
-    private String situacao(ContratoLinha linha, Tipo tipo) {
-        if (tipo == Tipo.CONTRATOS_ATRASADOS || linha.atrasado()) {
-            return "Atrasado";
-        }
-        if (tipo == Tipo.CONTRATOS_A_VENCER) {
-            return "A vencer";
-        }
-        return switch (texto(linha.situacaoValidade())) {
-            case "A_VENCER" -> "A vencer";
-            case "VENCIDO" -> "Vencido";
-            default -> "Vigente";
-        };
-    }
-
-    private String dias(ContratoLinha linha, Tipo tipo) {
-        Integer dias = switch (tipo) {
-            case CONTRATOS_ATRASADOS -> linha.diasAtraso();
-            case CONTRATOS_A_VENCER -> linha.diasParaVencer();
-            default -> linha.atrasado() ? linha.diasAtraso() : linha.diasParaVencer();
-        };
-        return dias == null ? "-" : dias + (dias == 1 ? " dia" : " dias");
-    }
-
-    private BigDecimal valor(ContratoLinha linha, Tipo tipo) {
-        if (tipo == Tipo.CONTRATOS_ATRASADOS) {
-            return linha.valorEmAtraso();
-        }
-        if (tipo == Tipo.CONTRATOS_EXISTENTES && linha.atrasado()
-                && linha.valorEmAtraso() != null && linha.valorEmAtraso().signum() > 0) {
-            return linha.valorEmAtraso();
-        }
-        return linha.valorAluguel();
-    }
-
-    private String vigencia(LocalDate inicio, LocalDate fim) {
-        String inicioTexto = inicio == null ? "-" : DATA.format(inicio);
-        String fimTexto = fim == null ? "indeterminado" : DATA.format(fim);
-        return inicioTexto + " a " + fimTexto;
+    private BigDecimal naoNegativo(BigDecimal valor) {
+        return valor == null || valor.signum() < 0 ? BigDecimal.ZERO : valor;
     }
 
     private String dinheiro(BigDecimal valor) {
@@ -603,7 +647,7 @@ public class RelatorioService {
 
     private String rotulo(String valor) {
         if (valor == null || valor.isBlank()) {
-            return "-";
+            return "—";
         }
         String chave = normalizar(valor);
         if (chave != null) {
@@ -685,8 +729,8 @@ public class RelatorioService {
         if (valor == null || valor.isBlank()) {
             return null;
         }
-        String semAcento = Normalizer.normalize(valor.trim(), Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "");
+        String semAcento = Normalizer.normalize(valor.trim().replace('_', ' '),
+                Normalizer.Form.NFD).replaceAll("\\p{M}", "");
         return semAcento.toUpperCase(Locale.ROOT).replaceAll("\\s+", " ");
     }
 
@@ -716,7 +760,7 @@ public class RelatorioService {
     }
 
     private String texto(String valor) {
-        return valor == null || valor.isBlank() ? "-" : valor.trim();
+        return valor == null || valor.isBlank() ? "—" : valor.trim();
     }
 
     private record Registro(String nome, String caminho) {

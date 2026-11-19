@@ -16,17 +16,15 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.QueryParameters;
 import com.vaadin.flow.router.Route;
 
-import br.com.manuelo.dados.ContratoRepositorio;
-import br.com.manuelo.dados.ImovelRepositorio;
-
 import com.Projeto.manuelo.servico.ContratoCadastroService;
 import com.Projeto.manuelo.servico.DocumentoService;
+import com.Projeto.manuelo.servico.consulta.ConsultaService;
 
 @Route(value = "contratos", layout = MainLayout.class)
 @PageTitle("Contratos")
 public class ContratosView extends Div implements BeforeEnterObserver {
 
-    private final ContratoRepositorio repositorio;
+    private final ConsultaService consulta;
     private final ContratoCadastroService cadastro;
     private final DocumentoService documentoService;
     private final TextField nome = UiKit.text("Nome", "Ex: João Miguel");
@@ -38,13 +36,13 @@ public class ContratosView extends Div implements BeforeEnterObserver {
     private final Div tabela = new Div();
     private final ContratoDialog dialog;
 
-    public ContratosView(ContratoRepositorio repositorio, ContratoCadastroService cadastro,
-            ImovelRepositorio imoveis, DocumentoService documentoService) {
-        this.repositorio = repositorio;
+    public ContratosView(ConsultaService consulta, ContratoCadastroService cadastro,
+            DocumentoService documentoService) {
+        this.consulta = consulta;
         this.cadastro = cadastro;
         this.documentoService = documentoService;
         addClassName("page");
-        dialog = new ContratoDialog(imoveis.opcoes(), this::adicionarContrato);
+        dialog = new ContratoDialog(consulta.imoveisOpcoes(), this::adicionarContrato);
 
         Button novo = UiKit.primaryIcon("Novo Contrato", VaadinIcon.PLUS, e -> dialog.abrir());
         add(UiKit.header("Contratos", null, novo));
@@ -102,7 +100,7 @@ public class ContratosView extends Div implements BeforeEnterObserver {
         tabela.removeAll();
         tabela.add(UiKit.tableHead("cols-contratos", "Nome", "Validade", "Endereço", "CPF", "Email"));
 
-        List<Modelos.Contrato> contratos = repositorio.listar(valor(nome), valor(cpf),
+        List<Modelos.Contrato> contratos = consulta.listarContratos(valor(nome), valor(cpf),
                 valor(imovel), valor(validade), situacao.getValue());
 
         if (contratos.isEmpty()) {

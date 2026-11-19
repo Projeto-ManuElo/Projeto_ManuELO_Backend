@@ -7,26 +7,23 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
-import br.com.manuelo.dados.HomeRepositorio;
-import br.com.manuelo.dados.MovimentacaoRepositorio;
+import com.Projeto.manuelo.servico.consulta.ConsultaService;
 
 @Route(value = "home", layout = MainLayout.class)
 @PageTitle("Visão geral")
 public class HomeView extends Div {
 
-    private final HomeRepositorio indicadores;
-    private final MovimentacaoRepositorio movimentacoes;
+    private final ConsultaService consulta;
 
-    public HomeView(HomeRepositorio indicadores, MovimentacaoRepositorio movimentacoes) {
-        this.indicadores = indicadores;
-        this.movimentacoes = movimentacoes;
+    public HomeView(ConsultaService consulta) {
+        this.consulta = consulta;
         addClassName("page");
 
         Button novo = UiKit.primaryIcon("Nova movimentação", VaadinIcon.PLUS,
                 e -> UiKit.ir("movimentacao-financeira"));
         add(UiKit.header("Visão geral", null, novo));
 
-        HomeRepositorio.Indicadores i = indicadores.indicadores();
+        ConsultaService.Indicadores i = consulta.indicadores();
         Div kpis = new Div(
                 UiKit.kpi("Imóveis alugados", String.valueOf(i.alugados()), "#0E9F6E", VaadinIcon.TRENDING_UP,
                         "imoveis?filtro=alugado", i.manutencao() + " em manutenção", "#0E9F6E"),
@@ -49,7 +46,7 @@ public class HomeView extends Div {
         tabela.addClassName("table");
         tabela.add(UiKit.tableHead("cols-home", "Data", "Descrição", "Categoria", "Valor"));
 
-        for (Modelos.Movimentacao movimentacao : movimentacoes.listar(10)) {
+        for (Modelos.Movimentacao movimentacao : consulta.movimentacoesRecentes(10)) {
             Span valor = UiKit.money(movimentacao.valor(), true);
             valor.addClassName("amount");
             Div linha = UiKit.tableRow("cols-home",

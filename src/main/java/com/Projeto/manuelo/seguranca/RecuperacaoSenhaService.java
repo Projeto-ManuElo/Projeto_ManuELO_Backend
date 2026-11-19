@@ -16,6 +16,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.Projeto.manuelo.dominio.TokenRedefinicaoSenha;
 import com.Projeto.manuelo.dominio.Usuario;
@@ -60,7 +62,7 @@ public class RecuperacaoSenhaService {
             return;
         }
         String normalizado = email.trim();
-        Usuario usuario = usuarios.findByEmailIgnoreCase(normalizado).orElse(null);
+        Usuario usuario = usuarios.findByEmailIgnoreCaseForUpdate(normalizado).orElse(null);
         if (usuario == null || usuario.getId() == null
                 || usuario.getStatus() != StatusUsuario.ATIVO) {
             return;
@@ -76,8 +78,25 @@ public class RecuperacaoSenhaService {
         token.setExpiraEm(agora.plusHours(1));
         tokens.save(token);
 
+        entregarAposCommit(usuario.getEmail(), tokenCru);
+    }
+
+    private void entregarAposCommit(String email, String tokenCru) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    entregar(email, tokenCru);
+                }
+            });
+            return;
+        }
+        entregar(email, tokenCru);
+    }
+
+    private void entregar(String email, String tokenCru) {
         try {
-            envio.enviar(usuario.getEmail(), tokenCru);
+            envio.enviar(email, tokenCru);
         } catch (RuntimeException ex) {
             LOG.warn("Falha ao entregar token de redefinição de senha: {}",
                     ex.getClass().getSimpleName());

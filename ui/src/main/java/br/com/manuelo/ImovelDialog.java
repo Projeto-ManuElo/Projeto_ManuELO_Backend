@@ -13,6 +13,8 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.upload.Upload;
 
+import com.Projeto.manuelo.servico.consulta.ConsultaService;
+
 public class ImovelDialog extends Dialog {
 
     public record DadosImovel(String id, String logradouro, String numero, String complemento,
@@ -153,7 +155,7 @@ public class ImovelDialog extends Dialog {
         String bairro = bairroAtual;
         String texto = endereco.getValue().trim();
         if (!texto.equals(enderecoOriginal)) {
-            String[] partes = br.com.manuelo.dados.ImovelRepositorio.separarEndereco(texto);
+            String[] partes = ConsultaService.separarEndereco(texto);
             logradouro = partes[0];
             numero = partes[1];
             complemento = partes[2] == null ? "" : partes[2];

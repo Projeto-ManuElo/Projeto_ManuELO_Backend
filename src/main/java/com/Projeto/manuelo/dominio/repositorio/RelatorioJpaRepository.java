@@ -2,9 +2,8 @@ package com.Projeto.manuelo.dominio.repositorio;
 
 import java.util.UUID;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-
 import com.Projeto.manuelo.dominio.Relatorio;
+import com.Projeto.manuelo.dominio.repositorio.insercao.InsercaoSomente;
 
-public interface RelatorioJpaRepository extends JpaRepository<Relatorio, UUID> {
+public interface RelatorioJpaRepository extends InsercaoSomente<Relatorio, UUID> {
 }

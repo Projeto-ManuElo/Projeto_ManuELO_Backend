@@ -13,9 +13,7 @@ import com.vaadin.flow.router.Route;
 
 import com.Projeto.manuelo.servico.DocumentoService;
 import com.Projeto.manuelo.servico.InquilinoCadastroService;
-
-import br.com.manuelo.dados.ImovelRepositorio;
-import br.com.manuelo.dados.InquilinoRepositorio;
+import com.Projeto.manuelo.servico.consulta.ConsultaService;
 
 @Route(value = "inquilinos", layout = MainLayout.class)
 @PageTitle("Inquilinos")
@@ -23,7 +21,7 @@ public class InquilinosView extends Div {
 
     private static final int PAGINA = 30;
 
-    private final InquilinoRepositorio repositorio;
+    private final ConsultaService consulta;
     private final InquilinoCadastroService cadastro;
     private final DocumentoService documentos;
     private final TextField nome = UiKit.text("Nome", "Ex: João Miguel");
@@ -34,13 +32,13 @@ public class InquilinosView extends Div {
     private final InquilinoDialog dialog;
     private int limite = PAGINA;
 
-    public InquilinosView(InquilinoRepositorio repositorio, InquilinoCadastroService cadastro,
-            ImovelRepositorio imoveis, DocumentoService documentos) {
-        this.repositorio = repositorio;
+    public InquilinosView(ConsultaService consulta, InquilinoCadastroService cadastro,
+            DocumentoService documentos) {
+        this.consulta = consulta;
         this.cadastro = cadastro;
         this.documentos = documentos;
         addClassName("page");
-        dialog = new InquilinoDialog(imoveis.opcoes(), this::salvar);
+        dialog = new InquilinoDialog(consulta.imoveisOpcoes(), this::salvar);
 
         Button novo = UiKit.primaryIcon("Novo Inquilino", VaadinIcon.PLUS, e -> dialog.abrirNovo());
         add(UiKit.header("Inquilinos", null, novo));
@@ -85,7 +83,7 @@ public class InquilinosView extends Div {
         paginacao.removeAll();
         tabela.add(UiKit.tableHead("cols-inquilinos", "Nome", "CPF", "Email"));
 
-        List<Modelos.Inquilino> filtrados = repositorio.listar(nome.getValue(), cpf.getValue(),
+        List<Modelos.Inquilino> filtrados = consulta.listarInquilinos(nome.getValue(), cpf.getValue(),
                 email.getValue());
 
         if (filtrados.isEmpty()) {
@@ -102,7 +100,7 @@ public class InquilinosView extends Div {
                     UiKit.muted(inquilino.email()));
             linha.addClassName("clickable");
             linha.addClickListener(e -> dialog.abrirEdicao(inquilino,
-                    repositorio.detalheEdicao(inquilino.id())));
+                    consulta.detalheInquilino(inquilino.id())));
             tabela.add(linha);
         }
         if (temMais) {
@@ -132,7 +130,7 @@ public class InquilinosView extends Div {
     private void salvarDocumentos(String inquilinoId, InquilinoDialog.DadosInquilino dados) {
         UiKit.ArquivoSelecionado contrato = dados.contratoArquivo();
         if (contrato != null && contrato.conteudo() != null && contrato.conteudo().length > 0) {
-            String contratoId = repositorio.contratoVigenteId(inquilinoId);
+            String contratoId = consulta.contratoVigenteId(inquilinoId);
             if (contratoId != null) {
                 documentos.salvar("Contrato - " + dados.nome(), "Contrato", LocalDate.now(),
                         "CONTRATO", contratoId, contrato.nome(), contrato.mime(),

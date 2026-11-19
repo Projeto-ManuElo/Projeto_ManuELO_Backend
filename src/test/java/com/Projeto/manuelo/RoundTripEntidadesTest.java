@@ -4,10 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
@@ -128,6 +130,25 @@ class RoundTripEntidadesTest {
     }
 
     @Test
+    void repositoriosImutaveisExpoemSomenteInsercaoELeitura() {
+        for (Class<?> tipo : List.of(MovimentacaoJpaRepository.class,
+                CaucaoMovimentacaoJpaRepository.class, RelatorioJpaRepository.class,
+                RelatorioMovimentacaoJpaRepository.class,
+                RelatorioContratoJpaRepository.class)) {
+            List<String> metodos = Arrays.stream(tipo.getMethods())
+                    .map(Method::getName)
+                    .toList();
+            assertThat(metodos)
+                    .as("%s deve expor inserir/findById", tipo.getSimpleName())
+                    .contains("inserir", "findById");
+            assertThat(metodos)
+                    .as("%s não pode expor update/delete", tipo.getSimpleName())
+                    .doesNotContain("save", "saveAll", "delete", "deleteAll", "deleteById",
+                            "deleteAllById");
+        }
+    }
+
+    @Test
     void roundTripDasQuatorzeEntidades() {
         String sufixo = UUID.randomUUID().toString();
 
@@ -212,7 +233,7 @@ class RoundTripEntidadesTest {
         definir(movimentacao, "formaPagamento", FormaPagamento.PIX);
         definir(movimentacao, "responsavelId", usuarioId);
         definir(movimentacao, "origemDescricao", "Origem QA " + sufixo);
-        movimentacao = movimentacaoRepo.save(movimentacao);
+        movimentacao = movimentacaoRepo.inserir(movimentacao);
         UUID movimentacaoId = movimentacao.getId();
         assertThat(movimentacaoId).isNotNull();
 
@@ -223,7 +244,7 @@ class RoundTripEntidadesTest {
         definir(caucao, "valor", new BigDecimal("1200.00"));
         definir(caucao, "data", LocalDate.now());
         definir(caucao, "criadoPor", usuarioId);
-        caucao = caucaoRepo.save(caucao);
+        caucao = caucaoRepo.inserir(caucao);
         UUID caucaoId = caucao.getId();
         assertThat(caucaoId).isNotNull();
 
@@ -261,7 +282,7 @@ class RoundTripEntidadesTest {
         definir(relatorio, "qtdRegistros", 0);
         definir(relatorio, "caminhoArquivo", "qa/relatorio-" + sufixo + ".pdf");
         definir(relatorio, "geradoPor", usuarioId);
-        relatorio = relatorioRepo.save(relatorio);
+        relatorio = relatorioRepo.inserir(relatorio);
         UUID relatorioId = relatorio.getId();
         assertThat(relatorioId).isNotNull();
 
@@ -386,7 +407,7 @@ class RoundTripEntidadesTest {
             definir(movimentacao, "formaPagamento", FormaPagamento.PIX);
             definir(movimentacao, "responsavelId", responsavelId);
             definir(movimentacao, "origemDescricao", "Origem QA " + UUID.randomUUID());
-            movimentacao = movimentacaoRepo.save(movimentacao);
+            movimentacao = movimentacaoRepo.inserir(movimentacao);
             entityManager.flush();
 
             UUID id = movimentacao.getId();

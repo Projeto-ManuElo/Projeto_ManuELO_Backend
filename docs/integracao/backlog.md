@@ -9,7 +9,7 @@ Status: PENDENTE | EM_ANDAMENTO | CONCLUIDO | BLOQUEADO. Dono: ordem banco -> ba
   Aceite: app sobe contra o banco migrado com validate. **CONCLUIDO** (commit 371eda3; 14 entidades, validate OK, juiz verde).
 - A-03 Entidades e repositórios de todo o modelo v3 (usuarios ... configuracoes, views como projeções de leitura).
   Aceite: round-trip (insert + select) por entidade; movimentacoes com @Immutable e sem UPDATE.
-  **CONCLUIDO** (14 repositórios; RoundTripEntidadesTest 2/2; juiz EXIT 0; ressalvas P-019/P-020).
+  **CONCLUIDO** (14 repositórios; RoundTripEntidadesTest 3/3; juiz EXIT 0; P-019/P-020 resolvidos).
 
 ## S1 Autenticação e usuários (telas /login, /cadastro, /aguardando-aprovacao, /recuperar-senha, /redefinir-senha, /usuarios)
 - A-10 Spring Security real: UserDetailsService, BCrypt, login/logout, rotas protegidas (públicas: login, cadastro,
@@ -18,13 +18,13 @@ Status: PENDENTE | EM_ANDAMENTO | CONCLUIDO | BLOQUEADO. Dono: ordem banco -> ba
   **CONCLUIDO** (UserDetailsService/AuthenticationManager reais; `SegurancaAutenticacaoTest` 10/0/1; juiz 8/8).
 - A-11 Cadastro real: grava usuarios com status PENDENTE_APROVACAO e perfil COLABORADOR; e-mail único; redireciona
   a /aguardando-aprovacao. Aceite: registro existe no banco após reiniciar o contexto.
-  **CONCLUIDO** (CadastroUsuariosTest; e-mail único case-insensitive; hash BCrypt; ressalva JDBC em P-021).
+  **CONCLUIDO** (CadastroUsuariosTest + CadastroUsuarioPersistenciaTest; e-mail único case-insensitive; hash BCrypt; P-021 resolvido).
 - A-12 Tela /usuarios (só ADMINISTRADOR): lista pendentes e ativos, aprova (aprovado_por/em), reprova/inativa, altera perfil.
   Aceite: COLABORADOR é barrado; aprovação libera o login.
   **CONCLUIDO** (UsuarioAdminService + UsuariosView; 403 para COLABORADOR; auditoria; juiz 8/8).
 - A-13 Recuperar e redefinir senha: token aleatório, só o hash no banco, uso único, expiração, entrega via interface
   (DEC-I05). Aceite: token expirado ou reutilizado falha; senha nova funciona no login.
-  **CONCLUIDO** (RecuperacaoSenhaService + EnvioTokenSenha; RecuperacaoSenhaTest 10/10; juiz 8/8; ressalvas P-023).
+  **CONCLUIDO** (RecuperacaoSenhaService + EnvioTokenSenha; RecuperacaoSenhaTest 12/12; juiz 8/8; P-023 resolvido).
 - A-14 Bootstrap do primeiro administrador por variáveis de ambiente (DEC-I04). Aceite: banco vazio + variáveis = admin ATIVO.
   **CONCLUIDO** (BootstrapAdminTest 3/3; ressalva: default de dev em P-025).
 - A-15 Auditoria: criado_por/atualizado_por vêm do usuário logado em toda gravação.
@@ -33,10 +33,10 @@ Status: PENDENTE | EM_ANDAMENTO | CONCLUIDO | BLOQUEADO. Dono: ordem banco -> ba
 ## S2 Imóveis, inquilinos, fiadores e reformas
 - A-20 /imoveis: lista, filtros opcionais (endereço, tipo, status, inquilino vinculado), cadastro, edição, detalhe com
   contrato vigente. Aceite: criar e editar persistem; filtros retornam o subconjunto certo.
-  **CONCLUIDO** (filtros SQL + ImovelDetalheDialog + ImoveisFiltrosTest 6/6; ressalvas em P-026).
+  **CONCLUIDO** (filtros SQL + ImovelDetalheDialog + ImoveisFiltrosTest 6/6; P-026 resolvido).
 - A-21 /inquilinos: lista, filtros (nome, CPF, e-mail), adicionar/editar com fiador, imóvel vinculado, valor da caução
   e upload do recibo da caução. Aceite: um envio cria inquilino, fiador, contrato e depósito de caução na mesma transação.
-  **CONCLUIDO** (InquilinoCadastroService transacional; InquilinoCadastroTest 4/4; upload pendente A-50; ressalvas P-027).
+  **CONCLUIDO** (InquilinoCadastroService transacional; InquilinoCadastroTest 5/5; upload em A-50; P-027 resolvido).
 - A-22 Reformas do imóvel: histórico (data, descrição, valor, responsável do período derivado) e + Novo Registro.
   **CONCLUIDO** (ReformasView com ComboBox de imóvel e ReformaRepositorio.listarImoveis; ReformasHistoricoTest 2/2).
 
@@ -85,9 +85,9 @@ Status: PENDENTE | EM_ANDAMENTO | CONCLUIDO | BLOQUEADO. Dono: ordem banco -> ba
 ## S8 Fecho
 - A-80 Autorização por papel também nos serviços (não só na tela), tratamento global de erros e notificações, pt-BR,
   moeda e datas, fuso America/Sao_Paulo.
-  **CONCLUIDO** (ErrosGlobalConfig + locale pt_BR + fuso; autorização nos serviços coberta por testes; ressalva P-022).
+  **CONCLUIDO** (ErrosGlobalConfig + locale pt_BR + fuso; autorização nos serviços coberta por testes; P-022 resolvido).
 - A-81 Perfis dev e prod, variáveis de ambiente documentadas, Dockerfile, README de execução e deploy (Railway/Render).
   **CONCLUIDO** (application-dev/prod, .env.example e README completo; Dockerfile já usa prod).
 - A-90 Auditoria final: DemoData removido, nenhum botão morto, todas as rotas do Figma funcionais, juiz verde,
   RELATORIO-FINAL.md.
-  **CONCLUIDO** (DemoData -> Modelos; botões mortos removidos; juiz 8/8; RELATORIO-FINAL.md).
+  **CONCLUIDO** (DemoData -> Modelos; botões mortos removidos; P-002/P-019/P-021/P-023/P-027 resolvidos; juiz 8/8; RELATORIO-FINAL.md).

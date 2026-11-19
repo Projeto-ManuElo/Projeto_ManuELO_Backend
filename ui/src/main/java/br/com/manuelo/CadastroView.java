@@ -7,13 +7,13 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
-import br.com.manuelo.dados.AutenticacaoService;
+import com.Projeto.manuelo.seguranca.CadastroUsuarioService;
 
 @Route("cadastro")
 @PageTitle("Cadastro")
 public class CadastroView extends AuthLayout {
 
-    public CadastroView(AutenticacaoService autenticacao) {
+    public CadastroView(CadastroUsuarioService cadastroUsuarios) {
         form.addClassName("auth-cadastro");
         titulo("Cadastre-se!", null);
 
@@ -37,7 +37,7 @@ public class CadastroView extends AuthLayout {
                         + "e ser igual à confirmação.");
                 return;
             }
-            if (autenticacao.cadastrar(nome.getValue(), email.getValue(), senha.getValue())) {
+            if (cadastroUsuarios.cadastrar(nome.getValue(), email.getValue(), senha.getValue())) {
                 UiKit.ir("aprovacao");
             } else {
                 UiKit.erro("Não foi possível cadastrar. Verifique se o email já está em uso.");

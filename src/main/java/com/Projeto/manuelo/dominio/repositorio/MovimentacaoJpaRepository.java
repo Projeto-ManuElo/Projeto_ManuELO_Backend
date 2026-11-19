@@ -2,9 +2,8 @@ package com.Projeto.manuelo.dominio.repositorio;
 
 import java.util.UUID;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-
 import com.Projeto.manuelo.dominio.Movimentacao;
+import com.Projeto.manuelo.dominio.repositorio.insercao.InsercaoSomente;
 
-public interface MovimentacaoJpaRepository extends JpaRepository<Movimentacao, UUID> {
+public interface MovimentacaoJpaRepository extends InsercaoSomente<Movimentacao, UUID> {
 }

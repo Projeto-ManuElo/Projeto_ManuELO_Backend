@@ -1,0 +1,1 @@
+DejaVu fonts are distributed under the Bitstream Vera license. See https://dejavu-fonts.github.io/License.html
