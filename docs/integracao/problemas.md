@@ -394,5 +394,5 @@ Modelo de bloco (copie para cada problema):
 - Dono: front (sessão/opções), back (compressão/log), qa (testes)
 - Critério de aceite: nenhuma chamada `*Opcoes()` em construtores de view; `SessaoUsuario` revalida no máximo 1x a cada
   30 s; compressão habilitada; log de requisições > 1,5 s; navegação medida em 1-3 s.
-- Status: EM_ANDAMENTO
-- Tentativas: 0/3
+- Status: EM_ANDAMENTO (correções aplicadas; falta juiz com JDK 21 e medição em produção)
+- Tentativas: 1/3

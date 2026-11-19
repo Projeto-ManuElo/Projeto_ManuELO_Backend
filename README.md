@@ -124,6 +124,10 @@ Em produção são obrigatórios `DB_URL`, `DB_USER`, `DB_PASSWORD`, `MANUELO_AD
 `MANUELO_STORAGE_DIR` (volume persistente para documentos). O `Dockerfile` já executa com
 `--spring.profiles.active=prod`, usa usuário não-root e aceita chaves Vaadin via secrets de build.
 
+Latência: mantenha o serviço do Railway e o Postgres (Supabase) na **mesma região**. Cada consulta
+é um round-trip e a distância entre regiões aparece direto no tempo de navegação. O log procura
+por `Requisição lenta` (acima de 1,5 s) para medir.
+
 ## Segurança e perfis
 
 - Login por e-mail/senha com BCrypt e sessão Spring Security.

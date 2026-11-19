@@ -38,7 +38,7 @@ public class InquilinosView extends Div {
         this.cadastro = cadastro;
         this.documentos = documentos;
         addClassName("page");
-        dialog = new InquilinoDialog(consulta.imoveisOpcoes(), this::salvar);
+        dialog = new InquilinoDialog(consulta::imoveisOpcoes, this::salvar);
 
         Button novo = UiKit.primaryIcon("Novo Inquilino", VaadinIcon.PLUS, e -> dialog.abrirNovo());
         add(UiKit.header("Inquilinos", null, novo));

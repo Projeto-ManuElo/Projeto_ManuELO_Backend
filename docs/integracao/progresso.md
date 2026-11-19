@@ -51,3 +51,8 @@ Nenhum. Os 5 problemas abertos (P-002/P-019/P-021/P-023/P-027) foram concluídos
 - Iteração 24: P-002/P-019/P-021/P-023/P-027 — `ConsultaService` + views sem repositórios, insert-only nos imutáveis, cadastro JPA com novo contexto, token após commit com lock e rollback pós-INSERT; juiz 8/8; 109 testes, 1 skip.
 - Iteração 25: P-028 — Dockerfile corrigido para o Railway (cache mount com `id=manuelo-m2` em `/app/.m2`, remoção dos secret mounts Vaadin Pro/Offline e do estágio `jq`); sem Docker local para build de validação, revalidar no deploy (DEC-I15).
 - Iteração 26: P-029 — Railway retorna 404 de borda ("train has not arrived"); Dockerfile já corrigido e app lê `PORT`; triagem registrada (Private Networking, env obrigatórias do perfil prod, target port). Sem acesso ao painel/logs do Railway nesta sessão.
+- Iteração 27: A-91/P-030 — `SessaoUsuario` revalida no banco no máximo 1x/30 s; opções de diálogo
+  (`Documentos`, `Contratos`, `Inquilinos`, `ContratoDetalhe`) e de `MovimentacaoFinanceiraView` passam a ser
+  carregadas sob demanda ao abrir/interagir, não no construtor; compressão HTTP habilitada; filtro
+  `Requisições lentas` (>1,5 s) adicionado; teste vermelho `SessaoUsuarioCacheTest`. JDK/Docker ausentes neste
+  ambiente: juiz e teste não executados aqui — rodar `./scripts/verificar-integracao.sh` com JDK 21.

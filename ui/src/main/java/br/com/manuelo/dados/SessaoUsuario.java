@@ -35,8 +35,13 @@ public class SessaoUsuario implements Serializable {
         }
     }
 
+    // DEC-I16: revalidar o status no banco no máximo 1x a cada 30 s. Antes, cada
+    // chamada de usuario() abria uma transação JPA, multiplicando o RTT na navegação.
+    private static final long INTERVALO_REVALIDACAO_MS = 30_000L;
+
     private UsuarioSessao usuario;
     private String emailRecuperacao;
+    private transient long revalidadoEm;
     private final UsuarioJpaRepository usuarios;
 
     public SessaoUsuario() {
@@ -55,9 +60,14 @@ public class SessaoUsuario implements Serializable {
     public UsuarioSessao usuario() {
         if (usuario == null) {
             usuario = usuarioDoSecurityContext();
+            revalidadoEm = 0L;
         }
         if (usuario != null) {
-            usuario = revalidar(usuario);
+            long agora = System.currentTimeMillis();
+            if (agora - revalidadoEm >= INTERVALO_REVALIDACAO_MS) {
+                usuario = revalidar(usuario);
+                revalidadoEm = usuario == null ? 0L : agora;
+            }
         }
         return usuario;
     }
@@ -74,11 +84,13 @@ public class SessaoUsuario implements Serializable {
 
     public void entrar(UsuarioSessao usuario) {
         this.usuario = usuario;
+        this.revalidadoEm = usuario == null ? 0L : System.currentTimeMillis();
     }
 
     public void sair() {
         this.usuario = null;
         this.emailRecuperacao = null;
+        this.revalidadoEm = 0L;
     }
 
     public String emailRecuperacao() {

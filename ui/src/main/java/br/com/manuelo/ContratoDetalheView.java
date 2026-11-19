@@ -53,7 +53,7 @@ public class ContratoDetalheView extends Div implements BeforeEnterObserver {
         this.pagamentos = pagamentos;
         this.documentoService = documentoService;
         this.caucao = caucao;
-        this.novoContrato = new ContratoDialog(consulta.imoveisOpcoes(), this::criarContrato);
+        this.novoContrato = new ContratoDialog(consulta::imoveisOpcoes, this::criarContrato);
         addClassName("page");
     }
 

@@ -42,7 +42,7 @@ public class ContratosView extends Div implements BeforeEnterObserver {
         this.cadastro = cadastro;
         this.documentoService = documentoService;
         addClassName("page");
-        dialog = new ContratoDialog(consulta.imoveisOpcoes(), this::adicionarContrato);
+        dialog = new ContratoDialog(consulta::imoveisOpcoes, this::adicionarContrato);
 
         Button novo = UiKit.primaryIcon("Novo Contrato", VaadinIcon.PLUS, e -> dialog.abrir());
         add(UiKit.header("Contratos", null, novo));
