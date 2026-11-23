@@ -912,6 +912,18 @@ vaadin-button.icon-button:hover {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) 130px 120px 190px;
 }
 
+.cols-extrato-mov {
+    grid-template-columns: 110px 90px 140px minmax(0, 1fr) 110px 130px 120px 130px;
+}
+
+.cols-extrato-mov-admin {
+    grid-template-columns: 110px 90px 140px minmax(0, 1fr) 110px 130px 120px 130px 180px;
+}
+
+.cols-extrato-rel {
+    grid-template-columns: 110px 90px 150px minmax(0, 1fr) 120px 130px;
+}
+
 .extrato .table-head {
     text-transform: uppercase;
     font-size: 13px;
@@ -1422,7 +1434,10 @@ vaadin-button.segment.active {
     .cols-contratos,
     .cols-extrato,
     .cols-reformas,
-    .cols-usuarios {
+    .cols-usuarios,
+    .cols-extrato-mov,
+    .cols-extrato-mov-admin,
+    .cols-extrato-rel {
         grid-template-columns: 1fr;
     }
 }

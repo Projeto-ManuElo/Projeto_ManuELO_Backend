@@ -380,7 +380,7 @@ public class MovimentacaoFinanceiraView extends Div {
                         "Valor", "Comprovante" };
         Div head = new Div();
         head.addClassName("table-head");
-        head.getStyle().set("grid-template-columns", gridExtrato());
+        head.addClassName(administrador ? "cols-extrato-mov-admin" : "cols-extrato-mov");
         for (String coluna : colunas) {
             head.add(new Span(coluna));
         }
@@ -416,7 +416,7 @@ public class MovimentacaoFinanceiraView extends Div {
                 comprovante(item),
                 estornado);
         linha.addClassName("table-row");
-        linha.getStyle().set("grid-template-columns", gridExtrato());
+        linha.addClassName(administrador ? "cols-extrato-mov-admin" : "cols-extrato-mov");
 
         if (administrador) {
             linha.add(criarAcoes(item));
@@ -462,10 +462,5 @@ public class MovimentacaoFinanceiraView extends Div {
             acoes.add(editar, estornar);
         }
         return acoes;
-    }
-
-    private String gridExtrato() {
-        String base = "110px 90px 140px minmax(0, 1fr) 110px 130px 120px 130px";
-        return administrador ? base + " 180px" : base;
     }
 }
