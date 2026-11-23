@@ -49,7 +49,8 @@ public class ContratoRepositorio {
         StringBuilder sql = new StringBuilder("""
                 SELECT contrato_id::text AS id, inquilino_nome, inquilino_documento, inquilino_email,
                        imovel_endereco, valor_aluguel, fim, atrasado, situacao_validade,
-                       COALESCE(dias_para_vencer, 0) AS dias
+                       COALESCE(dias_para_vencer, 0) AS dias,
+                       COALESCE(dias_atraso, 0) AS dias_atraso
                   FROM vw_contratos_situacao
                  WHERE 1 = 1
                 """);
@@ -96,6 +97,7 @@ public class ContratoRepositorio {
                         rs.getString("inquilino_email"),
                         rs.getObject("fim", LocalDate.class),
                         rs.getInt("dias"),
+                        rs.getInt("dias_atraso"),
                         rs.getString("imovel_endereco"),
                         Dominio.situacaoContrato(rs.getBoolean("atrasado"),
                                 rs.getString("situacao_validade")),

@@ -109,7 +109,7 @@ public class ContratosView extends Div implements BeforeEnterObserver {
         }
 
         for (Modelos.Contrato contrato : contratos) {
-            Span validadeSpan = new Span(UiKit.data(contrato.vencimento()) + "  " + textoDias(contrato.dias()));
+            Span validadeSpan = new Span(UiKit.data(contrato.vencimento()) + "  " + textoValidade(contrato));
             Div linha = UiKit.tableRow("cols-contratos",
                     new Span(contrato.inquilino()),
                     validadeSpan,
@@ -132,6 +132,13 @@ public class ContratosView extends Div implements BeforeEnterObserver {
         }
         int atraso = Math.abs(dias);
         return atraso == 1 ? "Atrasado há 1 dia" : "Atrasado há " + atraso + " dias";
+    }
+
+    private String textoValidade(Modelos.Contrato contrato) {
+        if (contrato.diasAtraso() > 0) {
+            return textoDias(-contrato.diasAtraso());
+        }
+        return textoDias(contrato.dias());
     }
 
     private String valor(TextField field) {
