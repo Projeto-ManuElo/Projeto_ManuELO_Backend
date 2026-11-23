@@ -46,7 +46,11 @@ public class EnvioTokenSenhaImpl implements EnvioTokenSenha {
         }
         if (environment.acceptsProfiles(Profiles.of("dev"))) {
             LOG.info("Link de redefinição de senha para {}: {}", email, link);
+            return;
         }
+        // F01: sem SMTP fora de dev não há como entregar o link; avisa sem PII
+        // (sem e-mail, sem token e sem link) para não falhar em silêncio.
+        LOG.warn("SMTP não configurado (spring.mail.host ausente); e-mail de redefinição de senha não será enviado.");
     }
 
     private void enviarPorEmail(JavaMailSender sender, String email, String link) {
