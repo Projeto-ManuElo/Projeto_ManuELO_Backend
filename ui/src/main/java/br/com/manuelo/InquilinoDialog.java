@@ -50,6 +50,8 @@ public class InquilinoDialog extends Dialog {
             Consumer<DadosInquilino> aoSalvar) {
         this.aoSalvar = aoSalvar;
         this.imoveis = imoveis;
+        UiKit.mascararCpf(cpf);
+        UiKit.mascararCpf(cpfFiador);
         imovel = new ComboBox<>("Imóvel vinculado");
         imovel.setItemLabelGenerator(ConsultaService.ImovelOpcao::rotulo);
         imovel.setPlaceholder("Selecione o imóvel");

@@ -308,6 +308,42 @@ public final class UiKit {
         return field;
     }
 
+    /**
+     * Aplica mascara progressiva de CPF (000.000.000-00) mantendo no maximo 11 digitos.
+     * Idempotente: valor ja mascarado nao dispara setValue (evita loop de eventos).
+     */
+    public static void mascararCpf(TextField campo) {
+        campo.addValueChangeListener(event -> {
+            String atual = event.getValue() == null ? "" : event.getValue();
+            String formatado = formatarCpf(atual);
+            if (!formatado.equals(atual)) {
+                campo.setValue(formatado);
+            }
+        });
+        String inicial = campo.getValue() == null ? "" : campo.getValue();
+        String formatadoInicial = formatarCpf(inicial);
+        if (!formatadoInicial.equals(inicial)) {
+            campo.setValue(formatadoInicial);
+        }
+    }
+
+    private static String formatarCpf(String valor) {
+        String digitos = valor == null ? "" : valor.replaceAll("\\D", "");
+        if (digitos.length() > 11) {
+            digitos = digitos.substring(0, 11);
+        }
+        StringBuilder texto = new StringBuilder(digitos.length() + 4);
+        for (int i = 0; i < digitos.length(); i++) {
+            if (i == 3 || i == 6) {
+                texto.append('.');
+            } else if (i == 9) {
+                texto.append('-');
+            }
+            texto.append(digitos.charAt(i));
+        }
+        return texto.toString();
+    }
+
     public static EmailField email(String label, String placeholder) {
         EmailField field = new EmailField(label);
         field.setPlaceholder(placeholder);
