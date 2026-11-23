@@ -31,7 +31,8 @@ public final class Modelos {
     }
 
     public record Contrato(String id, String inquilino, String cpf, String email,
-            LocalDate vencimento, int dias, String endereco, String situacao, BigDecimal aluguel) {
+            LocalDate vencimento, int dias, String endereco, String situacao, BigDecimal aluguel,
+            int diasAtraso) {
     }
 
     public record Movimentacao(LocalDate data, String descricao, String categoria, BigDecimal valor) {

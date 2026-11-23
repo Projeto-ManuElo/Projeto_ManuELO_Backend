@@ -28,7 +28,7 @@ public class ContratosView extends Div implements BeforeEnterObserver {
     private final ContratoCadastroService cadastro;
     private final DocumentoService documentoService;
     private final TextField nome = UiKit.text("Nome", "Ex: João Miguel");
-    private final TextField cpf = UiKit.text("CPF", "Ex: xxx.yyy.zzz.xz");
+    private final TextField cpf = UiKit.cpf("CPF", "Ex: xxx.yyy.zzz.xz");
     private final TextField imovel = UiKit.text("Imóvel", "Ex: Aurora");
     private final TextField validade = UiKit.text("Validade do contrato", "Ex: xx/xx/xx26");
     private final ComboBox<String> situacao = UiKit.select("Situação", "Ex: Atrasado ou não",
@@ -109,7 +109,7 @@ public class ContratosView extends Div implements BeforeEnterObserver {
         }
 
         for (Modelos.Contrato contrato : contratos) {
-            Span validadeSpan = new Span(UiKit.data(contrato.vencimento()) + "  " + textoDias(contrato.dias()));
+            Span validadeSpan = new Span(UiKit.data(contrato.vencimento()) + "  " + textoDias(contrato));
             Div linha = UiKit.tableRow("cols-contratos",
                     new Span(contrato.inquilino()),
                     validadeSpan,
@@ -123,7 +123,15 @@ public class ContratosView extends Div implements BeforeEnterObserver {
         }
     }
 
-    private String textoDias(int dias) {
+    private String textoDias(Modelos.Contrato contrato) {
+        if ("Atrasado".equals(contrato.situacao())) {
+            int atraso = contrato.diasAtraso();
+            if (atraso <= 0) {
+                return "";
+            }
+            return atraso == 1 ? "Atrasado há 1 dia" : "Atrasado há " + atraso + " dias";
+        }
+        int dias = contrato.dias();
         if (dias == 0) {
             return "Hoje";
         }

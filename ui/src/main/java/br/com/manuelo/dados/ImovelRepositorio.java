@@ -57,15 +57,20 @@ public class ImovelRepositorio {
                   ) cv ON true
                  WHERE 1 = 1
                 """);
-        String enderecoFiltro = normalizar(endereco);
+        List<String> enderecoTokens = tokensEndereco(endereco);
         String tipoFiltro = normalizar(tipo);
         String statusFiltro = normalizar(status);
         String inquilinoFiltro = normalizar(inquilino);
 
-        if (enderecoFiltro != null) {
-            sql.append(" AND (v.logradouro ILIKE :endereco ESCAPE '\\'")
-                    .append(" OR v.numero ILIKE :endereco ESCAPE '\\'")
-                    .append(" OR v.bairro ILIKE :endereco ESCAPE '\\')");
+        for (int i = 0; i < enderecoTokens.size(); i++) {
+            String param = "endereco" + i;
+            sql.append(" AND (v.logradouro ILIKE :").append(param).append(" ESCAPE '\\'")
+                    .append(" OR v.numero ILIKE :").append(param).append(" ESCAPE '\\'")
+                    .append(" OR v.complemento ILIKE :").append(param).append(" ESCAPE '\\'")
+                    .append(" OR v.bairro ILIKE :").append(param).append(" ESCAPE '\\'")
+                    .append(" OR v.cidade ILIKE :").append(param).append(" ESCAPE '\\'")
+                    .append(" OR v.uf ILIKE :").append(param).append(" ESCAPE '\\'")
+                    .append(" OR v.cep ILIKE :").append(param).append(" ESCAPE '\\')");
         }
         if (tipoFiltro != null) {
             sql.append(" AND v.tipo::text = :tipo");
@@ -84,8 +89,8 @@ public class ImovelRepositorio {
         }
 
         JdbcClient.StatementSpec spec = jdbc.sql(sql.toString());
-        if (enderecoFiltro != null) {
-            spec = spec.param("endereco", "%" + like(enderecoFiltro) + "%");
+        for (int i = 0; i < enderecoTokens.size(); i++) {
+            spec = spec.param("endereco" + i, "%" + like(enderecoTokens.get(i)) + "%");
         }
         if (tipoFiltro != null) {
             spec = spec.param("tipo", tipoFiltro);
@@ -125,6 +130,15 @@ public class ImovelRepositorio {
 
     private String normalizar(String valor) {
         return valor == null || valor.isBlank() ? null : valor.trim();
+    }
+
+    private static List<String> tokensEndereco(String texto) {
+        if (texto == null || texto.isBlank()) {
+            return List.of();
+        }
+        return java.util.Arrays.stream(texto.trim().split("[^\\p{L}\\p{N}]+"))
+                .filter(token -> !token.isBlank())
+                .toList();
     }
 
     private static String like(String texto) {

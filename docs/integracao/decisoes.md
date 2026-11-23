@@ -50,3 +50,17 @@ Modelo para novas decisões:
   requisições acima de 1,5 s para medir a meta; (5) recomendar Railway e Supabase na mesma região.
 - Motivo: cada transação custa BEGIN/SELECT/COMMIT; com RTT alto, cortar transações reduz segundos. O alvo é 1-3 s.
 - Reverter: baixar o TTL para 0 (revalidar sempre) e voltar a carregar as opções no construtor; remover o log de lentidão.
+
+## DEC-I17 Correções do relatório de frontend de 22/11/2026 (E01–E07, O01, O02)
+- Contexto: o relatório apontou 7 bugs de frontend após a entrega A-90 (PDF que não baixa, e-mail de senha, responsividade, datas, filtro de atrasados, endereço completo, máscara de CPF, exportação de extrato, mensagens e ordenação).
+- Escolha:
+  1. Download de PDF sempre por `UiKit.download` (`Anchor` + `StreamResource` + clique), nunca `Page.open` após round-trip; `ArquiteturaViewsTest` fiscaliza.
+  2. CPF/CNPJ validado por dígitos verificadores em `dominio/DocumentoFiscal` (back) e formatado por `UiKit.cpf` (front); serviços recusam documento inválido.
+  3. Filtro de endereço por tokens (logradouro/numero/complemento/bairro/cidade/uf/cep), cada token com `ILIKE`.
+  4. Datas e moeda centralizadas no `UiKit` com `pt-BR`; `DatePicker` com `I18N` pt-BR.
+  5. Contratos atrasados exibem `dias_atraso` da view (R06: atraso = competência em aberto, não data de fim).
+  6. Responsividade por breakpoints 1200/900/760/520 e `.table { overflow-x: auto }` para grids largos.
+  7. Documentos recentes: `ORDER BY enviado_em DESC, nome_arquivo ASC, id ASC` (determinístico).
+  8. SMTP: diagnóstico seguro no boot/envio; sem `SPRING_MAIL_HOST` o log avisa que nenhum e-mail sairá; token nunca é logado fora de `dev`.
+- Motivo: eliminar causas de download silencioso, validação fraca de documento, filtros incoerentes e layout quebrado no celular, sem alterar schema nem regras R01–R11.
+- Reverter: cada item é independente; reverter o arquivo/classe correspondente e o teste-guarda que o acompanha. Nenhuma migration foi criada.

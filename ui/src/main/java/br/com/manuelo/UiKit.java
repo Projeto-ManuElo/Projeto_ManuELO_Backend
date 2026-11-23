@@ -266,6 +266,19 @@ public final class UiKit {
         return data == null ? "" : DIA_MES.format(data).replace(".", "");
     }
 
+    public static Anchor download(String nome, String mime, byte[] conteudo) {
+        String arquivo = nome == null || nome.isBlank() ? "download" : nome;
+        byte[] bytes = conteudo == null ? new byte[0] : conteudo;
+        StreamResource resource = new StreamResource(arquivo,
+                () -> new ByteArrayInputStream(bytes));
+        resource.setContentType(mime);
+        resource.setHeader("Content-Disposition",
+                "attachment; filename=\"" + arquivo.replace("\"", "") + "\"");
+        Anchor anchor = new Anchor(resource, "");
+        anchor.setDownload(true);
+        return anchor;
+    }
+
     public static Button primary(String texto, ComponentEventListener<com.vaadin.flow.component.ClickEvent<Button>> listener) {
         Button button = new Button(texto, listener);
         button.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -311,6 +324,18 @@ public final class UiKit {
     public static TextField text(String label) {
         TextField field = new TextField(label);
         field.setWidthFull();
+        return field;
+    }
+
+    public static TextField cpf(String label, String placeholder) {
+        TextField field = text(label, placeholder);
+        field.setAllowedCharPattern("[0-9.\\-/]");
+        field.addBlurListener(e -> {
+            String digitos = Dominio.soDigitos(field.getValue());
+            if (digitos.length() == 11 || digitos.length() == 14) {
+                field.setValue(Dominio.formatarDocumento(digitos));
+            }
+        });
         return field;
     }
 

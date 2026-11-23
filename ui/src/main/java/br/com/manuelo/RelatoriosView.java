@@ -1,6 +1,5 @@
 package br.com.manuelo;
 
-import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.LocalDate;
@@ -8,19 +7,17 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.StreamRegistration;
-import com.vaadin.flow.server.StreamResource;
 
 import com.Projeto.manuelo.servico.MovimentacaoFinanceiraService;
 import com.Projeto.manuelo.servico.MovimentacaoFinanceiraService.ExtratoItem;
@@ -244,14 +241,10 @@ public class RelatoriosView extends Div {
     }
 
     private void baixar(RelatorioService.Arquivo arquivo) {
-        StreamResource resource = new StreamResource(arquivo.nome(),
-                () -> new ByteArrayInputStream(arquivo.conteudo()));
-        resource.setContentType(arquivo.mime());
-        resource.setHeader("Content-Disposition",
-                "attachment; filename=\"" + arquivo.nome().replace("\"", "") + "\"");
-        StreamRegistration registro = UI.getCurrent().getSession().getResourceRegistry()
-                .registerResource(resource);
-        UI.getCurrent().getPage().open(registro.getResourceUri().toString(), "_blank");
+        Anchor anchor = UiKit.download(arquivo.nome(), arquivo.mime(), arquivo.conteudo());
+        anchor.setVisible(false);
+        add(anchor);
+        anchor.getElement().executeJs("this.click()").then(ignored -> remove(anchor));
     }
 
     private boolean validarPeriodo(LocalDate dataInicio, LocalDate dataFim) {

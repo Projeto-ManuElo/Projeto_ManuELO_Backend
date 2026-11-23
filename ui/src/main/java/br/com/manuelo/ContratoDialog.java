@@ -47,11 +47,11 @@ public class ContratoDialog extends Dialog {
     private final ComboBox<ConsultaService.ImovelOpcao> imovel = new ComboBox<>("Imóvel existente");
     private final TextField endereco = UiKit.text("Endereço", "Ex: Ap 302. Ed. Aurora");
     private final TextField nome = UiKit.text("Nome", "Ex: João Miguel Oliveira dos Santos");
-    private final TextField cpf = UiKit.text("CPF", "Ex: 074.xxx.39-xy");
+    private final TextField cpf = UiKit.cpf("CPF", "Ex: 074.xxx.39-xy");
     private final EmailField email = UiKit.email("Email", "Ex: joao@wmail.com");
     private final TextField telefone = UiKit.text("Telefone", "Ex: (79) 99999-9999");
     private final TextField nomeFiador = UiKit.text("Nome do fiador", "Ex: Maria Oliveira dos Santos");
-    private final TextField documentoFiador = UiKit.text("CPF/CNPJ do fiador", "Ex: 123.xxx.xxx.123");
+    private final TextField documentoFiador = UiKit.cpf("CPF/CNPJ do fiador", "Ex: 123.xxx.xxx.123");
     private final EmailField emailFiador = UiKit.email("Email do fiador", "Ex: fiador@wmail.com");
     private final TextField telefoneFiador = UiKit.text("Telefone do fiador", "Ex: (79) 99999-9999");
     private final Checkbox acaoJudicial = new Checkbox("Tem ação judicial");

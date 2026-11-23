@@ -25,7 +25,7 @@ public class InquilinosView extends Div {
     private final InquilinoCadastroService cadastro;
     private final DocumentoService documentos;
     private final TextField nome = UiKit.text("Nome", "Ex: João Miguel");
-    private final TextField cpf = UiKit.text("CPF", "Ex: xxx.yyy.zzz.xz");
+    private final TextField cpf = UiKit.cpf("CPF", "Ex: xxx.yyy.zzz.xz");
     private final TextField email = UiKit.text("Email", "Ex: joao@wmail.com");
     private final Div tabela = new Div();
     private final Div paginacao = new Div();

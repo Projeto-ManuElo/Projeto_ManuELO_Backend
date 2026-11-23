@@ -1,6 +1,7 @@
 # Registro de problemas (o mapeador cria; o líder mantém o status)
 
-Resumo: total 27 | abertos 0 | em correção 0 | em revisão 0 | resolvidos 27 | bloqueados 0
+Resumo: total 40 | resolvidos 38 | em análise 1 (P-029) | em andamento 1 (P-030) | bloqueados 0
+Obs.: os itens do relatório de frontend de 22/11/2026 estão em P-031..P-040 e foram corrigidos no working tree (sem commit, por decisão do usuário nesta rodada).
 
 Modelo de bloco (copie para cada problema):
 
@@ -397,3 +398,95 @@ Modelo de bloco (copie para cada problema):
 - Status: EM_ANDAMENTO (correções aplicadas; teste novo verde; falta juiz completo e medição em produção)
 - Resolução parcial: SessaoUsuario com TTL de 30 s; `*Opcoes()` fora dos construtores; compressão HTTP; filtro `Requisição lenta` (commit 823c387).
 - Tentativas: 1/3
+
+## P-031 E01/FE46 — PDF trimestral não gerava/baixava
+- Severidade: CRÍTICA (bloqueava FE47)
+- Camada: front (download) + back (geração já existente)
+- Evidência: `RelatoriosView.baixar`/`ExportarExtratoDialog.baixar` usavam `UI.getCurrent().getPage().open(...)` com `StreamResource`; após o round-trip do servidor o navegador não baixava o arquivo.
+- Causa raiz: `Page.open` de uma URI de `StreamRegistration` não é confiável como download em Vaadin; o correto é `Anchor` com `StreamResource` e clique.
+- Correção: `UiKit.download(nome, mime, conteudo)` + `anchor.getElement().executeJs("this.click()")`; `ArquiteturaViewsTest` proíbe `getPage().open` em 5 views (`RelatoriosView`, `ExportarExtratoDialog`, `MovimentacaoFinanceiraView`, `DocumentosView`, `ContratoDetalheView`).
+- Status: RESOLVIDO (working tree, sem commit)
+- Teste: `ArquiteturaViewsTest.downloadsDeArquivoUsamAnchorENaoPageOpen`
+- Commit: pendente
+
+## P-032 F01/FE09 — e-mail de redefinição de senha não chega
+- Severidade: ALTA
+- Camada: back (SMTP) + infra (variáveis do Railway)
+- Evidência: `EnvioTokenSenhaImpl` só envia quando `spring.mail.host` está configurado; em produção sem `SPRING_MAIL_HOST` o envio era silencioso.
+- Causa raiz: configuração de SMTP ausente no ambiente; não havia diagnóstico explícito do motivo.
+- Correção: log de diagnóstico no boot e no envio (host/porta, sem usuário/senha), aviso explícito quando não há SMTP, mascaramento de e-mail e de `token=` em mensagens de erro, token nunca logado fora de dev; `.env.example` já documenta `SPRING_MAIL_*`.
+- Status: RESOLVIDO no código; entrega real depende de `SPRING_MAIL_HOST/USERNAME/PASSWORD` no ambiente (LACUNA L2)
+- Teste: `EnvioTokenSenhaImplTest` 3/3
+- Commit: pendente
+
+## P-033 E02/FE49 — interface não responsiva no celular
+- Severidade: ALTA
+- Camada: front (CSS)
+- Evidência: CSS com larguras fixas (sidebar 347px, grids de tabela até ~1000px, autenticação com paddings de 160px/48px) e sem breakpoint abaixo de 760px.
+- Causa raiz: breakpoints insuficientes para telas pequenas e tabelas largas sem rolagem horizontal.
+- Correção: `.table { overflow-x: auto }`; breakpoints 1200/900/760 já existentes reforçados; novo breakpoint 520px para `.app-content`, `.sidebar`, `.card`, `.page-actions`, `.modal-*`, `.doc-item`, `.segmented` e fluxo de autenticação.
+- Status: RESOLVIDO no CSS; validação visual em navegador real pendente (LACUNA L3)
+- Teste: `ResponsividadeCssTest` 4/4
+- Commit: pendente
+
+## P-034 E03 — datas em MM/DD/AAAA
+- Severidade: ALTA
+- Camada: front
+- Causa raiz: `DatePicker` sem `I18N`/locale pt-BR em alguns campos.
+- Correção: centralizada em `UiKit.date` + `UiKit.PT_BR` (commit 2a8c8af), com `UiKitDateTest`.
+- Status: RESOLVIDO (commit 2a8c8af)
+- Teste: `UiKitDateTest` 1/1
+- Commit: 2a8c8af
+
+## P-035 E04/FE30 — filtro "atrasados" mostrava aluguéis a vencer
+- Severidade: ALTA
+- Camada: front + consulta
+- Evidência: contrato com `fim` futuro e competência antiga em aberto aparecia como "Atrasado" (correto por R06), mas a coluna de dias exibia "Faltam N dias" (dias para o fim do contrato), dando a impressão de aluguel a vencer.
+- Causa raiz: `textoDias` usava `dias` (dias para o fim do contrato) em vez de `dias_atraso` quando a situação era Atrasado.
+- Correção: `Modelos.Contrato.diasAtraso` + `vw_contratos_situacao.dias_atraso`; `textoDias` prioriza "Atrasado há N dias".
+- Status: RESOLVIDO (working tree, sem commit)
+- Teste: `ContratosFiltrosTest` (A-94)
+- Commit: pendente
+
+## P-036 E05/FE18 — filtro por endereço completo gerava erro
+- Severidade: ALTA
+- Camada: back (consulta)
+- Causa raiz: filtro comparava o texto inteiro com `ILIKE` em um único campo, então "logradouro, número - bairro" não casava.
+- Correção: `ImovelRepositorio.tokensEndereco` divide o texto e aplica cada token em logradouro/numero/complemento/bairro/cidade/uf/cep.
+- Status: RESOLVIDO (working tree, sem commit)
+- Teste: `ImoveisFiltrosTest.filtraPorEnderecoCompletoLogradouroNumeroBairro` (A-95)
+- Commit: pendente
+
+## P-037 E06/FE26 — máscara de CPF não aplicada
+- Severidade: MÉDIA
+- Camada: front + back
+- Causa raiz: campos de CPF usavam `UiKit.text` sem máscara; serviços validavam apenas o tamanho.
+- Correção: `UiKit.cpf` (caracteres permitidos + formatação no blur) e `DocumentoFiscal` (dígitos verificadores de CPF/CNPJ) usado por `InquilinoCadastroService` e `ContratoCadastroService`.
+- Status: RESOLVIDO (working tree, sem commit)
+- Teste: `InquilinoCadastroTest` (A-96) e `ContratoCadastroTest`
+- Commit: pendente
+
+## P-038 E07/FE41 — exportar extrato não gerava arquivo
+- Severidade: MÉDIA (RF12)
+- Camada: front (download) + back (geração existente)
+- Causa raiz: mesmo `Page.open` de P-031.
+- Correção: `ExportarExtratoDialog` usa `UiKit.download` (Anchor + clique).
+- Status: RESOLVIDO (working tree, sem commit)
+- Teste: `ArquiteturaViewsTest.downloadsDeArquivoUsamAnchorENaoPageOpen`
+- Commit: pendente
+
+## P-039 O01/FE04 — mensagem genérica no cadastro
+- Severidade: BAIXA
+- Camada: front + back
+- Correção: `CadastroUsuarioService.cadastrarComResultado` (OK/EMAIL_EM_USO/DADOS_INVALIDOS) e `CadastroView` com mensagens específicas.
+- Status: RESOLVIDO (working tree, sem commit)
+- Teste: `CadastroUsuariosTest` (A-98) e `ArquiteturaViewsTest.cadastroViewUsaResultadoDetalhadoDoServico`
+- Commit: pendente
+
+## P-040 O02/FE43 — ordem de "Documentos recentes"
+- Severidade: BAIXA
+- Camada: back (consulta)
+- Correção: `ORDER BY enviado_em DESC, nome_arquivo ASC, id ASC` (determinística) em `DocumentoRepositorio.listarRecentes`; decisão registrada em DEC-I17.
+- Status: RESOLVIDO (working tree, sem commit)
+- Teste: `ArquiteturaViewsTest.documentosRecentesOrdenamPorEnviadoEmEId`
+- Commit: pendente
