@@ -99,6 +99,11 @@ public class ExportarExtratoDialog extends Dialog {
                 "attachment; filename=\"" + arquivo.nome().replace("\"", "") + "\"");
         StreamRegistration registro = UI.getCurrent().getSession().getResourceRegistry()
                 .registerResource(resource);
-        UI.getCurrent().getPage().open(registro.getResourceUri().toString(), "_blank");
+        // Download por ancora temporaria: nao depende de popup, que o navegador bloqueia
+        // quando a ativacao do usuario expira durante a geracao do PDF no servidor.
+        UI.getCurrent().getPage().executeJs(
+                "const a=document.createElement('a'); a.href=$0; a.download=$1;"
+                        + " document.body.appendChild(a); a.click(); a.remove();",
+                registro.getResourceUri().toString(), arquivo.nome());
     }
 }
