@@ -53,7 +53,7 @@ public class DocumentosView extends Div {
         add(criarFiltros());
         lista.addClassName("doc-list");
         paginacao.addClassName("form-actions");
-        add(UiKit.card(UiKit.cardHeader("Documento recentes", null), lista, paginacao));
+        add(UiKit.card(UiKit.cardHeader("Documentos recentes", null), lista, paginacao));
         renderizar();
     }
 
