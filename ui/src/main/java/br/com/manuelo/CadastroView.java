@@ -8,6 +8,7 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
 import com.Projeto.manuelo.seguranca.CadastroUsuarioService;
+import com.Projeto.manuelo.seguranca.CadastroUsuarioService.Resultado;
 
 @Route("cadastro")
 @PageTitle("Cadastro")
@@ -37,10 +38,15 @@ public class CadastroView extends AuthLayout {
                         + "e ser igual à confirmação.");
                 return;
             }
-            if (cadastroUsuarios.cadastrar(nome.getValue(), email.getValue(), senha.getValue())) {
-                UiKit.ir("aprovacao");
-            } else {
-                UiKit.erro("Não foi possível cadastrar. Verifique se o email já está em uso.");
+            Resultado resultado = cadastroUsuarios.cadastrarComResultado(
+                    nome.getValue(), email.getValue(), senha.getValue());
+            switch (resultado) {
+                case OK -> UiKit.ir("aprovacao");
+                case EMAIL_EM_USO -> UiKit.erro(
+                        "Este e-mail já está cadastrado. Use outro e-mail ou recupere a senha.");
+                case DADOS_INVALIDOS -> UiKit.erro(
+                        "Revise os dados: a senha deve ter ao menos 8 caracteres "
+                                + "e todos os campos devem estar preenchidos.");
             }
         });
         cadastrar.addClassName("auth-submit");
