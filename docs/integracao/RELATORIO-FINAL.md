@@ -1,7 +1,7 @@
 # RELATÓRIO FINAL — ManuElo
 
-Data: 19/11/2026
-Status: **ENTREGA FUNCIONAL CONCLUÍDA** — backlog A-01..A-90 concluído; juiz de integração verde.
+Data: 19/11/2026 (atualizado em 23/11/2026 com a rodada do relatório de frontend de 22/11)
+Status: **ENTREGA FUNCIONAL CONCLUÍDA** — backlog A-01..A-100 concluído no working tree (A-92..A-100 sem commit); juiz de integração verde.
 
 ## Resultado do juiz
 
@@ -65,16 +65,45 @@ JAVA_HOME=/caminho/jdk21 ./mvnw -B test
 
 Produção: `--spring.profiles.active=prod`, com `DB_URL`, `DB_USER`, `DB_PASSWORD`, `MANUELO_ADMIN_EMAIL`, `MANUELO_ADMIN_SENHA`, `MANUELO_APP_URL` e `MANUELO_STORAGE_DIR` obrigatórios. O `Dockerfile` já usa o perfil `prod`.
 
+## Rodada de correções do relatório de frontend de 22/11/2026
+
+Correções aplicadas no working tree, **sem commit** por decisão do usuário. Revisão independente (somente leitura): **APROVADA** com ressalvas não bloqueantes.
+
+| Item | Correção | Evidência |
+|---|---|---|
+| E01/FE46 e E07/FE41 | Download de PDF via `UiKit.download` (Anchor + clique) em 5 views; `Page.open` proibido por teste | `ArquiteturaViewsTest` |
+| E02/FE49 | Breakpoint 520px, reforço 760/900/1200 e `overflow-x` em tabelas | `ResponsividadeCssTest` (4/4) |
+| E03 | `DatePicker` pt-BR centralizado | `UiKitDateTest` |
+| E04/FE30 | "Atrasado há N dias" a partir de `dias_atraso` (R06) | `ContratosFiltrosTest` (8/8) |
+| E05/FE18 | Filtro por tokens de endereço com escape de `%`/`_` | `ImoveisFiltrosTest` (7/7) |
+| E06/FE26 | CPF/CNPJ com dígitos verificadores no serviço; máscara na view | testes de cadastro |
+| F01/FE09 | Diagnóstico SMTP sem credenciais; `token=` e e-mail mascarados no log | `EnvioTokenSenhaImplTest` (3/3) |
+| O01/FE04 | Resultado detalhado no cadastro (e-mail em uso/dados inválidos) | `CadastroUsuariosTest` (10/10) |
+| O02/FE43 | Ordenação determinística de documentos recentes (DEC-I17) | `ArquiteturaViewsTest` |
+
+Juiz após a rodada:
+
+```text
+./scripts/verificar-integracao.sh
+VERIFICAÇÃO DE INTEGRAÇÃO OK (8/8 etapas)
+Runtime do banco: 127.0.0.1:55433/manuelo
+EXIT 0
+```
+
+- 127 testes, 0 falhas, 0 erros, 1 skip (22 classes).
+- Ressalvas da revisão: (a) guardas de CSS/SQL por texto-fonte são frágeis; (b) `DocumentoFiscal.formatar` sem uso externo; (c) `.table { overflow-x:auto }` também força `overflow-y:auto`. Nenhuma bloqueante.
+- LACUNAs: entrega real de e-mail depende de `SPRING_MAIL_*` no Railway (L2); validação visual em navegador real pendente (L3); relatório original de 22/11 não está no repositório.
+
 ## Pendências conscientes (fora do backlog executado)
 
 O arquivo `docs/integracao/lacunas-interface.md` mapeava **67 lacunas de interface** (25 ALTO, 26 MÉDIO, 16 BAIXO); todas foram tratadas na rodada A-90 (commits 2302e95, 5f1af2f e be15137), com as ressalvas registradas no próprio documento.
 
-Problemas residuais registrados em `docs/integracao/problemas.md`: nenhum aberto. P-002 (views/serviços), P-019 (insert-only), P-021 (cadastro JPA com novo contexto), P-023 (token após commit + lock) e P-027 (rollback pós-INSERT) foram concluídos na rodada final.
+Problemas residuais registrados em `docs/integracao/problemas.md`: 38 resolvidos e 2 abertos fora do escopo (P-029, 404 no Railway; P-030, latência em produção). P-002 (views/serviços), P-019 (insert-only), P-021 (cadastro JPA com novo contexto), P-023 (token após commit + lock) e P-027 (rollback pós-INSERT) foram concluídos na rodada final; P-031..P-040 foram corrigidos no working tree na rodada de 22/11.
 
 ## Documentos de estado
 
 - `docs/integracao/backlog.md` — itens e evidências
 - `docs/integracao/progresso.md` — iterações e runtime
-- `docs/integracao/problemas.md` — 27 resolvidos / 0 abertos
-- `docs/integracao/decisoes.md` — DEC-I01..DEC-I14
+- `docs/integracao/problemas.md` — 40 registrados / 38 resolvidos / 2 abertos (P-029, P-030)
+- `docs/integracao/decisoes.md` — DEC-I01..DEC-I17
 - `docs/integracao/lacunas-interface.md` — 67 lacunas tratadas (com ressalvas)

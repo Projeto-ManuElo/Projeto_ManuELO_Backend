@@ -3,6 +3,9 @@ package com.Projeto.manuelo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -238,6 +241,56 @@ class CadastroUsuariosTest {
 		assertThatThrownBy(() -> adminService.alterarPerfil(cenario.pendenteId(), PerfilUsuario.COLABORADOR))
 				.as("sem SecurityContext o serviço deve exigir autenticação")
 				.isInstanceOf(IllegalStateException.class);
+	}
+
+	@Test
+	void cadastrarComResultadoClassificaEmailDuplicadoSenhaCurtaESucesso() throws Exception {
+		String emailDuplicado = PREFIXO + "-resultado-duplicado@manuelo.local";
+		assertThat(autenticacao.cadastrar("QA Resultado", emailDuplicado, SENHA)).isTrue();
+
+		Method metodo = Arrays.stream(CadastroUsuarioService.class.getMethods())
+				.filter(candidato -> "cadastrarComResultado".equals(candidato.getName())
+						&& Arrays.equals(candidato.getParameterTypes(),
+								new Class<?>[] { String.class, String.class, String.class }))
+				.findFirst()
+				.orElse(null);
+		assertThat(metodo)
+				.as("A-98: CadastroUsuarioService deve expor cadastrarComResultado(String,String,String)")
+				.isNotNull();
+
+		Class<?> resultadoEnum = Arrays.stream(CadastroUsuarioService.class.getDeclaredClasses())
+				.filter(classe -> "Resultado".equals(classe.getSimpleName()) && classe.isEnum())
+				.findFirst()
+				.orElse(null);
+		assertThat(resultadoEnum)
+				.as("A-98: CadastroUsuarioService deve declarar o enum interno Resultado")
+				.isNotNull();
+
+		assertThat(resultado(metodo, "QA Duplicado", emailDuplicado, SENHA))
+				.as("e-mail já cadastrado deve retornar EMAIL_EM_USO")
+				.isEqualTo("EMAIL_EM_USO");
+		assertThat(resultado(metodo, "QA Senha Curta",
+				PREFIXO + "-resultado-curta@manuelo.local", "abc"))
+				.as("senha curta deve retornar DADOS_INVALIDOS")
+				.isEqualTo("DADOS_INVALIDOS");
+		assertThat(resultado(metodo, "QA Valido",
+				PREFIXO + "-resultado-valido@manuelo.local", SENHA))
+				.as("cadastro válido deve retornar OK")
+				.isEqualTo("OK");
+	}
+
+	private String resultado(Method metodo, String nome, String email, String senha) {
+		try {
+			Object retorno = metodo.invoke(autenticacao, nome, email, senha);
+			assertThat(retorno)
+					.as("cadastrarComResultado deve devolver o enum Resultado")
+					.isInstanceOf(Enum.class);
+			return ((Enum<?>) retorno).name();
+		} catch (InvocationTargetException ex) {
+			throw new AssertionError("cadastrarComResultado lançou exceção", ex.getCause());
+		} catch (ReflectiveOperationException ex) {
+			throw new AssertionError("falha ao invocar cadastrarComResultado", ex);
+		}
 	}
 
 	private Cenario prepararCenario() {

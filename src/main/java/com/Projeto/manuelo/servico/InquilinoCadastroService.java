@@ -14,6 +14,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.Projeto.manuelo.dominio.DocumentoFiscal;
 import com.Projeto.manuelo.seguranca.UsuarioDetalhes;
 
 /**
@@ -432,13 +433,13 @@ public class InquilinoCadastroService {
     }
 
     private String somenteDigitos(String valor) {
-        return valor == null ? "" : valor.replaceAll("\\D", "");
+        return DocumentoFiscal.somenteDigitos(valor);
     }
 
     private void validarDocumento(String documento, String sujeito) {
-        if (documento.length() != 11 && documento.length() != 14) {
-            throw new IllegalArgumentException(
-                    "CPF/CNPJ " + sujeito + " deve ter 11 ou 14 dígitos.");
+        if (!DocumentoFiscal.valido(documento)) {
+            throw new IllegalArgumentException("CPF/CNPJ " + sujeito
+                    + " inválido. Informe 11 dígitos (CPF) ou 14 (CNPJ) com dígitos verificadores válidos.");
         }
     }
 

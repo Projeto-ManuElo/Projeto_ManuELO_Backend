@@ -37,10 +37,14 @@ public class CadastroView extends AuthLayout {
                         + "e ser igual à confirmação.");
                 return;
             }
-            if (cadastroUsuarios.cadastrar(nome.getValue(), email.getValue(), senha.getValue())) {
-                UiKit.ir("aprovacao");
-            } else {
-                UiKit.erro("Não foi possível cadastrar. Verifique se o email já está em uso.");
+            CadastroUsuarioService.Resultado resultado = cadastroUsuarios.cadastrarComResultado(
+                    nome.getValue(), email.getValue(), senha.getValue());
+            switch (resultado) {
+                case OK -> UiKit.ir("aprovacao");
+                case EMAIL_EM_USO -> UiKit.erro(
+                        "Este email já está cadastrado. Use outro email ou recupere a senha.");
+                case DADOS_INVALIDOS -> UiKit.erro(
+                        "Dados inválidos. Verifique o nome, o email e a senha.");
             }
         });
         cadastrar.addClassName("auth-submit");

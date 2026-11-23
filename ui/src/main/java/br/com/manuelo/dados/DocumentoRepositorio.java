@@ -88,7 +88,7 @@ public class DocumentoRepositorio {
             sql.append(" AND tipo_financeiro = :financeiro");
             params.put("financeiro", financeiroEnum);
         }
-        sql.append(" ORDER BY enviado_em DESC LIMIT :limite");
+        sql.append(" ORDER BY enviado_em DESC, nome_arquivo ASC, id ASC LIMIT :limite");
         params.put("limite", limite);
 
         return jdbc.sql(sql.toString())

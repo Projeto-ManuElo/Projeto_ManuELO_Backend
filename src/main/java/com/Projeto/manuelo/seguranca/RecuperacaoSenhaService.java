@@ -10,6 +10,7 @@ import java.util.Base64;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,10 @@ public class RecuperacaoSenhaService {
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final int TAMANHO_TOKEN_BYTES = 32;
     private static final int TAMANHO_MINIMO_SENHA = 8;
+    private static final Pattern EMAIL_EM_TEXTO =
+            Pattern.compile("[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}");
+    private static final Pattern TOKEN_EM_TEXTO =
+            Pattern.compile("(token=)[^\\s&]+");
 
     private final UsuarioJpaRepository usuarios;
     private final TokenRedefinicaoSenhaJpaRepository tokens;
@@ -98,9 +103,19 @@ public class RecuperacaoSenhaService {
         try {
             envio.enviar(email, tokenCru);
         } catch (RuntimeException ex) {
-            LOG.warn("Falha ao entregar token de redefinição de senha: {}",
-                    ex.getClass().getSimpleName());
+            LOG.warn("Falha ao entregar token de redefinição de senha ({}): {}",
+                    ex.getClass().getSimpleName(), mensagemSegura(ex));
         }
+    }
+
+    private String mensagemSegura(Throwable ex) {
+        String mensagem = ex.getMessage();
+        if (mensagem == null || mensagem.isBlank()) {
+            return "sem detalhe";
+        }
+        String semToken = TOKEN_EM_TEXTO.matcher(mensagem).replaceAll("$1***");
+        String semEmail = EMAIL_EM_TEXTO.matcher(semToken).replaceAll("***");
+        return semEmail.length() > 300 ? semEmail.substring(0, 300) + "..." : semEmail;
     }
 
     public Resultado redefinir(String token, String novaSenha) {

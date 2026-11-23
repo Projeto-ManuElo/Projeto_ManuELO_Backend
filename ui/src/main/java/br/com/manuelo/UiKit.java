@@ -7,7 +7,9 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.datepicker.DatePicker;
+import com.vaadin.flow.component.datepicker.DatePicker.DatePickerI18n;
 import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
@@ -24,9 +26,13 @@ import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.server.Command;
+import com.vaadin.flow.server.StreamResource;
 import com.vaadin.flow.server.streams.UploadHandler;
 import com.vaadin.flow.server.streams.UploadMetadata;
 
+import br.com.manuelo.dados.Dominio;
+
+import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.LocalDate;
@@ -260,6 +266,19 @@ public final class UiKit {
         return data == null ? "" : DIA_MES.format(data).replace(".", "");
     }
 
+    public static Anchor download(String nome, String mime, byte[] conteudo) {
+        String arquivo = nome == null || nome.isBlank() ? "download" : nome;
+        byte[] bytes = conteudo == null ? new byte[0] : conteudo;
+        StreamResource resource = new StreamResource(arquivo,
+                () -> new ByteArrayInputStream(bytes));
+        resource.setContentType(mime);
+        resource.setHeader("Content-Disposition",
+                "attachment; filename=\"" + arquivo.replace("\"", "") + "\"");
+        Anchor anchor = new Anchor(resource, "");
+        anchor.setDownload(true);
+        return anchor;
+    }
+
     public static Button primary(String texto, ComponentEventListener<com.vaadin.flow.component.ClickEvent<Button>> listener) {
         Button button = new Button(texto, listener);
         button.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
@@ -308,6 +327,18 @@ public final class UiKit {
         return field;
     }
 
+    public static TextField cpf(String label, String placeholder) {
+        TextField field = text(label, placeholder);
+        field.setAllowedCharPattern("[0-9.\\-/]");
+        field.addBlurListener(e -> {
+            String digitos = Dominio.soDigitos(field.getValue());
+            if (digitos.length() == 11 || digitos.length() == 14) {
+                field.setValue(Dominio.formatarDocumento(digitos));
+            }
+        });
+        return field;
+    }
+
     public static EmailField email(String label, String placeholder) {
         EmailField field = new EmailField(label);
         field.setPlaceholder(placeholder);
@@ -333,6 +364,18 @@ public final class UiKit {
         DatePicker field = new DatePicker(label);
         field.setPlaceholder("dd/mm/aaaa");
         field.setWidthFull();
+        DatePickerI18n i18n = new DatePickerI18n();
+        i18n.setDateFormat("dd/MM/yyyy");
+        i18n.setDateFormats("dd/MM/yyyy", "d/M/yyyy");
+        i18n.setMonthNames(List.of("Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+                "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"));
+        i18n.setWeekdays(List.of("Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira",
+                "Quinta-feira", "Sexta-feira", "Sábado"));
+        i18n.setWeekdaysShort(List.of("Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"));
+        i18n.setToday("Hoje");
+        i18n.setCancel("Cancelar");
+        field.setI18n(i18n);
+        field.setLocale(PT_BR);
         return field;
     }
 

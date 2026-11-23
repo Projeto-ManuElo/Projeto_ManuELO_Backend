@@ -1,7 +1,7 @@
 # Progresso (memória do loop; a conversa não é memória)
 
-Iteração: 24 | Orçamento: 120 | Runtime: postgres embutido do juiz (cluster temporário; sem Docker/psql na máquina)
-Última atualização: P-002/P-019/P-021/P-023/P-027 concluídos; juiz 8/8; 109 testes, 1 skip
+Iteração: 30 | Orçamento: 120 | Runtime: postgres embutido do juiz (127.0.0.1:55433; sem Docker/psql na máquina)
+Última atualização: correções do relatório de frontend de 22/11 (E01–E07, O01, O02) no working tree, sem commit por decisão do usuário; revisão independente APROVADA com ressalvas; download via `UiKit.download` estendido às 5 views; `token=` mascarado no log; regex de e-mail endurecido; juiz 8/8; 127 testes, 1 skip (22 classes).
 
 ## Entendimento inicial (8 linhas)
 1. O pacote ManuElo_Equipe_Completa foi copiado para a raiz: AGENTS.md, opencode.jsonc, .opencode/agents e docs/integracao.
@@ -58,3 +58,14 @@ Nenhum. Os 5 problemas abertos (P-002/P-019/P-021/P-023/P-027) foram concluídos
   ambiente: juiz e teste não executados aqui — rodar `./scripts/verificar-integracao.sh` com JDK 21.
   Verificação local: `JAVA_HOME=~/.jdks/openjdk-26.0.2.1 ./mvnw -B -Dtest=ArquiteturaViewsTest,SessaoUsuarioCacheTest test` -> 3 testes, 0 falhas (release 21);
   `SessaoUsuarioCacheTest` 2/2. Juiz completo ainda requer Docker/Postgres e não rodou neste ambiente.
+- Iteração 28: entrega de apoio — `docs/integracao/MAPEAMENTO-CLAUDE.md` com stack, árvore, rotas,
+  serviços, banco, fluxos, segurança, testes, problemas abertos, armadilhas e prompt-mestre para o
+  Claude converter um relatório de bugs em prompt de correção; sem mudança de código.
+- Iteração 29: relatório de frontend 22/11 (E01–E07, O01, O02) — correções A-94..A-100 no working tree
+  (diasAtraso/texto atrasado, endereço por tokens, CPF/CNPJ centralizado, download via Anchor,
+  mensagens de cadastro + diagnóstico SMTP, responsividade 520px, ordenação de recentes). Juiz completo
+  8/8 (EXIT 0) com Postgres embutido em 127.0.0.1:55433; 22 classes, 127 testes, 0 falhas, 0 erros, 1 skip.
+  Novos testes-guarda: `ResponsividadeCssTest` 4/4, `ArquiteturaViewsTest` 5/5, `EnvioTokenSenhaImplTest` 3/3,
+  `UiKitDateTest` 1/1. Sem commit nesta rodada (decisão do usuário). P-031..P-040 registrados em problemas.md;
+  DEC-I17 registrada. F01/P-032 depende de `SPRING_MAIL_HOST` no ambiente; E02/P-033 validada por teste-guarda,
+  falta inspeção visual em navegador real.

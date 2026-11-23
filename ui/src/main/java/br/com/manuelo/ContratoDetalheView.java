@@ -1,6 +1,5 @@
 package br.com.manuelo;
 
-import java.io.ByteArrayInputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -12,6 +11,7 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -21,8 +21,6 @@ import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.QueryParameters;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.StreamRegistration;
-import com.vaadin.flow.server.StreamResource;
 
 import com.Projeto.manuelo.servico.CaucaoService;
 import com.Projeto.manuelo.servico.ContratoCadastroService;
@@ -282,14 +280,10 @@ public class ContratoDetalheView extends Div implements BeforeEnterObserver {
     private void baixar(ConsultaService.DocumentoVinculo documento) {
         try {
             DocumentoService.Arquivo arquivo = documentoService.baixar(documento.id());
-            StreamResource resource = new StreamResource(arquivo.nome(),
-                    () -> new ByteArrayInputStream(arquivo.conteudo()));
-            resource.setContentType(arquivo.mime());
-            resource.setHeader("Content-Disposition",
-                    "attachment; filename=\"" + arquivo.nome().replace("\"", "") + "\"");
-            StreamRegistration registro = UI.getCurrent().getSession().getResourceRegistry()
-                    .registerResource(resource);
-            UI.getCurrent().getPage().open(registro.getResourceUri().toString(), "_blank");
+            Anchor anchor = UiKit.download(arquivo.nome(), arquivo.mime(), arquivo.conteudo());
+            anchor.setVisible(false);
+            add(anchor);
+            anchor.getElement().executeJs("this.click()").then(ignored -> remove(anchor));
         } catch (RuntimeException ex) {
             UiKit.erro(ex.getMessage());
         }

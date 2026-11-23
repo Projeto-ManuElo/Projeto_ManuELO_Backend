@@ -257,6 +257,31 @@ class InquilinoCadastroTest {
 	}
 
 	@Test
+	void cpfComOnzeDigitosEDigitoVerificadorInvalidoRecusaSemPersistirNada() {
+		UUID imovelId = inserirImovelVago();
+		String nome = nomeUnico("InquilinoCpfVerificadorInvalido");
+		String documentoInvalido = "11111111111";
+		String documentoFiador = cpfValido();
+
+		assertThatThrownBy(() -> comSavepoint(() -> service.salvar(dados(null, nome,
+				documentoInvalido, emailUnico("cpf-verificador-invalido"), "79999999999",
+				nomeUnico("FiadorCpfVerificadorInvalido"), documentoFiador,
+				emailUnico("fiador-cpf-verificador-invalido"), imovelId,
+				new BigDecimal("1500.00"), 5, new BigDecimal("3000.00"), null))))
+				.as("A-96: CPF de 11 dígitos com dígito verificador inválido deve ser recusado")
+				.isInstanceOf(RuntimeException.class);
+
+		assertThat(contar("SELECT count(*) FROM inquilinos WHERE documento = ?", documentoInvalido))
+				.as("nenhum inquilino pode ser gravado com CPF inválido").isZero();
+		assertThat(contar("SELECT count(*) FROM inquilinos WHERE nome = ?", nome))
+				.as("nenhum inquilino pode permanecer na tentativa recusada").isZero();
+		assertThat(contar("SELECT count(*) FROM fiadores WHERE documento = ?", documentoFiador))
+				.as("nenhum fiador pode permanecer na tentativa recusada").isZero();
+		assertThat(contar("SELECT count(*) FROM contratos WHERE imovel_id = ?", imovelId))
+				.as("nenhum contrato pode ser criado na tentativa recusada").isZero();
+	}
+
+	@Test
 	void aluguelNaoPositivoRecusaSemPersistirNada() {
 		UUID imovelId = inserirImovelVago();
 		String nome = nomeUnico("InquilinoAluguelInvalido");

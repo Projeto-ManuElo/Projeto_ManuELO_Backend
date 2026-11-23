@@ -3,9 +3,11 @@ package com.Projeto.manuelo;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
+import java.lang.reflect.RecordComponent;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -177,6 +179,43 @@ class ContratosFiltrosTest {
 		assertThat(ids(contratoRepositorio.listar(null, null, null, DATA.format(fimAtivo), null)))
 				.as("validade dd/MM/yyyy deve isolar pelo fim do contrato")
 				.containsExactly(contratoAtivo.toString());
+	}
+
+	@Test
+	void contratoComFimFuturoMasCompetenciaAntigaEmAbertoExpoeDiasAtraso() throws Exception {
+		LocalDate hoje = jdbc.queryForObject("SELECT current_date", Date.class).toLocalDate();
+		UUID imovel = UUID.randomUUID();
+		UUID contrato = UUID.randomUUID();
+		String nome = "Delta QA Atraso " + UUID.randomUUID();
+		String documento = documentoUnico();
+
+		inserirImovel(imovel, "Rua Delta " + MARCADOR, "404", "Bairro Delta " + MARCADOR,
+				"CASA", "ALUGADO");
+		inserirInquilino(UUID.randomUUID(), nome, documento);
+		inserirContrato(contrato, imovel, documento, hoje.minusMonths(3).withDayOfMonth(1),
+				hoje.plusMonths(3), hoje.minusMonths(3).withDayOfMonth(1), (short) 5);
+
+		List<Modelos.Contrato> encontrados =
+				contratoRepositorio.listar(nome, null, null, null, null);
+		assertThat(encontrados).as("o contrato do cenário deve ser listado").hasSize(1);
+		Modelos.Contrato listado = encontrados.get(0);
+		assertThat(listado.vencimento())
+				.as("o contrato tem fim futuro; o atraso vem da competência antiga em aberto")
+				.isAfter(hoje);
+
+		RecordComponent diasAtraso = Arrays.stream(Modelos.Contrato.class.getRecordComponents())
+				.filter(componente -> "diasAtraso".equals(componente.getName()))
+				.findFirst()
+				.orElse(null);
+		assertThat(diasAtraso)
+				.as("A-94: Modelos.Contrato deve expor o componente diasAtraso")
+				.isNotNull();
+
+		Object valor = diasAtraso.getAccessor().invoke(listado);
+		assertThat(valor).as("diasAtraso deve ser numérico").isInstanceOf(Number.class);
+		assertThat(((Number) valor).intValue())
+				.as("A-94: competência antiga em aberto deve gerar diasAtraso > 0")
+				.isGreaterThan(0);
 	}
 
 	@Test

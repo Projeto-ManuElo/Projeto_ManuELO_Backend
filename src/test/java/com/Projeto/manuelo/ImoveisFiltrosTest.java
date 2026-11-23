@@ -111,8 +111,18 @@ class ImoveisFiltrosTest {
 				.containsExactly(imovelApartamento.toString());
 	}
 
-	@Test
-	void filtraPorTipoStatusEInquilino() {
+    @Test
+    void filtraPorEnderecoCompletoLogradouroNumeroBairro() {
+        String enderecoCompleto = "Rua Alfa " + MARCADOR + ", 101 - " + bairroCasa;
+
+        assertThat(imovelRepositorio.listar(enderecoCompleto, null, null, null))
+                .as("A-95: o filtro 'logradouro, numero - bairro' deve casar o imóvel completo")
+                .extracting(Modelos.Imovel::id)
+                .containsExactly(imovelCasa.toString());
+    }
+
+    @Test
+    void filtraPorTipoStatusEInquilino() {
 		assertThat(imovelRepositorio.listar(MARCADOR, "Casa", null, null))
 				.as("tipo recebe o rótulo exibido na tela")
 				.extracting(Modelos.Imovel::id)

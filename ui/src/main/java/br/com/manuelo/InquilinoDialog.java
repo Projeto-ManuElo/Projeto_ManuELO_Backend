@@ -29,10 +29,10 @@ public class InquilinoDialog extends Dialog {
     private final Supplier<List<ConsultaService.ImovelOpcao>> imoveis;
     private final Span titulo = new Span("Adicionar Inquilino");
     private final TextField nome = UiKit.text("Nome", "Ex: João Miguel Oliveira de Souza");
-    private final TextField cpf = UiKit.text("CPF", "ex: 123.xxx.xxx.123");
+    private final TextField cpf = UiKit.cpf("CPF", "ex: 123.xxx.xxx.123");
     private final EmailField email = UiKit.email("Email", "ex: jteste@gmail.com");
     private final TextField nomeFiador = UiKit.text("Nome do fiador", "Ex: João Miguel Oliveira de Souza");
-    private final TextField cpfFiador = UiKit.text("CPF do fiador", "ex: 123.xxx.xxx.123");
+    private final TextField cpfFiador = UiKit.cpf("CPF do fiador", "ex: 123.xxx.xxx.123");
     private final EmailField emailFiador = UiKit.email("Email do fiador", "ex: jteste@gmail.com");
     private final ComboBox<ConsultaService.ImovelOpcao> imovel;
     private final TextField telefone = UiKit.text("Telefone", "Ex: (11) 99999-9999");

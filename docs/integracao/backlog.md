@@ -99,3 +99,14 @@ Status: PENDENTE | EM_ANDAMENTO | CONCLUIDO | BLOQUEADO. Dono: ordem banco -> ba
   /movimentacao-financeira sem consulta de opções no construtor e com no máximo 1 revalidação de sessão a cada 30 s;
   log `Requisição lenta` disponível para comprovar a meta em produção.
   **EM_ANDAMENTO** (P-030; DEC-I16).
+
+## S10 Correções do relatório de frontend de 22/11/2026 (E01–E07, O01, O02)
+- A-92 Extrair `grid-template-columns` inline das views para classes CSS. **CONCLUIDO** (commit af411e4; `ArquiteturaViewsTest`).
+- A-93 `DatePicker` em pt-BR centralizado no `UiKit`. **CONCLUIDO** (commit 2a8c8af; `UiKitDateTest`).
+- A-94 Contratos: expor `diasAtraso` e exibir "Atrasado há N dias" (E04/FE30). **CONCLUIDO no working tree** (sem commit; `ContratosFiltrosTest`).
+- A-95 Imóveis: filtro por endereço completo por tokens (E05/FE18). **CONCLUIDO no working tree** (sem commit; `ImoveisFiltrosTest`).
+- A-96 CPF/CNPJ: validação de dígitos verificadores em `DocumentoFiscal` + máscara `UiKit.cpf` (E06/FE26). **CONCLUIDO no working tree** (sem commit; `InquilinoCadastroTest`/`ContratoCadastroTest`).
+- A-97 Download de PDF via `UiKit.download` (Anchor), não `Page.open` (E01/FE46 e E07/FE41), aplicado às 5 views de download. **CONCLUIDO no working tree** (sem commit; `ArquiteturaViewsTest`).
+- A-98 Cadastro com resultado detalhado (O01/FE04) + diagnóstico seguro de SMTP (F01/FE09). **CONCLUIDO no working tree** (sem commit; `CadastroUsuariosTest`, `EnvioTokenSenhaImplTest`).
+- A-99 Responsividade mobile: breakpoint 520px, rolagem horizontal de tabelas e ajustes de auth/modais (E02/FE49). **CONCLUIDO no working tree** (sem commit; `ResponsividadeCssTest`).
+- A-100 Documentos recentes com ordenação determinística (O02/FE43). **CONCLUIDO no working tree** (sem commit; `ArquiteturaViewsTest`; DEC-I17).
