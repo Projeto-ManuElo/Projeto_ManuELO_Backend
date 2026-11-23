@@ -58,3 +58,6 @@ Nenhum. Os 5 problemas abertos (P-002/P-019/P-021/P-023/P-027) foram concluídos
   ambiente: juiz e teste não executados aqui — rodar `./scripts/verificar-integracao.sh` com JDK 21.
   Verificação local: `JAVA_HOME=~/.jdks/openjdk-26.0.2.1 ./mvnw -B -Dtest=ArquiteturaViewsTest,SessaoUsuarioCacheTest test` -> 3 testes, 0 falhas (release 21);
   `SessaoUsuarioCacheTest` 2/2. Juiz completo ainda requer Docker/Postgres e não rodou neste ambiente.
+- Iteração 28: entrega de apoio — `docs/integracao/MAPEAMENTO-CLAUDE.md` com stack, árvore, rotas,
+  serviços, banco, fluxos, segurança, testes, problemas abertos, armadilhas e prompt-mestre para o
+  Claude converter um relatório de bugs em prompt de correção; sem mudança de código.
