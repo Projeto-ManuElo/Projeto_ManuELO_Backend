@@ -29,14 +29,38 @@ public class CadastroUsuarioService {
         this.passwordEncoder = passwordEncoder;
     }
 
+    /**
+     * A-98: resultado tipado do cadastro, para a view distinguir e-mail já em
+     * uso de dados inválidos (relatório de bugs de frontend de 22/11/2026).
+     */
+    public enum Resultado {
+        OK,
+        EMAIL_EM_USO,
+        DADOS_INVALIDOS
+    }
+
+    /**
+     * A-98: mantém o contrato booleano histórico, delegando para o resultado
+     * tipado. Qualquer resultado diferente de OK continua recusando o cadastro.
+     */
     public boolean cadastrar(String nome, String email, String senha) {
+        return cadastrarComResultado(nome, email, senha) == Resultado.OK;
+    }
+
+    /**
+     * Valida nome/e-mail/senha (mínimo de {@value #TAMANHO_MINIMO_SENHA}
+     * caracteres), recusa e-mail já cadastrado ignorando a caixa e grava
+     * COLABORADOR/PENDENTE_APROVACAO com senha BCrypt. Dados inválidos têm
+     * precedência sobre e-mail duplicado.
+     */
+    public Resultado cadastrarComResultado(String nome, String email, String senha) {
         if (nome == null || nome.isBlank() || email == null || email.isBlank()
                 || senha == null || senha.length() < TAMANHO_MINIMO_SENHA) {
-            return false;
+            return Resultado.DADOS_INVALIDOS;
         }
         String emailNormalizado = email.trim();
         if (usuarios.existsByEmailIgnoreCase(emailNormalizado)) {
-            return false;
+            return Resultado.EMAIL_EM_USO;
         }
 
         Usuario usuario = new Usuario();
@@ -46,6 +70,6 @@ public class CadastroUsuarioService {
         usuario.setPerfil(PerfilUsuario.COLABORADOR);
         usuario.setStatus(StatusUsuario.PENDENTE_APROVACAO);
         usuarios.save(usuario);
-        return true;
+        return Resultado.OK;
     }
 }
