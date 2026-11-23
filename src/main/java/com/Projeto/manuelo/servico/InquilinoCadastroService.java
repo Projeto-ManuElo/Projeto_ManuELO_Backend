@@ -440,6 +440,36 @@ public class InquilinoCadastroService {
             throw new IllegalArgumentException(
                     "CPF/CNPJ " + sujeito + " deve ter 11 ou 14 dígitos.");
         }
+        if (documento.length() == 11 && !cpfValido(documento)) {
+            // A-96: tamanho correto não basta; o dígito verificador precisa fechar.
+            throw new IllegalArgumentException("CPF " + sujeito + " inválido.");
+        }
+    }
+
+    /** CPF válido: 11 dígitos, não todos iguais, e os dois dígitos verificadores corretos. */
+    private boolean cpfValido(String cpf) {
+        boolean todosIguais = true;
+        for (int i = 1; i < cpf.length(); i++) {
+            if (cpf.charAt(i) != cpf.charAt(0)) {
+                todosIguais = false;
+                break;
+            }
+        }
+        if (todosIguais) {
+            return false;
+        }
+        int primeiro = digitoVerificadorCpf(cpf, 9, 10);
+        int segundo = digitoVerificadorCpf(cpf, 10, 11);
+        return cpf.charAt(9) - '0' == primeiro && cpf.charAt(10) - '0' == segundo;
+    }
+
+    private int digitoVerificadorCpf(String cpf, int quantidade, int pesoInicial) {
+        int soma = 0;
+        for (int i = 0; i < quantidade; i++) {
+            soma += (cpf.charAt(i) - '0') * (pesoInicial - i);
+        }
+        int resto = (soma * 10) % 11;
+        return resto == 10 ? 0 : resto;
     }
 
     private UUID uuid(String valor, String mensagem) {
