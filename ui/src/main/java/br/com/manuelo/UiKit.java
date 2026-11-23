@@ -331,6 +331,10 @@ public final class UiKit {
 
     public static DatePicker date(String label) {
         DatePicker field = new DatePicker(label);
+        DatePicker.DatePickerI18n i18n = new DatePicker.DatePickerI18n();
+        i18n.setDateFormat("dd/MM/yyyy");
+        field.setI18n(i18n);
+        field.setLocale(PT_BR);
         field.setPlaceholder("dd/mm/aaaa");
         field.setWidthFull();
         return field;
