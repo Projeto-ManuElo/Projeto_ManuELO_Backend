@@ -65,7 +65,10 @@ public class ImovelRepositorio {
         if (enderecoFiltro != null) {
             sql.append(" AND (v.logradouro ILIKE :endereco ESCAPE '\\'")
                     .append(" OR v.numero ILIKE :endereco ESCAPE '\\'")
-                    .append(" OR v.bairro ILIKE :endereco ESCAPE '\\')");
+                    .append(" OR v.bairro ILIKE :endereco ESCAPE '\\'")
+                    .append(" OR (COALESCE(v.logradouro,'') || ', ' || COALESCE(v.numero,'')")
+                    .append(" || COALESCE(' - ' || NULLIF(v.complemento,''), '')")
+                    .append(" || COALESCE(' - ' || NULLIF(v.bairro,''), '')) ILIKE :endereco ESCAPE '\\')");
         }
         if (tipoFiltro != null) {
             sql.append(" AND v.tipo::text = :tipo");
