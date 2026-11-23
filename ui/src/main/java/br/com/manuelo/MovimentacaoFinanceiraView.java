@@ -380,7 +380,7 @@ public class MovimentacaoFinanceiraView extends Div {
                         "Valor", "Comprovante" };
         Div head = new Div();
         head.addClassName("table-head");
-        head.getStyle().set("grid-template-columns", gridExtrato());
+        head.addClassName(administrador ? "cols-extrato-financeiro-admin" : "cols-extrato-financeiro");
         for (String coluna : colunas) {
             head.add(new Span(coluna));
         }
@@ -416,7 +416,7 @@ public class MovimentacaoFinanceiraView extends Div {
                 comprovante(item),
                 estornado);
         linha.addClassName("table-row");
-        linha.getStyle().set("grid-template-columns", gridExtrato());
+        linha.addClassName(administrador ? "cols-extrato-financeiro-admin" : "cols-extrato-financeiro");
 
         if (administrador) {
             linha.add(criarAcoes(item));

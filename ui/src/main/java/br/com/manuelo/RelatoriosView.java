@@ -38,8 +38,6 @@ public class RelatoriosView extends Div {
     private static final List<String> TIPOS = List.of("Contratos existentes", "Contratos atrasados",
             "Contratos a vencer", "Movimentação financeira");
     private static final List<String> FILTROS = List.of("Todos", "Entrada", "Saída");
-    private static final String GRID_EXTRATO =
-            "110px 90px 150px minmax(0, 1fr) 120px 130px";
 
     private final RelatorioService relatorios;
     private final MovimentacaoFinanceiraService movimentacoes;
@@ -152,7 +150,7 @@ public class RelatoriosView extends Div {
     private Div cabecalhoExtrato() {
         Div head = new Div();
         head.addClassName("table-head");
-        head.getStyle().set("grid-template-columns", GRID_EXTRATO);
+        head.addClassName("cols-extrato-relatorio");
         for (String coluna : List.of("Data", "Tipo", "Categoria", "Descrição", "Forma", "Valor")) {
             head.add(new Span(coluna));
         }
@@ -181,7 +179,7 @@ public class RelatoriosView extends Div {
                 UiKit.muted(forma),
                 valor);
         linha.addClassName("table-row");
-        linha.getStyle().set("grid-template-columns", GRID_EXTRATO);
+        linha.addClassName("cols-extrato-relatorio");
         return linha;
     }
 

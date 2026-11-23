@@ -898,8 +898,21 @@ vaadin-button.icon-button:hover {
     grid-template-columns: 165px 166px minmax(0, 1fr) 150px;
 }
 
+.cols-extrato-relatorio {
+    grid-template-columns: 110px 90px 150px minmax(0, 1fr) 120px 130px;
+}
+
+.cols-extrato-financeiro {
+    grid-template-columns: 110px 90px 140px minmax(0, 1fr) 110px 130px 120px 130px;
+}
+
+.cols-extrato-financeiro-admin {
+    grid-template-columns: 110px 90px 140px minmax(0, 1fr) 110px 130px 120px 130px 180px;
+}
+
 .table-head.cols-home > span:last-child,
-.table-head.cols-extrato > span:last-child {
+.table-head.cols-extrato > span:last-child,
+.table-head.cols-extrato-relatorio > span:last-child {
     justify-self: end;
     text-align: right;
 }
@@ -1421,6 +1434,9 @@ vaadin-button.segment.active {
     .cols-inquilinos,
     .cols-contratos,
     .cols-extrato,
+    .cols-extrato-relatorio,
+    .cols-extrato-financeiro,
+    .cols-extrato-financeiro-admin,
     .cols-reformas,
     .cols-usuarios {
         grid-template-columns: 1fr;
